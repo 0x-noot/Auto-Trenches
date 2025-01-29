@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "AutoTrenches.sln"
+    "dotnet.defaultSolution": "Auto-Trenches.sln"
 }
