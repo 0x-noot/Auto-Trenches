@@ -1,0 +1,144 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+public class MovementSystem : MonoBehaviour
+{
+    private BaseUnit unit;
+    private Grid grid;
+    private PathfindingSystem pathfinding;
+    private bool isMoving = false;
+    private List<Vector3> currentPath = new List<Vector3>();
+    private Vector3 currentTargetPosition;
+    private float pathRecalculationTimer = 0f;
+    
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float stoppingDistance = 0.1f;
+    [SerializeField] private float pathRecalculationInterval = 0.5f;
+    [SerializeField] private LayerMask obstacleLayer;
+    [SerializeField] private LayerMask unitLayer;
+    
+    private void Awake()
+    {
+        unit = GetComponent<BaseUnit>();
+        grid = Object.FindFirstObjectByType<Grid>();
+        pathfinding = new PathfindingSystem(grid, obstacleLayer, unitLayer);
+    }
+
+    private void Update()
+    {
+        if (isMoving)
+        {
+            pathRecalculationTimer += Time.deltaTime;
+            if (pathRecalculationTimer >= pathRecalculationInterval)
+            {
+                pathRecalculationTimer = 0f;
+                RecalculatePath();
+            }
+        }
+    }
+
+    public bool MoveTo(Vector3 destination)
+    {
+        currentTargetPosition = destination;
+        return CalculateAndFollowPath();
+    }
+
+    public void UpdateTargetPosition(Vector3 newPosition)
+    {
+        if (Vector3.Distance(currentTargetPosition, newPosition) > stoppingDistance)
+        {
+            currentTargetPosition = newPosition;
+            // Don't immediately recalculate - let the Update timer handle it
+        }
+    }
+
+    private bool CalculateAndFollowPath()
+    {
+        if (unit.GetCurrentState() == UnitState.Dead)
+            return false;
+
+        Vector3Int targetCell = grid.WorldToCell(currentTargetPosition);
+        List<Vector3Int> path = pathfinding.FindPath(
+            grid.WorldToCell(transform.position), 
+            targetCell
+        );
+        
+        if (path == null || path.Count == 0)
+            return false;
+
+        currentPath = path.Select(p => grid.GetCellCenterWorld(p)).ToList();
+        
+        if (!isMoving)
+        {
+            StartCoroutine(FollowPathCoroutine());
+        }
+        
+        return true;
+    }
+
+    private void RecalculatePath()
+    {
+        if (Vector3.Distance(transform.position, currentTargetPosition) <= stoppingDistance)
+            return;
+
+        CalculateAndFollowPath();
+    }
+
+    private IEnumerator FollowPathCoroutine()
+    {
+        isMoving = true;
+        unit.UpdateState(UnitState.Moving);
+        
+        while (currentPath.Count > 0)
+        {
+            Vector3 currentWaypoint = currentPath[0];
+            
+            while (Vector3.Distance(transform.position, currentWaypoint) > stoppingDistance)
+            {
+                if (unit.GetCurrentState() == UnitState.Dead)
+                {
+                    StopMovement();
+                    yield break;
+                }
+
+                // Calculate movement direction
+                Vector3 direction = (currentWaypoint - transform.position).normalized;
+                
+                // Rotate unit to face movement direction
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                transform.rotation = Quaternion.AngleAxis(angle - 90f, Vector3.forward);
+                
+                // Move unit
+                float step = moveSpeed * Time.deltaTime;
+                transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, step);
+                
+                yield return null;
+            }
+
+            if (currentPath.Count > 0)
+                currentPath.RemoveAt(0);
+            
+            // If we're close enough to the final target, stop
+            if (Vector3.Distance(transform.position, currentTargetPosition) <= stoppingDistance)
+            {
+                break;
+            }
+        }
+        
+        isMoving = false;
+        unit.UpdateState(UnitState.Idle);
+    }
+
+    public void StopMovement()
+    {
+        if (isMoving)
+        {
+            StopAllCoroutines();
+            currentPath.Clear();
+            isMoving = false;
+            unit.UpdateState(UnitState.Idle);
+        }
+    }
+}
