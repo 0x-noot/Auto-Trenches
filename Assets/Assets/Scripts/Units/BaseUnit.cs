@@ -13,7 +13,7 @@ public abstract class BaseUnit : MonoBehaviour
     protected float moveSpeed;
     
     [Header("Team Settings")]
-    [SerializeField] protected string teamId;  // Add this
+    [SerializeField] protected string teamId;
 
     [Header("Death Settings")]
     [SerializeField] protected float deathAnimationDuration = 1f;
@@ -24,7 +24,6 @@ public abstract class BaseUnit : MonoBehaviour
     protected float lastAttackTime;
     protected HealthSystem healthSystem;
 
-    // Event that other systems can subscribe to
     public event Action<BaseUnit> OnUnitDeath;
 
     protected virtual void Start()
@@ -62,7 +61,6 @@ public abstract class BaseUnit : MonoBehaviour
         if (currentState == UnitState.Dead) return;
         
         currentState = UnitState.Dead;
-        Debug.Log($"[{gameObject.name}] Unit died. Team: {teamId}");
 
         var movementSystem = GetComponent<MovementSystem>();
         if (movementSystem != null)
@@ -87,7 +85,6 @@ public abstract class BaseUnit : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // Notify GameManager about unit death
         GameManager.Instance?.HandleUnitDeath(this);
     }
 
@@ -122,24 +119,23 @@ public abstract class BaseUnit : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // Add these new methods for team management
     public void SetTeam(string newTeamId)
     {
         teamId = newTeamId;
-        Debug.Log($"[{gameObject.name}] Setting team to: {newTeamId}");
         
-        // Convert team name to layer name (PlayerTeam -> PlayerLayer, EnemyTeam -> EnemyLayer)
-        string layerName = newTeamId.Replace("Team", "Layer");
+        string layerName = newTeamId == "PlayerTeam" ? "TeamA" : 
+                        newTeamId == "EnemyTeam" ? "TeamB" : 
+                        newTeamId;
+        
         int layerIndex = LayerMask.NameToLayer(layerName);
         
         if (layerIndex != -1)
         {
             gameObject.layer = layerIndex;
-            Debug.Log($"[{gameObject.name}] Set layer to: {layerName} (index: {layerIndex})");
         }
         else
         {
-            Debug.LogError($"[{gameObject.name}] Failed to find layer: {layerName}");
+            Debug.LogError($"Failed to find layer: {layerName}");
         }
     }
 

@@ -15,8 +15,8 @@ public class EnemyTargeting : MonoBehaviour
     [Header("Targeting Settings")]
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float targetingRange = 10f;
-    [SerializeField] private float updateInterval = 0.1f;  // Reduced from 0.2f to 0.1f
-    [SerializeField] private string targetTeamLayer = "TeamB";
+    [SerializeField] private float updateInterval = 0.1f;
+    [SerializeField] private string targetTeamLayer = "TeamA";
     
     [Header("Combat Settings")]
     [SerializeField] private float positionVariance = 0.5f;
@@ -29,7 +29,7 @@ public class EnemyTargeting : MonoBehaviour
         
         if (combatSystem == null)
         {
-            Debug.LogError($"[{gameObject.name}] Missing CombatSystem component!");
+            Debug.LogError($"Missing CombatSystem component!");
         }
     }
 
@@ -43,7 +43,6 @@ public class EnemyTargeting : MonoBehaviour
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
-                Debug.Log($"[{gameObject.name}] Subscribed to GameState changes");
             }
         }
     }
@@ -58,16 +57,13 @@ public class EnemyTargeting : MonoBehaviour
 
     private void HandleGameStateChanged(GameState newState)
     {
-        Debug.Log($"[{gameObject.name}] Received game state change: {newState}");
         switch (newState)
         {
             case GameState.BattleActive:
-                Debug.Log($"[{gameObject.name}] Starting targeting system");
                 StartTargeting();
                 break;
             case GameState.BattleEnd:
             case GameState.GameOver:
-                Debug.Log($"[{gameObject.name}] Stopping targeting system");
                 StopTargeting();
                 break;
         }
@@ -75,10 +71,8 @@ public class EnemyTargeting : MonoBehaviour
 
     private void UpdateTargeting()
     {
-        // Skip if unit is dead or we're not actively targeting
         if (!isTargeting || unit.GetCurrentState() == UnitState.Dead) return;
 
-        // If we don't have a target, find one
         if (currentTarget == null)
         {
             FindNewTarget();
@@ -89,43 +83,36 @@ public class EnemyTargeting : MonoBehaviour
         Vector3 targetPos = currentTarget.position;
         float distanceToTarget = Vector2.Distance(currentPos, targetPos);
 
-        // Check if current target is still valid
         if (distanceToTarget <= targetingRange && currentTarget.gameObject.activeInHierarchy)
         {
-            // In attack range
             if (distanceToTarget <= unit.GetAttackRange())
             {
                 movementSystem.StopMovement();
                 FaceTarget(targetPos);
                 unit.UpdateState(UnitState.Attacking);
                 
-                // Get or update target unit reference
                 if (currentTargetUnit == null || currentTargetUnit.gameObject != currentTarget.gameObject)
                 {
                     currentTargetUnit = currentTarget.GetComponent<BaseUnit>();
                 }
                 
-                // Attack if possible
                 if (currentTargetUnit != null && currentTargetUnit.GetCurrentState() != UnitState.Dead)
                 {
                     combatSystem.ExecuteAttack(currentTargetUnit);
                 }
                 else
                 {
-                    // Target is dead or invalid, find new target
                     currentTarget = null;
                     currentTargetUnit = null;
                     FindNewTarget();
                 }
             }
-            // Move towards target
             else
             {
                 Vector3 idealPosition = CalculateIdealPosition(currentPos, targetPos);
                 movementSystem.MoveTo(idealPosition);
             }
         }
-        // Target out of range or inactive
         else
         {
             currentTarget = null;
@@ -173,7 +160,6 @@ public class EnemyTargeting : MonoBehaviour
         {
             if (hit.gameObject == gameObject) continue;
 
-            // Check if potential target is alive
             BaseUnit targetUnit = hit.GetComponent<BaseUnit>();
             if (targetUnit == null || targetUnit.GetCurrentState() == UnitState.Dead) continue;
 
@@ -211,7 +197,6 @@ public class EnemyTargeting : MonoBehaviour
         {
             isTargeting = true;
             StartCoroutine(TargetingRoutine());
-            Debug.Log($"[{gameObject.name}] Started targeting routine");
         }
     }
 
@@ -221,7 +206,6 @@ public class EnemyTargeting : MonoBehaviour
         currentTarget = null;
         currentTargetUnit = null;
         StopAllCoroutines();
-        Debug.Log($"[{gameObject.name}] Stopped targeting routine");
     }
 
     private IEnumerator TargetingRoutine()
@@ -230,26 +214,6 @@ public class EnemyTargeting : MonoBehaviour
         {
             UpdateTargeting();
             yield return new WaitForSeconds(updateInterval);
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (!Application.isPlaying) return;
-        
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, targetingRange);
-
-        if (unit != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, unit.GetAttackRange());
-        }
-
-        if (currentTarget != null)
-        {
-            Gizmos.color = Color.white;
-            Gizmos.DrawLine(transform.position, currentTarget.position);
         }
     }
 }

@@ -48,7 +48,6 @@ public class PlacementManager : MonoBehaviour
     public void SelectUnitType(UnitType type)
     {
         selectedUnitType = type;
-        Debug.Log($"Selected unit type: {type}");
     }
 
     public void PlaceUnit(Vector3 position)
@@ -81,8 +80,6 @@ public class PlacementManager : MonoBehaviour
         
         // Notify UI
         OnUnitsChanged?.Invoke();
-
-        Debug.Log($"Placed {selectedUnitType} unit at {position}");
     }
 
     private GameObject GetPrefabForType(UnitType type)

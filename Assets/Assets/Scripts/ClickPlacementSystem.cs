@@ -20,20 +20,15 @@ public class ClickPlacementSystem : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0)) // Left click
+        if (Input.GetMouseButtonDown(0))
         {
-            // Convert mouse position to world position
             Vector3 mousePos = Input.mousePosition;
             mousePos.z = -mainCamera.transform.position.z;
             Vector3 worldPos = mainCamera.ScreenToWorldPoint(mousePos);
 
-            // Check if it's a valid position
             if (validPlacement.IsValidPosition(worldPos))
             {
-                // Get the snapped position
                 Vector3 validPos = validPlacement.GetNearestValidPosition(worldPos);
-                
-                // Place the unit
                 placementManager.PlaceUnit(validPos);
             }
         }

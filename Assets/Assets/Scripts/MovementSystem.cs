@@ -9,7 +9,7 @@ public class MovementSystem : MonoBehaviour
     private Grid grid;
     private PathfindingSystem pathfinding;
     private bool isMoving = false;
-    private bool isEnabled = false;  // New flag to control movement
+    private bool isEnabled = false;
     private List<Vector3> currentPath = new List<Vector3>();
     private Vector3 currentTargetPosition;
     private float pathRecalculationTimer = 0f;
@@ -29,7 +29,6 @@ public class MovementSystem : MonoBehaviour
 
     private void Start()
     {
-        // Subscribe to game state changes
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
@@ -64,7 +63,7 @@ public class MovementSystem : MonoBehaviour
 
     private void Update()
     {
-        if (!isEnabled) return;  // Skip update if movement is not enabled
+        if (!isEnabled) return;
 
         if (isMoving)
         {
@@ -90,7 +89,6 @@ public class MovementSystem : MonoBehaviour
         if (Vector3.Distance(currentTargetPosition, newPosition) > stoppingDistance)
         {
             currentTargetPosition = newPosition;
-            // Don't immediately recalculate - let the Update timer handle it
         }
     }
 
@@ -143,14 +141,11 @@ public class MovementSystem : MonoBehaviour
                     yield break;
                 }
 
-                // Calculate movement direction
                 Vector3 direction = (currentWaypoint - transform.position).normalized;
                 
-                // Rotate unit to face movement direction
                 float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 transform.rotation = Quaternion.AngleAxis(angle - 90f, Vector3.forward);
                 
-                // Move unit
                 float step = moveSpeed * Time.deltaTime;
                 transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, step);
                 
@@ -160,7 +155,6 @@ public class MovementSystem : MonoBehaviour
             if (currentPath.Count > 0)
                 currentPath.RemoveAt(0);
             
-            // If we're close enough to the final target, stop
             if (Vector3.Distance(transform.position, currentTargetPosition) <= stoppingDistance)
             {
                 break;

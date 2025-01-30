@@ -19,7 +19,7 @@ public class CombatSystem : MonoBehaviour
         unit = GetComponent<BaseUnit>();
         if (!TryGetComponent<EnemyTargeting>(out var targeting))
         {
-            Debug.LogError($"[{gameObject.name}] CombatSystem requires EnemyTargeting component!");
+            Debug.LogError($"CombatSystem requires EnemyTargeting component!");
         }
     }
 
@@ -49,8 +49,6 @@ public class CombatSystem : MonoBehaviour
         Vector3 targetPosition = target.transform.position;
         Vector3 attackDirection = (targetPosition - originalPosition).normalized;
 
-        Debug.Log($"[{gameObject.name}] Starting melee attack sequence. Original pos: {originalPosition}, Target pos: {targetPosition}");
-
         // Quick lunge forward
         float elapsedTime = 0f;
         float lungeDuration = attackAnimationDuration * 0.3f;
@@ -67,22 +65,20 @@ public class CombatSystem : MonoBehaviour
         // Spawn attack effect
         if (meleeAttackEffectPrefab != null)
         {
-            Debug.Log($"[{gameObject.name}] Spawning attack effect");
             GameObject effectObj = Instantiate(meleeAttackEffectPrefab);
             MeleeAttackEffect effect = effectObj.GetComponent<MeleeAttackEffect>();
             if (effect != null)
             {
-                Debug.Log($"[{gameObject.name}] Setting up effect between {transform.position} and {targetPosition}");
                 effect.SetupEffect(transform.position, targetPosition);
             }
             else
             {
-                Debug.LogError($"[{gameObject.name}] MeleeAttackEffect component missing from prefab!");
+                Debug.LogError("MeleeAttackEffect component missing from prefab!");
             }
         }
         else
         {
-            Debug.LogError($"[{gameObject.name}] No meleeAttackEffectPrefab assigned!");
+            Debug.LogError("No meleeAttackEffectPrefab assigned!");
         }
 
         // Apply damage
@@ -90,36 +86,34 @@ public class CombatSystem : MonoBehaviour
         {
             float damage = CalculateDamage(target);
             target.TakeDamage(damage);
-            Debug.Log($"{gameObject.name} dealt {damage} damage to {target.gameObject.name}");
         }
 
         // Recoil movement
-        elapsedTime = 0f;
+        float elapsedRecoilTime = 0f;
         float recoilDuration = attackAnimationDuration * 0.4f;
         Vector3 recoilPosition = transform.position - (attackDirection * meleeAttackRecoil);
         
-        while (elapsedTime < recoilDuration)
+        while (elapsedRecoilTime < recoilDuration)
         {
-            elapsedTime += Time.deltaTime;
-            float t = elapsedTime / recoilDuration;
+            elapsedRecoilTime += Time.deltaTime;
+            float t = elapsedRecoilTime / recoilDuration;
             transform.position = Vector3.Lerp(lungePosition, recoilPosition, t);
             yield return null;
         }
 
         // Return to original position
-        elapsedTime = 0f;
+        float elapsedReturnTime = 0f;
         float returnDuration = attackAnimationDuration * 0.3f;
         
-        while (elapsedTime < returnDuration)
+        while (elapsedReturnTime < returnDuration)
         {
-            elapsedTime += Time.deltaTime;
-            float t = elapsedTime / returnDuration;
+            elapsedReturnTime += Time.deltaTime;
+            float t = elapsedReturnTime / returnDuration;
             transform.position = Vector3.Lerp(recoilPosition, originalPosition, t);
             yield return null;
         }
 
         transform.position = originalPosition;
-        Debug.Log($"[{gameObject.name}] Completed melee attack sequence");
     }
 
     private float CalculateDamage(BaseUnit target)
