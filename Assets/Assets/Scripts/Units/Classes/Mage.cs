@@ -2,32 +2,21 @@ using UnityEngine;
 
 public class Mage : BaseUnit
 {
+    [Header("Mage-Specific Settings")]
+    [SerializeField] private float magicPenetration = 10f;
+
     private void Awake()
     {
         unitType = UnitType.Mage;
-        maxHealth = 100;
-        attackDamage = 30;
+        maxHealth = 80f;
+        attackDamage = 40f;
         attackRange = 5f;
-        moveSpeed = 3.5f;
-    }
-
-    protected override void Start()
-    {
-        base.Start();
-    }
-
-    public override float GetAttackRange()
-    {
-        return attackRange;
+        moveSpeed = 3f;
+        attackSpeed = 0.8f;
     }
 
     public override float GetAttackDamage()
     {
-        return attackDamage;
-    }
-
-    public override float GetMoveSpeed()
-    {
-        return moveSpeed;
+        return attackDamage + magicPenetration;
     }
 }

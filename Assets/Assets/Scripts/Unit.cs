@@ -1,4 +1,3 @@
-// Create Unit.cs
 using UnityEngine;
 
 public class Unit : MonoBehaviour
@@ -10,7 +9,7 @@ public class Unit : MonoBehaviour
 
     private void Start()
     {
-        placementSystem = FindObjectOfType<ValidPlacementSystem>();
+        placementSystem = Object.FindFirstObjectByType<ValidPlacementSystem>();
     }
 
     private void OnMouseDown()
@@ -39,14 +38,14 @@ public class Unit : MonoBehaviour
         
         // Check if it's a valid placement
         if (placementSystem.IsValidPosition(transform.position))
-            {
-                // Snap to nearest valid position
-                transform.position = placementSystem.GetNearestValidPosition(transform.position);
-            }
+        {
+            // Snap to nearest valid position
+            transform.position = placementSystem.GetNearestValidPosition(transform.position);
+        }
         else
-            {
-                // Return to original position
-                transform.position = originalPosition;
-            }
+        {
+            // Return to original position
+            transform.position = originalPosition;
+        }
     }
 }

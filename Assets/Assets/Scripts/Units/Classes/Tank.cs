@@ -2,40 +2,22 @@ using UnityEngine;
 
 public class Tank : BaseUnit
 {
+    [Header("Tank-Specific Settings")]
+    [SerializeField] private float armorBonus = 20f;
+
     private void Awake()
     {
-        // Set Tank-specific stats
         unitType = UnitType.Tank;
-        maxHealth = 200;
-        attackDamage = 10;
-        attackRange = 1f;
+        maxHealth = 200f;
+        attackDamage = 10f;
+        attackRange = 3.5f;
         moveSpeed = 2f;
+        attackSpeed = 0.8f;
     }
 
-    protected override void Start()
+    public override void TakeDamage(float damage)
     {
-        base.Start();
-    }
-
-    // Properly override the getter methods
-    public override float GetAttackRange()
-    {
-        Debug.Log($"[{gameObject.name}] Getting attack range from Tank: {attackRange}");
-        return attackRange;
-    }
-
-    public override float GetAttackDamage()
-    {
-        return attackDamage;
-    }
-
-    public override float GetMoveSpeed()
-    {
-        return moveSpeed;
-    }
-
-    public override UnitType GetUnitType()
-    {
-        return unitType;
+        float reducedDamage = damage * (100f / (100f + armorBonus));
+        base.TakeDamage(reducedDamage);
     }
 }

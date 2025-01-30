@@ -9,6 +9,7 @@ public class MovementSystem : MonoBehaviour
     private Grid grid;
     private PathfindingSystem pathfinding;
     private bool isMoving = false;
+    private bool isEnabled = false;  // New flag to control movement
     private List<Vector3> currentPath = new List<Vector3>();
     private Vector3 currentTargetPosition;
     private float pathRecalculationTimer = 0f;
@@ -26,8 +27,45 @@ public class MovementSystem : MonoBehaviour
         pathfinding = new PathfindingSystem(grid, obstacleLayer, unitLayer);
     }
 
+    private void Start()
+    {
+        // Subscribe to game state changes
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    private void HandleGameStateChanged(GameState newState)
+    {
+        switch (newState)
+        {
+            case GameState.BattleActive:
+                isEnabled = true;
+                break;
+            case GameState.BattleEnd:
+            case GameState.GameOver:
+                isEnabled = false;
+                StopMovement();
+                break;
+            default:
+                isEnabled = false;
+                break;
+        }
+    }
+
     private void Update()
     {
+        if (!isEnabled) return;  // Skip update if movement is not enabled
+
         if (isMoving)
         {
             pathRecalculationTimer += Time.deltaTime;
@@ -41,6 +79,8 @@ public class MovementSystem : MonoBehaviour
 
     public bool MoveTo(Vector3 destination)
     {
+        if (!isEnabled) return false;
+        
         currentTargetPosition = destination;
         return CalculateAndFollowPath();
     }

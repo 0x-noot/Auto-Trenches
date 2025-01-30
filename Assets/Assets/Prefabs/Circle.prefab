@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 4093855614760905040}
   - component: {fileID: 4086236311955577192}
   - component: {fileID: 1174965803830295085}
+  - component: {fileID: 4264494884639939895}
   m_Layer: 10
   m_Name: Circle
   m_TagString: Untagged
@@ -194,6 +195,22 @@ MonoBehaviour:
   unitLayer:
     serializedVersion: 2
     m_Bits: 0
+--- !u!114 &4264494884639939895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8622eabda0b47c43b97853f375b28c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackAnimationDuration: 0.5
+  meleeAttackEffectPrefab: {fileID: 7712415899826019650, guid: 523c2691ff71cb54da7bdc85369cbbff, type: 3}
+  meleeAttackRecoil: 0.3
+  meleeAttackLunge: 0.5
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0

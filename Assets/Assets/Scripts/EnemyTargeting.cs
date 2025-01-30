@@ -4,16 +4,18 @@ using System.Collections;
 public class EnemyTargeting : MonoBehaviour
 {
     private MovementSystem movementSystem;
+    private CombatSystem combatSystem;
     private BaseUnit unit;
     private bool isTargeting = false;
     private Transform currentTarget;
+    private BaseUnit currentTargetUnit;
     private Vector3 lastTargetPosition;
-    private float attackRange; // Added this field
+    private float attackRange;
     
     [Header("Targeting Settings")]
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float targetingRange = 10f;
-    [SerializeField] private float updateInterval = 0.2f;
+    [SerializeField] private float updateInterval = 0.1f;  // Reduced from 0.2f to 0.1f
     [SerializeField] private string targetTeamLayer = "TeamB";
     
     [Header("Combat Settings")]
@@ -23,76 +25,114 @@ public class EnemyTargeting : MonoBehaviour
     {
         movementSystem = GetComponent<MovementSystem>();
         unit = GetComponent<BaseUnit>();
+        combatSystem = GetComponent<CombatSystem>();
+        
+        if (combatSystem == null)
+        {
+            Debug.LogError($"[{gameObject.name}] Missing CombatSystem component!");
+        }
     }
+
     private void Start()
     {
-        Debug.Log($"[{gameObject.name}] Starting EnemyTargeting initialization");
-        
-        // Check what components are actually on this object
-        var components = GetComponents<BaseUnit>();
-        foreach (var comp in components)
-        {
-            Debug.Log($"[{gameObject.name}] Found unit component: {comp.GetType().Name}");
-        }
-
         if (movementSystem != null && unit != null)
         {
-            // Get the attack range after unit stats are initialized
             attackRange = unit.GetAttackRange();
-            
-            // Debug log to show unit type and stats
-            Debug.Log($"[{gameObject.name}] Unit Details:\n" +
-                     $"Component Type: {unit.GetType().Name}\n" +
-                     $"Unit Type Enum: {unit.GetUnitType()}\n" +
-                     $"Attack Range: {unit.GetAttackRange()}\n" +
-                     $"Attack Damage: {unit.GetAttackDamage()}\n" +
-                     $"Move Speed: {unit.GetMoveSpeed()}");
-            
             enemyLayer = LayerMask.GetMask(targetTeamLayer);
-            StartTargeting();
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+                Debug.Log($"[{gameObject.name}] Subscribed to GameState changes");
+            }
         }
-        else
+    }
+
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
         {
-            Debug.LogError($"[{gameObject.name}] Missing components!\n" +
-                          $"MovementSystem: {movementSystem != null}\n" +
-                          $"Unit: {unit != null}");
+            GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    private void HandleGameStateChanged(GameState newState)
+    {
+        Debug.Log($"[{gameObject.name}] Received game state change: {newState}");
+        switch (newState)
+        {
+            case GameState.BattleActive:
+                Debug.Log($"[{gameObject.name}] Starting targeting system");
+                StartTargeting();
+                break;
+            case GameState.BattleEnd:
+            case GameState.GameOver:
+                Debug.Log($"[{gameObject.name}] Stopping targeting system");
+                StopTargeting();
+                break;
         }
     }
 
     private void UpdateTargeting()
     {
-        if (unit.GetCurrentState() == UnitState.Dead) return;
+        // Skip if unit is dead or we're not actively targeting
+        if (!isTargeting || unit.GetCurrentState() == UnitState.Dead) return;
 
-        if (currentTarget != null)
+        // If we don't have a target, find one
+        if (currentTarget == null)
         {
-            Vector3 currentPos = transform.position;
-            Vector3 targetPos = currentTarget.position;
-            float distanceToTarget = Vector2.Distance(currentPos, targetPos);
+            FindNewTarget();
+            return;
+        }
 
-            if (distanceToTarget <= targetingRange && 
-                currentTarget.gameObject.activeInHierarchy)
+        Vector3 currentPos = transform.position;
+        Vector3 targetPos = currentTarget.position;
+        float distanceToTarget = Vector2.Distance(currentPos, targetPos);
+
+        // Check if current target is still valid
+        if (distanceToTarget <= targetingRange && currentTarget.gameObject.activeInHierarchy)
+        {
+            // In attack range
+            if (distanceToTarget <= unit.GetAttackRange())
             {
-                if (distanceToTarget <= unit.GetAttackRange())
+                movementSystem.StopMovement();
+                FaceTarget(targetPos);
+                unit.UpdateState(UnitState.Attacking);
+                
+                // Get or update target unit reference
+                if (currentTargetUnit == null || currentTargetUnit.gameObject != currentTarget.gameObject)
                 {
-                    movementSystem.StopMovement();
-                    FaceTarget(targetPos);
-                    unit.UpdateState(UnitState.Attacking);
+                    currentTargetUnit = currentTarget.GetComponent<BaseUnit>();
+                }
+                
+                // Attack if possible
+                if (currentTargetUnit != null && currentTargetUnit.GetCurrentState() != UnitState.Dead)
+                {
+                    combatSystem.ExecuteAttack(currentTargetUnit);
                 }
                 else
                 {
-                    Vector3 idealPosition = CalculateIdealPosition(currentPos, targetPos);
-                    movementSystem.MoveTo(idealPosition);
+                    // Target is dead or invalid, find new target
+                    currentTarget = null;
+                    currentTargetUnit = null;
+                    FindNewTarget();
                 }
-                return;
             }
+            // Move towards target
             else
             {
-                currentTarget = null;
-                unit.UpdateState(UnitState.Idle);
+                Vector3 idealPosition = CalculateIdealPosition(currentPos, targetPos);
+                movementSystem.MoveTo(idealPosition);
             }
         }
-
-        FindNewTarget();
+        // Target out of range or inactive
+        else
+        {
+            currentTarget = null;
+            currentTargetUnit = null;
+            unit.UpdateState(UnitState.Idle);
+            FindNewTarget();
+        }
     }
 
     private void FaceTarget(Vector3 targetPos)
@@ -122,6 +162,8 @@ public class EnemyTargeting : MonoBehaviour
 
     private void FindNewTarget()
     {
+        if (!isTargeting) return;
+
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, targetingRange, enemyLayer);
         
         Transform bestTarget = null;
@@ -130,6 +172,10 @@ public class EnemyTargeting : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.gameObject == gameObject) continue;
+
+            // Check if potential target is alive
+            BaseUnit targetUnit = hit.GetComponent<BaseUnit>();
+            if (targetUnit == null || targetUnit.GetCurrentState() == UnitState.Dead) continue;
 
             float distance = Vector2.Distance(transform.position, hit.transform.position);
             float score = 100f - distance;
@@ -153,6 +199,7 @@ public class EnemyTargeting : MonoBehaviour
         if (bestTarget != null)
         {
             currentTarget = bestTarget;
+            currentTargetUnit = bestTarget.GetComponent<BaseUnit>();
             Vector3 idealPosition = CalculateIdealPosition(transform.position, bestTarget.position);
             movementSystem.MoveTo(idealPosition);
         }
@@ -164,6 +211,7 @@ public class EnemyTargeting : MonoBehaviour
         {
             isTargeting = true;
             StartCoroutine(TargetingRoutine());
+            Debug.Log($"[{gameObject.name}] Started targeting routine");
         }
     }
 
@@ -171,7 +219,9 @@ public class EnemyTargeting : MonoBehaviour
     {
         isTargeting = false;
         currentTarget = null;
+        currentTargetUnit = null;
         StopAllCoroutines();
+        Debug.Log($"[{gameObject.name}] Stopped targeting routine");
     }
 
     private IEnumerator TargetingRoutine()
@@ -187,18 +237,15 @@ public class EnemyTargeting : MonoBehaviour
     {
         if (!Application.isPlaying) return;
         
-        // Targeting range
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, targetingRange);
 
-        // Attack range
         if (unit != null)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, unit.GetAttackRange());
         }
 
-        // Line to current target
         if (currentTarget != null)
         {
             Gizmos.color = Color.white;

@@ -2,32 +2,30 @@ using UnityEngine;
 
 public class Range : BaseUnit
 {
+    [Header("Range-Specific Settings")]
+    [SerializeField] private float longRangeBonus = 5f;
+    [SerializeField] private float longRangeThreshold = 4f;
+
     private void Awake()
     {
         unitType = UnitType.Range;
-        maxHealth = 100;
-        attackDamage = 20;
-        attackRange = 3f;
-        moveSpeed = 3.5f;
-    }
-
-    protected override void Start()
-    {
-        base.Start();
-    }
-
-    public override float GetAttackRange()
-    {
-        return attackRange;
+        maxHealth = 90f;
+        attackDamage = 25f;
+        attackRange = 6f;
+        moveSpeed = 3.2f;
+        attackSpeed = 1f;
     }
 
     public override float GetAttackDamage()
     {
+        if (currentTarget != null)
+        {
+            float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+            if (distanceToTarget >= longRangeThreshold)
+            {
+                return attackDamage + longRangeBonus;
+            }
+        }
         return attackDamage;
-    }
-
-    public override float GetMoveSpeed()
-    {
-        return moveSpeed;
     }
 }
