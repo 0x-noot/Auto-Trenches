@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8158063898966457997}
   - component: {fileID: 8339836777071340575}
   - component: {fileID: 1987214769941732356}
+  - component: {fileID: 5021277451700102207}
   m_Layer: 9
   m_Name: Mage
   m_TagString: Untagged
@@ -207,9 +208,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74b32e45ef55d4e4fb1dd46043e93d03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
   magicPenetration: 10
+--- !u!114 &5021277451700102207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8622eabda0b47c43b97853f375b28c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackAnimationDuration: 0.5
+  meleeAttackEffectPrefab: {fileID: 0}
+  meleeAttackRecoil: 0.3
+  meleeAttackLunge: 0.5
+  arrowPrefab: {fileID: 0}
+  arrowSpeed: 15
+  arrowArcHeight: 1
+  spellPrefab: {fileID: 5755857881989349283, guid: a5ea9879854b33c41bc2cd2ce184bf62, type: 3}
+  spellSpeed: 10
+  spellCastDelay: 0.2
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0

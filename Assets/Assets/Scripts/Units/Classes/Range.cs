@@ -9,8 +9,8 @@ public class Range : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Range;
-        maxHealth = 90f;
-        attackDamage = 25f;
+        maxHealth = 900f;
+        attackDamage = 125f;
         attackRange = 6f;
         moveSpeed = 3.2f;
         attackSpeed = 1f;

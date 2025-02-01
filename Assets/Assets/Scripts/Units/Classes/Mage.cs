@@ -8,8 +8,8 @@ public class Mage : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Mage;
-        maxHealth = 80f;
-        attackDamage = 40f;
+        maxHealth = 800f;
+        attackDamage = 200f;
         attackRange = 5f;
         moveSpeed = 3f;
         attackSpeed = 0.8f;

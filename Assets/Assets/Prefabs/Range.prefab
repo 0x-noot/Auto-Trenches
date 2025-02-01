@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 6366450414728439361}
   - component: {fileID: 2565664993874433029}
   - component: {fileID: 3647747275820437899}
+  - component: {fileID: 7539634553804937470}
   m_Layer: 9
   m_Name: Range
   m_TagString: Untagged
@@ -207,10 +208,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f5da0bf698a5f84ba3cb0bc3a8786d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
   longRangeBonus: 5
   longRangeThreshold: 4
+--- !u!114 &7539634553804937470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8622eabda0b47c43b97853f375b28c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackAnimationDuration: 0.5
+  meleeAttackEffectPrefab: {fileID: 0}
+  meleeAttackRecoil: 0.3
+  meleeAttackLunge: 0.5
+  arrowPrefab: {fileID: 7661146755148989948, guid: 99a56206f5be9d5419eabdf4affd5abb, type: 3}
+  arrowSpeed: 15
+  arrowArcHeight: 1
+  spellPrefab: {fileID: 0}
+  spellSpeed: 10
+  spellCastDelay: 0.2
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0

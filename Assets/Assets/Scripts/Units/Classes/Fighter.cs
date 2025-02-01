@@ -8,8 +8,8 @@ public class Fighter : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Fighter;
-        maxHealth = 100f;
-        attackDamage = 30f;
+        maxHealth = 800f;
+        attackDamage = 150f;
         attackRange = 3.5f;
         moveSpeed = 3.5f;
         attackSpeed = 1.2f;

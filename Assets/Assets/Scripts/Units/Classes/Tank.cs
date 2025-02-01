@@ -8,8 +8,8 @@ public class Tank : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Tank;
-        maxHealth = 200f;
-        attackDamage = 10f;
+        maxHealth = 2000f;
+        attackDamage = 50f;
         attackRange = 3.5f;
         moveSpeed = 2f;
         attackSpeed = 0.8f;
