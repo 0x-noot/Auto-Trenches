@@ -12,7 +12,7 @@ public class UnitSelectionUI : MonoBehaviour
     [SerializeField] private Button startBattleButton;
     [SerializeField] private TextMeshProUGUI unitCountText;
     
-    private void Start()
+    void Start()
     {
         if (placementManager == null)
         {
@@ -117,16 +117,29 @@ public class UnitSelectionUI : MonoBehaviour
 
     public void UpdateUnitCountText()
     {
+        Debug.Log("UpdateUnitCountText called");
         if (unitCountText != null && placementManager != null)
         {
-            int currentCount = placementManager.GetPlacedUnitsCount();
+            // Update to use TeamA consistently
+            int currentCount = placementManager.GetTeamUnits("TeamA").Count;
             int maxUnits = placementManager.GetMaxUnits();
+            Debug.Log($"Current count: {currentCount}, Max units: {maxUnits}");
             unitCountText.text = $"Units: {currentCount}/{maxUnits}";
 
             if (startBattleButton != null)
             {
-                startBattleButton.interactable = currentCount == maxUnits;
+                // Enable start button when we have at least one unit but not more than max
+                startBattleButton.interactable = currentCount > 0 && currentCount <= maxUnits;
+                Debug.Log($"Start button interactable set to: {startBattleButton.interactable}");
             }
+            else
+            {
+                Debug.LogError("Start battle button is null!");
+            }
+        }
+        else
+        {
+            Debug.LogError($"Unit count text is null: {unitCountText == null}, PlacementManager is null: {placementManager == null}");
         }
     }
 

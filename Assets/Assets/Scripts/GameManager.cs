@@ -9,7 +9,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private int maxUnitsPerPlayer = 3;
+    [SerializeField] private int maxUnitsPerPlayer = 11;
     [SerializeField] private float battleStartDelay = 0.1f;
     [SerializeField] private float endGameDelay = 5f;
     [SerializeField] private float unitActivationInterval = 0.1f;
@@ -64,6 +64,20 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager: Initialization complete");
     }
 
+    public void PrepareNextRound()
+    {
+        Debug.Log("GameManager: Preparing next round");
+        
+        // Clear all units
+        playerUnits.Clear();
+        enemyUnits.Clear();
+        pendingDeaths.Clear();
+        isBattleEnding = false;
+
+        // Reset game state for unit placement
+        UpdateGameState(GameState.UnitPlacement);
+    }
+
     private void RegisterExistingEnemyUnits()
     {
         Debug.Log("GameManager: Registering existing enemy units");
@@ -85,7 +99,6 @@ public class GameManager : MonoBehaviour
             Debug.Log($"GameManager: Registering player unit: {unit.gameObject.name}");
             playerUnits.Add(unit);
             unit.OnUnitDeath += HandleUnitDeath;
-            unit.SetTeam("PlayerTeam");
         }
     }
 
@@ -96,7 +109,6 @@ public class GameManager : MonoBehaviour
             Debug.Log($"GameManager: Registering enemy unit: {unit.gameObject.name}");
             enemyUnits.Add(unit);
             unit.OnUnitDeath += HandleUnitDeath;
-            unit.SetTeam("EnemyTeam");
         }
     }
 
@@ -217,9 +229,9 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (playerUnits.Count < maxUnitsPerPlayer)
+        if (playerUnits.Count == 0)
         {
-            Debug.LogWarning("GameManager: Not all player units have been placed!");
+            Debug.LogWarning("GameManager: No player units placed!");
             return;
         }
 
@@ -272,7 +284,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager: Setting battle end state");
         UpdateGameState(GameState.BattleEnd);
         DisableAllUnits();
-        StartCoroutine(GameOverSequence(winner));
+        OnGameOver?.Invoke(winner);
     }
 
     private void DisableAllUnits()
@@ -292,21 +304,6 @@ public class GameManager : MonoBehaviour
         {
             targeting.StopTargeting();
         }
-    }
-
-    private IEnumerator GameOverSequence(string winner)
-    {
-        Debug.Log($"GameManager: Starting game over sequence for winner: {winner}");
-        yield return new WaitForSeconds(endGameDelay);
-        
-        Debug.Log("GameManager: Updating game state to GameOver");
-        UpdateGameState(GameState.GameOver);
-        
-        Debug.Log($"GameManager: Invoking OnGameOver with winner: {winner}");
-        OnGameOver?.Invoke(winner);
-        
-        isBattleEnding = false;
-        Debug.Log("GameManager: Game over sequence complete");
     }
 
     private void UpdateGameState(GameState newState)

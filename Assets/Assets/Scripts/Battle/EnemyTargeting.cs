@@ -14,7 +14,7 @@ public class EnemyTargeting : MonoBehaviour
     
     [Header("Targeting Settings")]
     [SerializeField] private LayerMask enemyLayer;
-    [SerializeField] private float targetingRange = 10f;
+    [SerializeField] private float targetingRange = 100f;
     [SerializeField] private float updateInterval = 0.1f;
     [SerializeField] private string targetTeamLayer = "TeamA";
     

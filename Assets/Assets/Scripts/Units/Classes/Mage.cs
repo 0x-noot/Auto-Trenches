@@ -10,7 +10,7 @@ public class Mage : BaseUnit
         unitType = UnitType.Mage;
         maxHealth = 800f;
         attackDamage = 200f;
-        attackRange = 5f;
+        attackRange = 10f;
         moveSpeed = 3f;
         attackSpeed = 0.8f;
     }

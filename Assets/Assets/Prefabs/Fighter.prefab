@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 1647429070346559058}
   - component: {fileID: 1823176806197746853}
   - component: {fileID: 6585370680212932942}
-  m_Layer: 9
+  m_Layer: 8
   m_Name: Fighter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -191,8 +191,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 1024
-  targetingRange: 10
+    m_Bits: 0
+  targetingRange: 100
   updateInterval: 0.5
   targetTeamLayer: TeamB
   positionVariance: 0.5
@@ -208,6 +208,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b094a73858e92e4cbde5c5131e454d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
   criticalStrikeChance: 0.2
@@ -227,6 +228,13 @@ MonoBehaviour:
   meleeAttackEffectPrefab: {fileID: 7712415899826019650, guid: 523c2691ff71cb54da7bdc85369cbbff, type: 3}
   meleeAttackRecoil: 0.3
   meleeAttackLunge: 0.5
+  arrowPrefab: {fileID: 0}
+  arrowSpeed: 15
+  arrowArcHeight: 1
+  arrowHomingStrength: 0.8
+  spellPrefab: {fileID: 0}
+  spellSpeed: 10
+  spellCastDelay: 0.2
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -261,7 +269,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5087511408334891270, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchorMax.y
@@ -289,7 +297,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5507293933271101215, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Pivot.x
@@ -381,15 +389,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5987202453722712021, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6888536557747712299, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 7663299353646893449, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

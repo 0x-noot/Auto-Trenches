@@ -46,24 +46,26 @@ public class BattleResultsUI : MonoBehaviour
     private void Start()
     {
         Debug.Log("BattleResultsUI: Start called");
-        
-        if (GameManager.Instance != null)
+
+        if (BattleRoundManager.Instance != null)
         {
-            Debug.Log("BattleResultsUI: Subscribing to GameManager events");
-            GameManager.Instance.OnGameOver += ShowBattleResults;
+            BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
+            BattleRoundManager.Instance.OnMatchEnd += HandleMatchEnd;
+            Debug.Log("BattleResultsUI: Subscribed to BattleRoundManager events");
         }
         else
         {
-            Debug.LogError("BattleResultsUI: GameManager.Instance is null in Start!");
+            Debug.LogError("BattleResultsUI: BattleRoundManager.Instance is null in Start!");
         }
     }
 
     private void OnDestroy()
     {
         Debug.Log("BattleResultsUI: OnDestroy called");
-        if (GameManager.Instance != null)
+        if (BattleRoundManager.Instance != null)
         {
-            GameManager.Instance.OnGameOver -= ShowBattleResults;
+            BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
+            BattleRoundManager.Instance.OnMatchEnd -= HandleMatchEnd;
         }
     }
 
@@ -82,27 +84,72 @@ public class BattleResultsUI : MonoBehaviour
         }
     }
 
-    public void ShowBattleResults(string winner)
+    private void HandleRoundEnd(string winner, int round)
     {
-        if (isTransitioning) return;
-        
-        Debug.Log($"BattleResultsUI: ShowBattleResults called with winner: {winner}");
-        StartCoroutine(BattleResultsSequence(winner));
+        StartCoroutine(ShowRoundResults(winner, round));
     }
 
-    private IEnumerator BattleResultsSequence(string winner)
+    private void HandleMatchEnd(string winner, int playerAScore, int playerBScore)
     {
-        isTransitioning = true;
-        Debug.Log("BattleResultsUI: Starting battle results sequence");
-        
-        // Activate panel
-        resultsPanel.SetActive(true);
-        Debug.Log("BattleResultsUI: Panel activated");
+        StartCoroutine(ShowMatchResults(winner, playerAScore, playerBScore));
+    }
 
+    private IEnumerator ShowRoundResults(string winner, int round)
+    {
+        Debug.Log($"BattleResultsUI: Showing round {round} results");
+        resultsPanel.SetActive(true);
+        
+        // Set up round results text
+        winnerText.text = $"Round {round}: {(winner == "player" ? "Victory!" : "Defeat!")}";
+        winnerText.color = winner == "player" ? Color.green : Color.red;
+        
+        // Show round statistics
+        battleStatsText.text = GenerateRoundStats();
+        
+        // Fade in panel
+        yield return StartCoroutine(FadeInPanel());
+        
+        yield return new WaitForSeconds(transitionDelay);
+        
+        // Check if the match should continue
+        if (BattleRoundManager.Instance.GetPlayerAWins() < BattleRoundManager.Instance.GetRoundsToWin() && 
+            BattleRoundManager.Instance.GetPlayerBWins() < BattleRoundManager.Instance.GetRoundsToWin())
+        {
+            // Fade out panel
+            yield return StartCoroutine(FadeOutPanel());
+            resultsPanel.SetActive(false);
+            
+            // Start next round
+            BattleRoundManager.Instance.StartNewRound();
+        }
+    }
+
+    private IEnumerator ShowMatchResults(string winner, int playerAScore, int playerBScore)
+    {
+        Debug.Log("BattleResultsUI: Showing match results");
+        resultsPanel.SetActive(true);
+        
+        // Set up match results text
+        winnerText.text = $"Match {(winner == "player" ? "Victory!" : "Defeat!")}";
+        winnerText.color = winner == "player" ? Color.green : Color.red;
+        
+        // Show match statistics
+        battleStatsText.text = GenerateMatchStats(playerAScore, playerBScore);
+        
+        // Fade in panel
+        yield return StartCoroutine(FadeInPanel());
+        
+        yield return new WaitForSeconds(transitionDelay);
+        
+        // Return to main menu
+        StartCoroutine(TransitionToMainMenu());
+    }
+
+    private IEnumerator FadeInPanel()
+    {
         panelCanvasGroup.interactable = true;
         panelCanvasGroup.blocksRaycasts = true;
 
-        // Fade in panel
         float elapsedTime = 0f;
         while (elapsedTime < panelFadeInDuration)
         {
@@ -111,30 +158,10 @@ public class BattleResultsUI : MonoBehaviour
             yield return null;
         }
         panelCanvasGroup.alpha = 1f;
-        Debug.Log("BattleResultsUI: Panel fade complete");
-
-        // Show winner
-        winnerText.text = winner == "player" ? "Victory!" : "Defeat!";
-        winnerText.color = winner == "player" ? Color.green : Color.red;
-        Debug.Log($"BattleResultsUI: Winner text set to {winnerText.text}");
-
-        yield return new WaitForSeconds(statsRevealDelay);
-
-        // Show battle stats
-        battleStatsText.text = GenerateBattleStats();
-        Debug.Log("BattleResultsUI: Battle stats displayed");
-        
-        // Wait before transitioning
-        yield return new WaitForSeconds(transitionDelay);
-
-        // Start scene transition
-        Debug.Log("BattleResultsUI: Starting scene transition");
-        StartCoroutine(TransitionToMainMenu());
     }
 
-    private IEnumerator TransitionToMainMenu()
+    private IEnumerator FadeOutPanel()
     {
-        // Fade out the panel
         float elapsedTime = 0f;
         while (elapsedTime < panelFadeInDuration)
         {
@@ -142,6 +169,15 @@ public class BattleResultsUI : MonoBehaviour
             panelCanvasGroup.alpha = 1 - (elapsedTime / panelFadeInDuration);
             yield return null;
         }
+        panelCanvasGroup.alpha = 0f;
+        panelCanvasGroup.interactable = false;
+        panelCanvasGroup.blocksRaycasts = false;
+    }
+
+    private IEnumerator TransitionToMainMenu()
+    {
+        Debug.Log("BattleResultsUI: Starting transition to main menu");
+        yield return StartCoroutine(FadeOutPanel());
 
         // Load the main menu scene
         Debug.Log("BattleResultsUI: Loading main menu scene");
@@ -149,7 +185,7 @@ public class BattleResultsUI : MonoBehaviour
         isTransitioning = false;
     }
 
-    private string GenerateBattleStats()
+    private string GenerateRoundStats()
     {
         if (GameManager.Instance == null) return "";
 
@@ -159,9 +195,17 @@ public class BattleResultsUI : MonoBehaviour
         int playerSurvivors = CountAliveCombatants(playerUnits);
         int enemySurvivors = CountAliveCombatants(enemyUnits);
 
-        return $"Battle Results:\n" +
+        return $"Round Results:\n" +
                $"Friendly Units Remaining: {playerSurvivors}\n" +
                $"Enemy Units Remaining: {enemySurvivors}";
+    }
+
+    private string GenerateMatchStats(int playerAScore, int playerBScore)
+    {
+        return $"Match Complete!\n" +
+               $"Rounds Won: {playerAScore}\n" +
+               $"Rounds Lost: {playerBScore}\n" +
+               $"Total Rounds: {BattleRoundManager.Instance.GetCurrentRound()}";
     }
 
     private int CountAliveCombatants(System.Collections.Generic.List<BaseUnit> units)

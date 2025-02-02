@@ -11,7 +11,7 @@ public class Range : BaseUnit
         unitType = UnitType.Range;
         maxHealth = 900f;
         attackDamage = 125f;
-        attackRange = 6f;
+        attackRange = 15f;
         moveSpeed = 3.2f;
         attackSpeed = 1f;
     }

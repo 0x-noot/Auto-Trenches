@@ -191,8 +191,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 1024
-  targetingRange: 10
+    m_Bits: 0
+  targetingRange: 100
   updateInterval: 0.5
   targetTeamLayer: TeamB
   positionVariance: 0.5
@@ -232,6 +232,7 @@ MonoBehaviour:
   arrowPrefab: {fileID: 7661146755148989948, guid: 99a56206f5be9d5419eabdf4affd5abb, type: 3}
   arrowSpeed: 15
   arrowArcHeight: 1
+  arrowHomingStrength: 0.8
   spellPrefab: {fileID: 0}
   spellSpeed: 10
   spellCastDelay: 0.2

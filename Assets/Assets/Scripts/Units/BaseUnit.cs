@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 public abstract class BaseUnit : MonoBehaviour
 {
@@ -119,23 +120,40 @@ public abstract class BaseUnit : MonoBehaviour
         Destroy(gameObject);
     }
 
+    private string[] GetAllLayerNames()
+    {
+        List<string> layers = new List<string>();
+        for(int i = 0; i < 32; i++)
+        {
+            string layerName = LayerMask.LayerToName(i);
+            if(!string.IsNullOrEmpty(layerName))
+            {
+                layers.Add(layerName);
+            }
+        }
+        return layers.ToArray();
+    }
+
     public void SetTeam(string newTeamId)
     {
+        Debug.Log($"SetTeam called on {gameObject.name} with team: {newTeamId}");
         teamId = newTeamId;
         
-        string layerName = newTeamId == "PlayerTeam" ? "TeamA" : 
-                        newTeamId == "EnemyTeam" ? "TeamB" : 
-                        newTeamId;
+        // Match layer name exactly with team ID
+        string layerName = newTeamId;  // Since we're using TeamA/TeamB consistently
         
+        Debug.Log($"Attempting to set layer to: {layerName}");
         int layerIndex = LayerMask.NameToLayer(layerName);
         
+        Debug.Log($"Layer index found: {layerIndex}");
         if (layerIndex != -1)
         {
             gameObject.layer = layerIndex;
+            Debug.Log($"Successfully set {gameObject.name}'s layer to {layerName} (index: {layerIndex})");
         }
         else
         {
-            Debug.LogError($"Failed to find layer: {layerName}");
+            Debug.LogError($"Failed to find layer: {layerName}. Available layers: {string.Join(", ", GetAllLayerNames())}");
         }
     }
 

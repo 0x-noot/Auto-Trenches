@@ -178,8 +178,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 1024
-  targetingRange: 10
+    m_Bits: 0
+  targetingRange: 100
   updateInterval: 0.5
   targetTeamLayer: TeamB
   positionVariance: 0.5
@@ -195,6 +195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93c78ea7da2ee8c4094df61ba78952e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
   armorBonus: 20
@@ -214,6 +215,13 @@ MonoBehaviour:
   meleeAttackEffectPrefab: {fileID: 7712415899826019650, guid: 523c2691ff71cb54da7bdc85369cbbff, type: 3}
   meleeAttackRecoil: 0.3
   meleeAttackLunge: 0.5
+  arrowPrefab: {fileID: 0}
+  arrowSpeed: 15
+  arrowArcHeight: 1
+  arrowHomingStrength: 0.8
+  spellPrefab: {fileID: 0}
+  spellSpeed: 10
+  spellCastDelay: 0.2
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0
