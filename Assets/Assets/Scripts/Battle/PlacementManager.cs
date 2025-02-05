@@ -27,8 +27,8 @@ public class PlacementManager : MonoBehaviour
 
     private List<BaseUnit> placedUnits = new List<BaseUnit>();
     private GameManager gameManager;
+    private ValidPlacementSystem validPlacement;
     
-    // Event for UI updates
     public event Action OnUnitsChanged;
 
     private void Start()
@@ -39,18 +39,63 @@ public class PlacementManager : MonoBehaviour
             Debug.LogError("GameManager not found in scene!");
         }
 
-        // If parent transforms aren't assigned, use this transform as default
-        if (playerAUnitsParent == null)
+        validPlacement = FindFirstObjectByType<ValidPlacementSystem>();
+        if (validPlacement == null)
         {
-            playerAUnitsParent = transform;
+            Debug.LogError("ValidPlacementSystem not found in scene!");
         }
-        if (playerBUnitsParent == null)
+
+        // If parent transforms aren't assigned, use this transform as default
+        if (playerAUnitsParent == null) playerAUnitsParent = transform;
+        if (playerBUnitsParent == null) playerBUnitsParent = transform;
+
+        // Subscribe to game state changes
+        if (gameManager != null)
         {
-            playerBUnitsParent = transform;
+            gameManager.OnGameStateChanged += HandleGameStateChanged;
         }
 
         // Verify required layers exist
         VerifyRequiredLayers();
+    }
+
+    private void OnDestroy()
+    {
+        if (gameManager != null)
+        {
+            gameManager.OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    private void HandleGameStateChanged(GameState newState)
+    {
+        switch (newState)
+        {
+            case GameState.PlayerAPlacement:
+                SetCurrentTeam("TeamA");
+                break;
+            case GameState.PlayerBPlacement:
+                SetCurrentTeam("TeamB");
+                break;
+        }
+    }
+
+    private void VerifyRequiredLayers()
+    {
+        Debug.Log("Verifying required layers...");
+        string[] allLayers = GetAllLayerNames();
+        Debug.Log($"Available layers: {string.Join(", ", allLayers)}");
+        
+        int teamALayer = LayerMask.NameToLayer("TeamA");
+        int teamBLayer = LayerMask.NameToLayer("TeamB");
+        
+        Debug.Log($"TeamA layer index: {teamALayer}");
+        Debug.Log($"TeamB layer index: {teamBLayer}");
+        
+        if (teamALayer == -1)
+            Debug.LogError("TeamA layer is missing! Please add it in Project Settings -> Tags and Layers");
+        if (teamBLayer == -1)
+            Debug.LogError("TeamB layer is missing! Please add it in Project Settings -> Tags and Layers");
     }
 
     private string[] GetAllLayerNames()
@@ -67,36 +112,11 @@ public class PlacementManager : MonoBehaviour
         return layers.ToArray();
     }
 
-    private void VerifyRequiredLayers()
-    {
-        Debug.Log("Verifying required layers...");
-        string[] allLayers = GetAllLayerNames();
-        Debug.Log($"Available layers: {string.Join(", ", allLayers)}");
-        
-        int teamALayer = LayerMask.NameToLayer("TeamA");
-        int teamBLayer = LayerMask.NameToLayer("TeamB");
-        
-        Debug.Log($"TeamA layer index: {teamALayer}");
-        Debug.Log($"TeamB layer index: {teamBLayer}");
-        
-        if (teamALayer == -1)
-        {
-            Debug.LogError("TeamA layer is missing! Please add it in Project Settings -> Tags and Layers");
-        }
-        if (teamBLayer == -1)
-        {
-            Debug.LogError("TeamB layer is missing! Please add it in Project Settings -> Tags and Layers");
-        }
-    }
-
     public void SetCurrentTeam(string team)
     {
         currentTeam = team;
-        var validPlacement = FindObjectOfType<ValidPlacementSystem>();
-        if (validPlacement != null)
-        {
-            validPlacement.SetCurrentTeam(team);
-        }
+        Debug.Log($"PlacementManager: Current team set to {team}");
+        validPlacement?.SetCurrentTeam(team);
     }
 
     public bool CanPlaceUnit()
@@ -127,14 +147,8 @@ public class PlacementManager : MonoBehaviour
             return;
         }
 
-        // Fix parent transform assignment
         Transform parentTransform = currentTeam == "TeamA" ? playerAUnitsParent : playerBUnitsParent;
         Debug.Log($"Using parent transform: {parentTransform?.name ?? "null"}");
-        
-        if (parentTransform == null)
-        {
-            parentTransform = transform;
-        }
 
         GameObject unitObject = Instantiate(prefab, position, Quaternion.identity, parentTransform);
         BaseUnit unit = unitObject.GetComponent<BaseUnit>();
@@ -146,32 +160,36 @@ public class PlacementManager : MonoBehaviour
             return;
         }
 
-        unit.SetTeam(currentTeam);  // Set team to TeamA/TeamB
+        unit.SetTeam(currentTeam);
         placedUnits.Add(unit);
         
-        // Fix team registration logic
         if (currentTeam == "TeamA")
         {
             Debug.Log("Registering as player unit");
             gameManager?.RegisterPlayerUnit(unit);
         }
-        else if (currentTeam == "TeamB")
+        else
         {
             Debug.Log("Registering as enemy unit");
             gameManager?.RegisterEnemyUnit(unit);
         }
-        
+
         var teamUnits = GetTeamUnits(currentTeam);
         Debug.Log($"After placement - Total units: {placedUnits.Count}, {currentTeam} units: {teamUnits.Count}");
         
-        if (OnUnitsChanged != null)
+        OnUnitsChanged?.Invoke();
+
+        // Check if current team has placed all units
+        if (teamUnits.Count >= maxUnitsPerTeam)
         {
-            OnUnitsChanged.Invoke();
-            Debug.Log("OnUnitsChanged event fired");
-        }
-        else
-        {
-            Debug.LogWarning("OnUnitsChanged has no subscribers!");
+            if (currentTeam == "TeamA")
+            {
+                gameManager?.UpdateGameState(GameState.PlayerBPlacement);
+            }
+            else if (currentTeam == "TeamB")
+            {
+                gameManager?.StartBattle();
+            }
         }
     }
 

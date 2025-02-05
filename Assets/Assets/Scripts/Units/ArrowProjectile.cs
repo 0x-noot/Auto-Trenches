@@ -11,6 +11,10 @@ public class ArrowProjectile : MonoBehaviour
     [SerializeField] private float trailTime = 0.2f;
     [SerializeField] private Color trailStartColor = Color.white;
     [SerializeField] private Color trailEndColor = new Color(1, 1, 1, 0);
+
+    [Header("Explosive Arrow Settings")]
+    [SerializeField] private Color explosiveTrailColor = Color.red;
+    [SerializeField] private ParticleSystem explosiveParticles;
     
     [Header("Flight Settings")]
     [SerializeField] private float rotationSpeed = 360f;
@@ -19,6 +23,8 @@ public class ArrowProjectile : MonoBehaviour
     
     private Vector3 originalScale;
     private bool isFlying = false;
+    private Range sourceUnit;
+    private BaseUnit targetUnit;
 
     private void Awake()
     {
@@ -33,6 +39,51 @@ public class ArrowProjectile : MonoBehaviour
             arrowParticles = GetComponent<ParticleSystem>();
             
         originalScale = transform.localScale;
+    }
+
+    public void Initialize(Range source, BaseUnit target)
+    {
+        sourceUnit = source;
+        targetUnit = target;
+        
+        if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
+        {
+            SetupExplosiveArrow();
+        }
+        else
+        {
+            SetupNormalArrow();
+        }
+    }
+
+    private void SetupExplosiveArrow()
+    {
+        if (arrowTrail != null)
+        {
+            // Create a gradient for the explosive trail
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new GradientColorKey[] { 
+                    new GradientColorKey(explosiveTrailColor, 0.0f), 
+                    new GradientColorKey(Color.yellow, 1.0f) 
+                },
+                new GradientAlphaKey[] { 
+                    new GradientAlphaKey(1.0f, 0.0f), 
+                    new GradientAlphaKey(0.0f, 1.0f) 
+                }
+            );
+            arrowTrail.colorGradient = gradient;
+        }
+
+        // Setup explosive particles
+        if (explosiveParticles != null)
+        {
+            explosiveParticles.Play();
+        }
+    }
+
+    private void SetupNormalArrow()
+    {
         SetupTrail();
         SetupParticles();
     }
@@ -65,8 +116,6 @@ public class ArrowProjectile : MonoBehaviour
         {
             var main = arrowParticles.main;
             main.startColor = trailStartColor;
-            
-            // Start the particle system
             arrowParticles.Play();
         }
     }
@@ -84,14 +133,10 @@ public class ArrowProjectile : MonoBehaviour
     {
         if (!isFlying) return;
 
-        // Rotate arrow during flight
         transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
-
-        // Scale effect during flight
         float scaleMultiplier = Mathf.Lerp(1f, scaleDuringFlight, flightProgress);
         transform.localScale = originalScale * scaleMultiplier;
 
-        // Update particle systems
         if (arrowParticles != null)
         {
             var emission = arrowParticles.emission;
@@ -103,19 +148,18 @@ public class ArrowProjectile : MonoBehaviour
     {
         isFlying = false;
 
-        // Stop trail effect
         if (arrowTrail != null)
-        {
             arrowTrail.emitting = false;
-        }
-
-        // Stop flight particles
+            
         if (arrowParticles != null)
-        {
             arrowParticles.Stop();
+
+        // Create explosion if this is an explosive arrow
+        if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
+        {
+            sourceUnit.CreateExplosion(transform.position, targetUnit);
         }
 
-        // Start fade out
         StartFadeOut();
     }
 
@@ -123,7 +167,6 @@ public class ArrowProjectile : MonoBehaviour
     {
         if (arrowSprite != null)
         {
-            // Fade out the sprite
             Color startColor = arrowSprite.color;
             Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
             StartCoroutine(FadeSprite(startColor, endColor, hitEffectDuration));
@@ -133,7 +176,6 @@ public class ArrowProjectile : MonoBehaviour
     private System.Collections.IEnumerator FadeSprite(Color startColor, Color endColor, float duration)
     {
         float elapsed = 0f;
-        
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -143,8 +185,6 @@ public class ArrowProjectile : MonoBehaviour
             }
             yield return null;
         }
-
-        // Destroy the arrow after fade out
         Destroy(gameObject);
     }
 }

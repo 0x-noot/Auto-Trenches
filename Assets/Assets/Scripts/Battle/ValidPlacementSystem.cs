@@ -13,17 +13,18 @@ public class ValidPlacementSystem : MonoBehaviour
     private List<Vector3Int> playerBValidPositions = new List<Vector3Int>();
     private Camera mainCamera;
     
-    private string currentTeam = "PlayerA"; // Default to PlayerA
+    private string currentTeam = "TeamA"; // Changed to TeamA to match other scripts
 
     void Start()
     {
         mainCamera = Camera.main;
         StoreValidPositions();
+        Debug.Log($"ValidPlacementSystem: Initialized with {playerAValidPositions.Count} positions for TeamA and {playerBValidPositions.Count} positions for TeamB");
     }
 
     private void StoreValidPositions()
     {
-        // Store PlayerA positions
+        // Store TeamA positions
         if (playerAPlacementTilemap != null)
         {
             BoundsInt boundsA = playerAPlacementTilemap.cellBounds;
@@ -39,8 +40,12 @@ public class ValidPlacementSystem : MonoBehaviour
                 }
             }
         }
+        else
+        {
+            Debug.LogError("ValidPlacementSystem: TeamA placement tilemap is not assigned!");
+        }
 
-        // Store PlayerB positions
+        // Store TeamB positions
         if (playerBPlacementTilemap != null)
         {
             BoundsInt boundsB = playerBPlacementTilemap.cellBounds;
@@ -56,46 +61,60 @@ public class ValidPlacementSystem : MonoBehaviour
                 }
             }
         }
+        else
+        {
+            Debug.LogError("ValidPlacementSystem: TeamB placement tilemap is not assigned!");
+        }
     }
 
     public void SetCurrentTeam(string team)
     {
+        Debug.Log($"ValidPlacementSystem: Setting current team to {team}");
         currentTeam = team;
     }
 
     public bool IsValidPosition(Vector3 worldPosition)
     {
         Vector3Int cellPosition;
-        if (currentTeam == "PlayerA")
+        bool isValid = false;
+
+        if (currentTeam == "TeamA")
         {
             cellPosition = playerAPlacementTilemap.WorldToCell(worldPosition);
-            return playerAValidPositions.Contains(cellPosition);
+            isValid = playerAValidPositions.Contains(cellPosition);
         }
-        else
+        else if (currentTeam == "TeamB")
         {
             cellPosition = playerBPlacementTilemap.WorldToCell(worldPosition);
-            return playerBValidPositions.Contains(cellPosition);
+            isValid = playerBValidPositions.Contains(cellPosition);
         }
+
+        Debug.Log($"ValidPlacementSystem: Checking position {worldPosition} for {currentTeam} - Valid: {isValid}");
+        return isValid;
     }
 
     public Vector3 GetNearestValidPosition(Vector3 worldPosition)
     {
-        Tilemap currentTilemap = currentTeam == "PlayerA" ? playerAPlacementTilemap : playerBPlacementTilemap;
+        Tilemap currentTilemap = currentTeam == "TeamA" ? playerAPlacementTilemap : playerBPlacementTilemap;
         Vector3Int cellPosition = currentTilemap.WorldToCell(worldPosition);
         
-        if ((currentTeam == "PlayerA" && playerAValidPositions.Contains(cellPosition)) ||
-            (currentTeam == "PlayerB" && playerBValidPositions.Contains(cellPosition)))
+        if ((currentTeam == "TeamA" && playerAValidPositions.Contains(cellPosition)) ||
+            (currentTeam == "TeamB" && playerBValidPositions.Contains(cellPosition)))
         {
-            return currentTilemap.GetCellCenterWorld(cellPosition);
+            Vector3 validPos = currentTilemap.GetCellCenterWorld(cellPosition);
+            Debug.Log($"ValidPlacementSystem: Found valid position {validPos} for {currentTeam}");
+            return validPos;
         }
+
+        Debug.LogWarning($"ValidPlacementSystem: No valid position found for {worldPosition}, returning Vector3.zero");
         return Vector3.zero;
     }
 
     public List<Vector3> GetAllValidWorldPositions(string team)
     {
         List<Vector3> worldPositions = new List<Vector3>();
-        Tilemap tilemap = team == "PlayerA" ? playerAPlacementTilemap : playerBPlacementTilemap;
-        List<Vector3Int> validPositions = team == "PlayerA" ? playerAValidPositions : playerBValidPositions;
+        Tilemap tilemap = team == "TeamA" ? playerAPlacementTilemap : playerBPlacementTilemap;
+        List<Vector3Int> validPositions = team == "TeamA" ? playerAValidPositions : playerBValidPositions;
 
         foreach (Vector3Int cellPos in validPositions)
         {

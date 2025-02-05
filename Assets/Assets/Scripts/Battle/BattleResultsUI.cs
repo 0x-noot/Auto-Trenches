@@ -19,18 +19,12 @@ public class BattleResultsUI : MonoBehaviour
     
     private CanvasGroup panelCanvasGroup;
     private bool isTransitioning = false;
-    
+
     private void Awake()
     {
-        Debug.Log("BattleResultsUI: Awake called");
-        
-        // Ensure panel starts hidden
         panelCanvasGroup = resultsPanel.GetComponent<CanvasGroup>();
         if (panelCanvasGroup == null)
-        {
-            Debug.Log("BattleResultsUI: Adding CanvasGroup component");
             panelCanvasGroup = resultsPanel.AddComponent<CanvasGroup>();
-        }
 
         HidePanel();
         ValidateReferences();
@@ -38,30 +32,22 @@ public class BattleResultsUI : MonoBehaviour
 
     private void ValidateReferences()
     {
-        if (resultsPanel == null) Debug.LogError("BattleResultsUI: resultsPanel is null!");
-        if (winnerText == null) Debug.LogError("BattleResultsUI: winnerText is null!");
-        if (battleStatsText == null) Debug.LogError("BattleResultsUI: battleStatsText is null!");
+        if (resultsPanel == null) Debug.LogError("resultsPanel is null!");
+        if (winnerText == null) Debug.LogError("winnerText is null!");
+        if (battleStatsText == null) Debug.LogError("battleStatsText is null!");
     }
 
     private void Start()
     {
-        Debug.Log("BattleResultsUI: Start called");
-
         if (BattleRoundManager.Instance != null)
         {
             BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
             BattleRoundManager.Instance.OnMatchEnd += HandleMatchEnd;
-            Debug.Log("BattleResultsUI: Subscribed to BattleRoundManager events");
-        }
-        else
-        {
-            Debug.LogError("BattleResultsUI: BattleRoundManager.Instance is null in Start!");
         }
     }
 
     private void OnDestroy()
     {
-        Debug.Log("BattleResultsUI: OnDestroy called");
         if (BattleRoundManager.Instance != null)
         {
             BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
@@ -71,7 +57,6 @@ public class BattleResultsUI : MonoBehaviour
 
     private void HidePanel()
     {
-        Debug.Log("BattleResultsUI: Hiding panel");
         if (panelCanvasGroup != null)
         {
             panelCanvasGroup.alpha = 0f;
@@ -84,64 +69,44 @@ public class BattleResultsUI : MonoBehaviour
         }
     }
 
-    private void HandleRoundEnd(string winner, int round)
+    private void HandleRoundEnd(string winner, int survivingUnits)
     {
-        StartCoroutine(ShowRoundResults(winner, round));
+        StartCoroutine(ShowRoundResults(winner, survivingUnits));
     }
 
-    private void HandleMatchEnd(string winner, int playerAScore, int playerBScore)
+    private void HandleMatchEnd(string winner)
     {
-        StartCoroutine(ShowMatchResults(winner, playerAScore, playerBScore));
+        StartCoroutine(ShowMatchResults(winner));
     }
 
-    private IEnumerator ShowRoundResults(string winner, int round)
+    private IEnumerator ShowRoundResults(string winner, int survivingUnits)
     {
-        Debug.Log($"BattleResultsUI: Showing round {round} results");
         resultsPanel.SetActive(true);
         
-        // Set up round results text
-        winnerText.text = $"Round {round}: {(winner == "player" ? "Victory!" : "Defeat!")}";
+        winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {(winner == "player" ? "Victory!" : "Defeat!")}";
         winnerText.color = winner == "player" ? Color.green : Color.red;
         
-        // Show round statistics
-        battleStatsText.text = GenerateRoundStats();
+        battleStatsText.text = GenerateRoundStats(winner, survivingUnits);
         
-        // Fade in panel
         yield return StartCoroutine(FadeInPanel());
-        
         yield return new WaitForSeconds(transitionDelay);
+        yield return StartCoroutine(FadeOutPanel());
         
-        // Check if the match should continue
-        if (BattleRoundManager.Instance.GetPlayerAWins() < BattleRoundManager.Instance.GetRoundsToWin() && 
-            BattleRoundManager.Instance.GetPlayerBWins() < BattleRoundManager.Instance.GetRoundsToWin())
-        {
-            // Fade out panel
-            yield return StartCoroutine(FadeOutPanel());
-            resultsPanel.SetActive(false);
-            
-            // Start next round
-            BattleRoundManager.Instance.StartNewRound();
-        }
+        resultsPanel.SetActive(false);
+        BattleRoundManager.Instance.StartNewRound();
     }
 
-    private IEnumerator ShowMatchResults(string winner, int playerAScore, int playerBScore)
+    private IEnumerator ShowMatchResults(string winner)
     {
-        Debug.Log("BattleResultsUI: Showing match results");
         resultsPanel.SetActive(true);
         
-        // Set up match results text
         winnerText.text = $"Match {(winner == "player" ? "Victory!" : "Defeat!")}";
         winnerText.color = winner == "player" ? Color.green : Color.red;
         
-        // Show match statistics
-        battleStatsText.text = GenerateMatchStats(playerAScore, playerBScore);
+        battleStatsText.text = GenerateMatchStats();
         
-        // Fade in panel
         yield return StartCoroutine(FadeInPanel());
-        
         yield return new WaitForSeconds(transitionDelay);
-        
-        // Return to main menu
         StartCoroutine(TransitionToMainMenu());
     }
 
@@ -176,48 +141,25 @@ public class BattleResultsUI : MonoBehaviour
 
     private IEnumerator TransitionToMainMenu()
     {
-        Debug.Log("BattleResultsUI: Starting transition to main menu");
         yield return StartCoroutine(FadeOutPanel());
-
-        // Load the main menu scene
-        Debug.Log("BattleResultsUI: Loading main menu scene");
         SceneManager.LoadScene(mainMenuScene);
         isTransitioning = false;
     }
 
-    private string GenerateRoundStats()
+    private string GenerateRoundStats(string winner, int survivingUnits)
     {
-        if (GameManager.Instance == null) return "";
-
-        var playerUnits = GameManager.Instance.GetPlayerUnits();
-        var enemyUnits = GameManager.Instance.GetEnemyUnits();
-
-        int playerSurvivors = CountAliveCombatants(playerUnits);
-        int enemySurvivors = CountAliveCombatants(enemyUnits);
-
+        float damage = 5f + (1.5f * survivingUnits);
         return $"Round Results:\n" +
-               $"Friendly Units Remaining: {playerSurvivors}\n" +
-               $"Enemy Units Remaining: {enemySurvivors}";
+               $"Enemy Units Remaining: {survivingUnits}\n" +
+               $"Damage Dealt: {damage:F1}";
     }
 
-    private string GenerateMatchStats(int playerAScore, int playerBScore)
+    private string GenerateMatchStats()
     {
         return $"Match Complete!\n" +
-               $"Rounds Won: {playerAScore}\n" +
-               $"Rounds Lost: {playerBScore}\n" +
+               $"Final HP:\n" +
+               $"Player A: {BattleRoundManager.Instance.GetPlayerAHP():F0}\n" +
+               $"Player B: {BattleRoundManager.Instance.GetPlayerBHP():F0}\n" +
                $"Total Rounds: {BattleRoundManager.Instance.GetCurrentRound()}";
-    }
-
-    private int CountAliveCombatants(System.Collections.Generic.List<BaseUnit> units)
-    {
-        int count = 0;
-        foreach (var unit in units)
-        {
-            if (unit != null && unit.GetCurrentState() != UnitState.Dead)
-            {
-                count++;
-            }
-        }
-        return count;
     }
 }

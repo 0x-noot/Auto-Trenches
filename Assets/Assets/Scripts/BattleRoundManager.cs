@@ -1,125 +1,148 @@
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class BattleRoundManager : MonoBehaviour
 {
     public static BattleRoundManager Instance { get; private set; }
 
-    [Header("Round Settings")]
-    [SerializeField] private int roundsToWin = 2;
-    
+    [Header("Player References")]
+    [SerializeField] private PlayerHP playerAHP;
+    [SerializeField] private PlayerHP playerBHP;
+
     private int currentRound = 1;
-    private int playerAWins = 0;
-    private int playerBWins = 0;
+    private bool isRoundActive = false;
 
     public event Action<int> OnRoundStart;
-    public event Action<string, int> OnRoundEnd; // winner, round number
-    public event Action<string, int, int> OnMatchEnd; // winner, playerAScore, playerBScore
+    public event Action<string, int> OnRoundEnd; // winner, surviving units
+    public event Action<string> OnMatchEnd; // winner
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            Debug.Log("BattleRoundManager: Instance initialized");
-        }
-        else
-        {
-            Debug.LogWarning("BattleRoundManager: Multiple instances detected. Destroying duplicate.");
-            Destroy(gameObject);
-        }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
     }
 
     private void Start()
     {
-        Debug.Log("BattleRoundManager: Start called");
+        // Find PlayerHP components if not assigned in inspector
+        if (playerAHP == null)
+        {
+            GameObject playerAObj = GameObject.Find("PlayerAHP");
+            if (playerAObj != null)
+                playerAHP = playerAObj.GetComponent<PlayerHP>();
+        }
+        if (playerBHP == null)
+        {
+            GameObject playerBObj = GameObject.Find("PlayerBHP");
+            if (playerBObj != null)
+                playerBHP = playerBObj.GetComponent<PlayerHP>();
+        }
+
         if (GameManager.Instance != null)
         {
+            GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
             GameManager.Instance.OnGameOver += HandleRoundEnd;
-            Debug.Log("BattleRoundManager: Subscribed to GameManager events");
-        }
-        else
-        {
-            Debug.LogError("BattleRoundManager: GameManager instance not found!");
         }
     }
 
     private void OnDestroy()
     {
-        Debug.Log("BattleRoundManager: OnDestroy called");
         if (GameManager.Instance != null)
         {
+            GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
             GameManager.Instance.OnGameOver -= HandleRoundEnd;
         }
     }
 
+    private void HandleGameStateChanged(GameState newState)
+    {
+        if (newState == GameState.BattleActive) isRoundActive = true;
+        else if (newState == GameState.PlayerAPlacement) isRoundActive = false;
+    }
+
     public void StartNewRound()
     {
-        Debug.Log($"BattleRoundManager: Starting round {currentRound}");
+        // Force HP update when starting a new round
+        ForceHPUpdate();
         OnRoundStart?.Invoke(currentRound);
+    }
+
+    private void ForceHPUpdate()
+    {
+        // Manually trigger HP update through BattleRoundManager methods
+        if (playerAHP != null)
+        {
+            float currentAHP = playerAHP.GetCurrentHP();
+            playerAHP.TriggerHPChanged();
+        }
+        if (playerBHP != null)
+        {
+            float currentBHP = playerBHP.GetCurrentHP();
+            playerBHP.TriggerHPChanged();
+        }
     }
 
     private void HandleRoundEnd(string winner)
     {
-        Debug.Log($"BattleRoundManager: Round {currentRound} ended. Winner: {winner}");
-        
+        int survivingUnits = CountSurvivingUnits(winner);
+
         if (winner == "player")
         {
-            playerAWins++;
-            Debug.Log($"BattleRoundManager: Player A wins increased to {playerAWins}");
+            playerAHP.IncrementWinStreak();
+            playerBHP.ResetWinStreak();
+            playerBHP.TakeDamage(survivingUnits);
+            
+            if (playerBHP.IsDead())
+            {
+                OnMatchEnd?.Invoke("player");
+                return;
+            }
         }
         else
         {
-            playerBWins++;
-            Debug.Log($"BattleRoundManager: Player B wins increased to {playerBWins}");
+            playerBHP.IncrementWinStreak();
+            playerAHP.ResetWinStreak();
+            playerAHP.TakeDamage(survivingUnits);
+            
+            if (playerAHP.IsDead())
+            {
+                OnMatchEnd?.Invoke("enemy");
+                return;
+            }
         }
 
-        OnRoundEnd?.Invoke(winner, currentRound);
+        // Force HP update after damage calculation
+        ForceHPUpdate();
 
-        if (playerAWins >= roundsToWin || playerBWins >= roundsToWin)
+        OnRoundEnd?.Invoke(winner, survivingUnits);
+        currentRound++;
+        PrepareNextRound();
+    }
+
+    private int CountSurvivingUnits(string winner)
+    {
+        if (winner == "player")
         {
-            string matchWinner = playerAWins > playerBWins ? "player" : "enemy";
-            Debug.Log($"BattleRoundManager: Match ended. Overall winner: {matchWinner}");
-            OnMatchEnd?.Invoke(matchWinner, playerAWins, playerBWins);
+            return GameManager.Instance.GetPlayerUnits().Where(u => 
+                u != null && u.GetCurrentState() != UnitState.Dead).Count();
         }
         else
         {
-            currentRound++;
-            Debug.Log($"BattleRoundManager: Advancing to round {currentRound}");
-            PrepareNextRound();
+            return GameManager.Instance.GetEnemyUnits().Where(u => 
+                u != null && u.GetCurrentState() != UnitState.Dead).Count();
         }
     }
 
     private void PrepareNextRound()
     {
-        Debug.Log("BattleRoundManager: Preparing next round");
-        
-        // Clear existing units
         PlacementManager placementManager = FindFirstObjectByType<PlacementManager>();
-        if (placementManager != null)
-        {
-            placementManager.ClearUnits();
-            Debug.Log("BattleRoundManager: Units cleared");
-        }
-        else
-        {
-            Debug.LogError("BattleRoundManager: PlacementManager not found!");
-        }
+        if (placementManager != null) placementManager.ClearUnits();
 
-        // Reset game state for next round
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.PrepareNextRound();
-            Debug.Log("BattleRoundManager: Game state reset for next round");
-        }
-        else
-        {
-            Debug.LogError("BattleRoundManager: GameManager not found!");
-        }
+        if (GameManager.Instance != null) GameManager.Instance.PrepareNextRound();
     }
 
     public int GetCurrentRound() => currentRound;
-    public int GetPlayerAWins() => playerAWins;
-    public int GetPlayerBWins() => playerBWins;
-    public int GetRoundsToWin() => roundsToWin;
+    public float GetPlayerAHP() => playerAHP.GetCurrentHP();
+    public float GetPlayerBHP() => playerBHP.GetCurrentHP();
 }

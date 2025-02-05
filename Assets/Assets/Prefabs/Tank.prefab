@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 6242076655360780094}
   - component: {fileID: 8026853603894329445}
   - component: {fileID: 4290822579935511551}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Tank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -181,7 +181,6 @@ MonoBehaviour:
     m_Bits: 0
   targetingRange: 100
   updateInterval: 0.5
-  targetTeamLayer: TeamB
   positionVariance: 0.5
 --- !u!114 &8026853603894329445
 MonoBehaviour:
@@ -198,7 +197,15 @@ MonoBehaviour:
   teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
-  armorBonus: 20
+  baseAbilityCooldown: 15
+  abilityChance: 0.2
+  baseArmorBonus: 20
+  shieldDuration: 5
+  shieldArmorMultiplier: 3
+  allyProtectionRadius: 5
+  allyArmorBonus: 10
+  shieldEffectPrefab: {fileID: 2706341720612109025, guid: 5a37432869b614448834a4aa2342dc83, type: 3}
+  shieldActiveColor: {r: 0, g: 0.8, b: 1, a: 1}
 --- !u!114 &4290822579935511551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,7 +263,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5087511408334891270, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
@@ -272,7 +279,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5507293933271101215, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Pivot.x
@@ -364,15 +371,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5987202453722712021, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6888536557747712299, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7663299353646893449, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

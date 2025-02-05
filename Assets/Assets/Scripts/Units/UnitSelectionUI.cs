@@ -11,7 +11,18 @@ public class UnitSelectionUI : MonoBehaviour
     [SerializeField] private Button[] unitButtons;
     [SerializeField] private Button startBattleButton;
     [SerializeField] private TextMeshProUGUI unitCountText;
+    [SerializeField] private TextMeshProUGUI currentTurnText;
+    [SerializeField] private GameObject placementPanel;
     
+    void Awake()
+    {
+        // Subscribe to GameManager events right away
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+        }
+    }
+
     void Start()
     {
         if (placementManager == null)
@@ -24,12 +35,24 @@ public class UnitSelectionUI : MonoBehaviour
             }
         }
 
-        // Subscribe to the OnUnitsChanged event
+        // Subscribe to events
         placementManager.OnUnitsChanged += UpdateUnitCountText;
 
         // Initialize buttons
         InitializeButtons();
         UpdateUnitCountText();
+
+        // Set initial turn text
+        if (currentTurnText != null)
+        {
+            currentTurnText.text = "Player A's Turn";
+            currentTurnText.color = Color.blue;
+            Debug.Log("Setting initial turn text: Player A's Turn");
+        }
+        else
+        {
+            Debug.LogError("CurrentTurnText is null!");
+        }
     }
 
     private void OnDestroy()
@@ -37,6 +60,51 @@ public class UnitSelectionUI : MonoBehaviour
         if (placementManager != null)
         {
             placementManager.OnUnitsChanged -= UpdateUnitCountText;
+        }
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    private void HandleGameStateChanged(GameState newState)
+    {
+        Debug.Log($"UnitSelectionUI: Handling state change to {newState}");
+        
+        switch (newState)
+        {
+            case GameState.PlayerAPlacement:
+                placementPanel.SetActive(true);
+                if (currentTurnText != null)
+                {
+                    currentTurnText.text = "Player A's Turn";
+                    currentTurnText.color = Color.blue;
+                    Debug.Log("Set turn text to: Player A's Turn");
+                }
+                startBattleButton.gameObject.SetActive(false);
+                UpdateUnitCountText();
+                break;
+
+            case GameState.PlayerBPlacement:
+                placementPanel.SetActive(true);
+                if (currentTurnText != null)
+                {
+                    currentTurnText.text = "Player B's Turn";
+                    currentTurnText.color = Color.red;
+                    Debug.Log("Set turn text to: Player B's Turn");
+                }
+                startBattleButton.gameObject.SetActive(true);
+                UpdateUnitCountText();
+                break;
+
+            case GameState.BattleStart:
+            case GameState.BattleActive:
+                placementPanel.SetActive(false);
+                break;
+
+            case GameState.BattleEnd:
+                // Handle battle end if needed
+                break;
         }
     }
 
@@ -85,7 +153,7 @@ public class UnitSelectionUI : MonoBehaviour
         {
             startBattleButton.onClick.RemoveAllListeners();
             startBattleButton.onClick.AddListener(StartBattle);
-            startBattleButton.interactable = false;
+            startBattleButton.gameObject.SetActive(false);  // Hide initially
         }
         else
         {
@@ -120,16 +188,24 @@ public class UnitSelectionUI : MonoBehaviour
         Debug.Log("UpdateUnitCountText called");
         if (unitCountText != null && placementManager != null)
         {
-            // Update to use TeamA consistently
-            int currentCount = placementManager.GetTeamUnits("TeamA").Count;
+            string currentTeam = placementManager.GetCurrentTeam();
+            int currentCount = placementManager.GetTeamUnits(currentTeam).Count;
             int maxUnits = placementManager.GetMaxUnits();
             Debug.Log($"Current count: {currentCount}, Max units: {maxUnits}");
             unitCountText.text = $"Units: {currentCount}/{maxUnits}";
 
             if (startBattleButton != null)
             {
-                // Enable start button when we have at least one unit but not more than max
-                startBattleButton.interactable = currentCount > 0 && currentCount <= maxUnits;
+                if (currentTeam == "TeamB")
+                {
+                    // Only show and enable start button for Team B when they've placed enough units
+                    startBattleButton.gameObject.SetActive(true);
+                    startBattleButton.interactable = currentCount > 0 && currentCount <= maxUnits;
+                }
+                else
+                {
+                    startBattleButton.gameObject.SetActive(false);
+                }
                 Debug.Log($"Start button interactable set to: {startBattleButton.interactable}");
             }
             else
@@ -153,5 +229,15 @@ public class UnitSelectionUI : MonoBehaviour
         {
             Debug.LogError("GameManager.Instance is null!");
         }
+    }
+
+    // Helper method to validate required components
+    private void OnValidate()
+    {
+        Debug.Log("Validating UnitSelectionUI components...");
+        if (currentTurnText == null)
+            Debug.LogError("CurrentTurnText is not assigned in UnitSelectionUI!");
+        if (placementPanel == null)
+            Debug.LogError("PlacementPanel is not assigned in UnitSelectionUI!");
     }
 }

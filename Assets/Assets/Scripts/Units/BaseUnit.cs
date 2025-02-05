@@ -20,12 +20,20 @@ public abstract class BaseUnit : MonoBehaviour
     [SerializeField] protected float deathAnimationDuration = 1f;
     [SerializeField] protected bool useDeathAnimation = true;
 
+    [Header("Ability Settings")]
+    [SerializeField] protected float baseAbilityCooldown = 15f;
+    [SerializeField] protected float abilityChance = 0.2f; // 20% chance to trigger ability
+    protected bool isAbilityActive = false;
+    protected float nextAbilityTime = 0f;
+
     protected UnitState currentState;
     protected BaseUnit currentTarget;
     protected float lastAttackTime;
     protected HealthSystem healthSystem;
 
     public event Action<BaseUnit> OnUnitDeath;
+    public event Action<BaseUnit> OnAbilityActivated;
+    public event Action<BaseUnit> OnAbilityDeactivated;
 
     protected virtual void Start()
     {
@@ -37,6 +45,66 @@ public abstract class BaseUnit : MonoBehaviour
         {
             healthSystem.Initialize(maxHealth);
         }
+
+        // Initialize ability cooldown
+        nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
+
+        // Subscribe to game state changes
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+        }
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
+        }
+    }
+
+    protected virtual void HandleGameStateChanged(GameState newState)
+    {
+        // Reset ability cooldown when battle starts
+        if (newState == GameState.BattleActive)
+        {
+            nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
+        }
+    }
+
+    protected virtual void Update()
+    {
+        // Only check for ability activation during battle and when attacking
+        if (GameManager.Instance != null && 
+            GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
+            currentState == UnitState.Attacking &&
+            currentState != UnitState.Dead && 
+            Time.time >= nextAbilityTime)
+        {
+            TryActivateAbility();
+        }
+    }
+
+    protected virtual void TryActivateAbility()
+    {
+        if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
+        {
+            ActivateAbility();
+            nextAbilityTime = Time.time + baseAbilityCooldown;
+        }
+    }
+
+    protected virtual void ActivateAbility()
+    {
+        isAbilityActive = true;
+        OnAbilityActivated?.Invoke(this);
+    }
+
+    protected virtual void DeactivateAbility()
+    {
+        isAbilityActive = false;
+        OnAbilityDeactivated?.Invoke(this);
     }
 
     public virtual void UpdateState(UnitState newState)
@@ -120,40 +188,19 @@ public abstract class BaseUnit : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private string[] GetAllLayerNames()
-    {
-        List<string> layers = new List<string>();
-        for(int i = 0; i < 32; i++)
-        {
-            string layerName = LayerMask.LayerToName(i);
-            if(!string.IsNullOrEmpty(layerName))
-            {
-                layers.Add(layerName);
-            }
-        }
-        return layers.ToArray();
-    }
-
     public void SetTeam(string newTeamId)
     {
-        Debug.Log($"SetTeam called on {gameObject.name} with team: {newTeamId}");
         teamId = newTeamId;
-        
-        // Match layer name exactly with team ID
-        string layerName = newTeamId;  // Since we're using TeamA/TeamB consistently
-        
-        Debug.Log($"Attempting to set layer to: {layerName}");
+        string layerName = newTeamId;
         int layerIndex = LayerMask.NameToLayer(layerName);
         
-        Debug.Log($"Layer index found: {layerIndex}");
         if (layerIndex != -1)
         {
             gameObject.layer = layerIndex;
-            Debug.Log($"Successfully set {gameObject.name}'s layer to {layerName} (index: {layerIndex})");
         }
         else
         {
-            Debug.LogError($"Failed to find layer: {layerName}. Available layers: {string.Join(", ", GetAllLayerNames())}");
+            Debug.LogError($"Failed to find layer: {layerName}");
         }
     }
 
@@ -165,4 +212,5 @@ public abstract class BaseUnit : MonoBehaviour
     public virtual float GetMoveSpeed() => moveSpeed;
     public virtual UnitType GetUnitType() => unitType;
     public float GetDeathAnimationDuration() => deathAnimationDuration;
+    public bool IsAbilityActive() => isAbilityActive;
 }

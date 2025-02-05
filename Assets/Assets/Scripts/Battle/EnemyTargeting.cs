@@ -16,7 +16,6 @@ public class EnemyTargeting : MonoBehaviour
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float targetingRange = 100f;
     [SerializeField] private float updateInterval = 0.1f;
-    [SerializeField] private string targetTeamLayer = "TeamA";
     
     [Header("Combat Settings")]
     [SerializeField] private float positionVariance = 0.5f;
@@ -38,7 +37,11 @@ public class EnemyTargeting : MonoBehaviour
         if (movementSystem != null && unit != null)
         {
             attackRange = unit.GetAttackRange();
+            
+            // Set the target team layer based on this unit's team
+            string targetTeamLayer = unit.GetTeamId() == "TeamA" ? "TeamB" : "TeamA";
             enemyLayer = LayerMask.GetMask(targetTeamLayer);
+            Debug.Log($"Unit {gameObject.name} on team {unit.GetTeamId()} targeting layer: {targetTeamLayer}");
 
             if (GameManager.Instance != null)
             {

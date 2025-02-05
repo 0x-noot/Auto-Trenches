@@ -18,7 +18,7 @@ public class CombatSystem : MonoBehaviour
     [SerializeField] private GameObject arrowPrefab;
     [SerializeField] private float arrowSpeed = 15f;
     [SerializeField] private float arrowArcHeight = 1f;
-    [SerializeField] private float arrowHomingStrength = 0.8f; // Added homing strength parameter
+    [SerializeField] private float arrowHomingStrength = 0.8f;
     
     [Header("Mage Attack Settings")]
     [SerializeField] private GameObject spellPrefab;
@@ -108,6 +108,8 @@ public class CombatSystem : MonoBehaviour
             yield break;
         }
 
+        Debug.Log($"Starting ranged attack from {unit.gameObject.name} to {target.gameObject.name}");
+
         // Create arrow at a slightly offset position to avoid clipping
         Vector3 spawnOffset = transform.up * 0.5f;
         GameObject arrowObj = Instantiate(arrowPrefab, transform.position + spawnOffset, Quaternion.identity);
@@ -118,6 +120,18 @@ public class CombatSystem : MonoBehaviour
             Debug.LogError("ArrowProjectile component missing from prefab!");
             Destroy(arrowObj);
             yield break;
+        }
+
+        // Initialize the arrow with the source Range unit if applicable
+        Range rangeUnit = unit as Range;
+        if (rangeUnit != null)
+        {
+            Debug.Log($"Initializing arrow with Range unit: {unit.gameObject.name}");
+            arrow.Initialize(rangeUnit, target);
+        }
+        else
+        {
+            Debug.LogError($"Unit {unit.gameObject.name} is not a Range unit!");
         }
 
         Vector3 startPos = arrowObj.transform.position;
@@ -180,6 +194,7 @@ public class CombatSystem : MonoBehaviour
         // Arrow hit
         if (arrow != null && target != null && target.GetCurrentState() != UnitState.Dead)
         {
+            Debug.Log("Arrow reached target, triggering OnHit");
             arrow.transform.position = target.transform.position;
             arrow.OnHit();
             ApplyDamage(target);
@@ -214,7 +229,7 @@ public class CombatSystem : MonoBehaviour
         float elapsedTime = 0f;
         while (elapsedTime < duration)
         {
-            if (spell == null) break; // In case spell was destroyed
+            if (spell == null) break;
 
             elapsedTime += Time.deltaTime;
             float t = elapsedTime / duration;
@@ -228,7 +243,7 @@ public class CombatSystem : MonoBehaviour
         {
             spell.OnSpellHit();
             ApplyDamage(target);
-            Destroy(spellObj, 0.5f); // Longer delay to show spell hit effects
+            Destroy(spellObj, 0.5f);
         }
     }
 

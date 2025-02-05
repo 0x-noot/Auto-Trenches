@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 2565664993874433029}
   - component: {fileID: 3647747275820437899}
   - component: {fileID: 7539634553804937470}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Range
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -194,7 +194,6 @@ MonoBehaviour:
     m_Bits: 0
   targetingRange: 100
   updateInterval: 0.5
-  targetTeamLayer: TeamB
   positionVariance: 0.5
 --- !u!114 &3647747275820437899
 MonoBehaviour:
@@ -211,8 +210,14 @@ MonoBehaviour:
   teamId: 
   deathAnimationDuration: 1
   useDeathAnimation: 1
+  baseAbilityCooldown: 15
+  abilityChance: 0.2
   longRangeBonus: 5
   longRangeThreshold: 4
+  explosionRadius: 3
+  explosionDamageMultiplier: 0.5
+  explosionEffectPrefab: {fileID: 7475421778096362061, guid: 9ffee3269ab3f2846abc6b3b95a38dab, type: 3}
+  isExplosiveArrow: 0
 --- !u!114 &7539634553804937470
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -270,7 +275,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5087511408334891270, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
@@ -286,7 +291,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5507293933271101215, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Pivot.x
@@ -378,15 +383,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5987202453722712021, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6888536557747712299, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7663299353646893449, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -59,8 +59,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        RegisterExistingEnemyUnits();
-        UpdateGameState(GameState.UnitPlacement);
+        // Start with Player A's placement turn
+        UpdateGameState(GameState.PlayerAPlacement);
         Debug.Log("GameManager: Initialization complete");
     }
 
@@ -74,8 +74,8 @@ public class GameManager : MonoBehaviour
         pendingDeaths.Clear();
         isBattleEnding = false;
 
-        // Reset game state for unit placement
-        UpdateGameState(GameState.UnitPlacement);
+        // Reset game state for Player A's placement
+        UpdateGameState(GameState.PlayerAPlacement);
     }
 
     private void RegisterExistingEnemyUnits()
@@ -150,26 +150,46 @@ public class GameManager : MonoBehaviour
             if (playerUnits.Contains(unit))
             {
                 playerUnits.Remove(unit);
-                Debug.Log("GameManager: Removed unit from player units");
+                Debug.Log($"GameManager: Removed unit {unit.gameObject.name} from player units");
             }
             else if (enemyUnits.Contains(unit))
             {
                 enemyUnits.Remove(unit);
-                Debug.Log("GameManager: Removed unit from enemy units");
+                Debug.Log($"GameManager: Removed unit {unit.gameObject.name} from enemy units");
             }
 
             pendingDeaths.Remove(unit);
+            Debug.Log($"GameManager: Removed {unit.gameObject.name} from pending deaths");
         }
 
         // Clean up null references
         playerUnits.RemoveAll(u => u == null);
         enemyUnits.RemoveAll(u => u == null);
 
-        if (currentGameState == GameState.BattleActive)
+        if (currentGameState == GameState.BattleActive && !isBattleEnding)
         {
             Debug.Log("GameManager: Checking battle end after unit death");
             CheckBattleEnd();
         }
+    }
+
+    private int CountAliveUnits(List<BaseUnit> units)
+    {
+        // First remove any null references
+        units.RemoveAll(u => u == null);
+
+        int count = 0;
+        foreach (var unit in units)
+        {
+            if (unit != null && 
+                unit.GetCurrentState() != UnitState.Dead && 
+                !pendingDeaths.ContainsKey(unit))
+            {
+                count++;
+                Debug.Log($"Counting alive unit: {unit.gameObject.name}, Team: {unit.GetTeamId()}, State: {unit.GetCurrentState()}");
+            }
+        }
+        return count;
     }
 
     private void CheckBattleEnd()
@@ -184,35 +204,35 @@ public class GameManager : MonoBehaviour
         bool playersPending = HasPendingDeaths(playerUnits);
         bool enemiesPending = HasPendingDeaths(enemyUnits);
 
-        Debug.Log($"GameManager: Pending deaths - Players: {playersPending}, Enemies: {enemiesPending}");
+        Debug.Log($"GameManager: Checking battle end - Players pending: {playersPending}, Enemies pending: {enemiesPending}");
 
         // Don't check for battle end if there are any pending deaths
-        if (playersPending || enemiesPending) return;
+        if (playersPending || enemiesPending) 
+        {
+            Debug.Log("GameManager: Pending deaths exist, delaying battle end check");
+            return;
+        }
+
+        // Clean up lists first
+        playerUnits.RemoveAll(u => u == null);
+        enemyUnits.RemoveAll(u => u == null);
 
         int alivePlayers = CountAliveUnits(playerUnits);
         int aliveEnemies = CountAliveUnits(enemyUnits);
 
-        Debug.Log($"GameManager: Alive units - Players: {alivePlayers}, Enemies: {aliveEnemies}");
+        Debug.Log($"GameManager: Detailed unit count - Player Units: {playerUnits.Count} (Alive: {alivePlayers}), Enemy Units: {enemyUnits.Count} (Alive: {aliveEnemies})");
 
-        if (alivePlayers == 0)
+        // Ensure victory only when ALL enemy units are dead while player units are alive
+        if (aliveEnemies == 0 && alivePlayers > 0 && !isBattleEnding)
         {
-            Debug.Log("GameManager: No players alive, enemy wins");
-            EndBattle("enemy");
-        }
-        else if (aliveEnemies == 0)
-        {
-            Debug.Log("GameManager: No enemies alive, player wins");
+            Debug.Log($"GameManager: All enemy units dead, player wins");
             EndBattle("player");
         }
-    }
-
-    private int CountAliveUnits(List<BaseUnit> units)
-    {
-        return units.Count(unit => 
-            unit != null && 
-            unit.GetCurrentState() != UnitState.Dead && 
-            !pendingDeaths.ContainsKey(unit)
-        );
+        else if (alivePlayers == 0 && !isBattleEnding)
+        {
+            Debug.Log($"GameManager: No players alive, enemy wins");
+            EndBattle("enemy");
+        }
     }
 
     private bool HasPendingDeaths(List<BaseUnit> units)
@@ -223,19 +243,20 @@ public class GameManager : MonoBehaviour
     public void StartBattle()
     {
         Debug.Log("GameManager: StartBattle called");
-        if (currentGameState != GameState.UnitPlacement)
+        if (currentGameState != GameState.PlayerBPlacement)
         {
             Debug.Log($"GameManager: Cannot start battle in current state: {currentGameState}");
             return;
         }
 
-        if (playerUnits.Count == 0)
+        if (playerUnits.Count == 0 || enemyUnits.Count == 0)
         {
-            Debug.LogWarning("GameManager: No player units placed!");
+            Debug.LogWarning("GameManager: Missing units from one or both teams!");
             return;
         }
 
         Debug.Log("GameManager: Starting battle sequence");
+        isBattleEnding = false;
         UpdateGameState(GameState.BattleStart);
         StartCoroutine(BattleStartSequence());
     }
@@ -281,7 +302,7 @@ public class GameManager : MonoBehaviour
         }
 
         isBattleEnding = true;
-        Debug.Log("GameManager: Setting battle end state");
+        Debug.Log("GameManager: Setting battle end state and triggering OnGameOver");
         UpdateGameState(GameState.BattleEnd);
         DisableAllUnits();
         OnGameOver?.Invoke(winner);
@@ -306,7 +327,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void UpdateGameState(GameState newState)
+    public void UpdateGameState(GameState newState)
     {
         Debug.Log($"GameManager: Changing state from {currentGameState} to {newState}");
         currentGameState = newState;
