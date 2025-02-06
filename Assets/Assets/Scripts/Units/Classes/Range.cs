@@ -25,13 +25,13 @@ public class Range : BaseUnit
 
     protected override void TryActivateAbility()
     {
-        Debug.Log($"Range unit {gameObject.name}: Trying to activate ability. Can activate: {!isAbilityActive && UnityEngine.Random.value < abilityChance}");
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
             ActivateAbility();
             nextAbilityTime = Time.time + baseAbilityCooldown;
         }
     }
+
     protected override void ActivateAbility()
     {
         if (!isAbilityActive && 
@@ -39,7 +39,6 @@ public class Range : BaseUnit
         {
             base.ActivateAbility();
             isExplosiveArrow = true;
-            Debug.Log($"Range unit {gameObject.name}: Explosive arrows activated!");
         }
     }
 
@@ -47,7 +46,6 @@ public class Range : BaseUnit
     {
         isExplosiveArrow = false;
         base.DeactivateAbility();
-        Debug.Log($"Range unit {gameObject.name} deactivated explosive arrows!");
     }
 
     public bool IsExplosiveArrow()
@@ -57,18 +55,11 @@ public class Range : BaseUnit
 
     public void CreateExplosion(Vector3 position, BaseUnit primaryTarget)
     {
-        Debug.Log($"Range unit {gameObject.name}: Creating explosion at {position}. IsExplosiveArrow: {isExplosiveArrow}");
         if (!isExplosiveArrow) return;
 
-        // Spawn explosion effect
         if (explosionEffectPrefab != null)
         {
-            Debug.Log($"Range unit {gameObject.name}: Spawning explosion effect");
             Instantiate(explosionEffectPrefab, position, Quaternion.identity);
-        }
-        else
-        {
-            Debug.LogError($"Range unit {gameObject.name}: No explosion effect prefab assigned!");
         }
 
         // Get all units in explosion radius

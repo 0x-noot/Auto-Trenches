@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 public class BattleResultsUI : MonoBehaviour
@@ -69,9 +71,22 @@ public class BattleResultsUI : MonoBehaviour
         }
     }
 
-    private void HandleRoundEnd(string winner, int survivingUnits)
+    private void HandleRoundEnd(string winner, int originalSurvivingUnits)
     {
-        StartCoroutine(ShowRoundResults(winner, survivingUnits));
+        if (BattleRoundManager.Instance == null || GameManager.Instance == null) return;
+
+        List<BaseUnit> losingTeamUnits = winner == "player" 
+            ? GameManager.Instance.GetEnemyUnits() 
+            : GameManager.Instance.GetPlayerUnits();
+
+        int losingTeamUnitCount = losingTeamUnits.Count(u => 
+            u != null && 
+            u.GetCurrentState() != UnitState.Dead);
+
+        // Use the current losing team unit count or fall back to original surviving units
+        int unitsToDisplay = losingTeamUnitCount > 0 ? losingTeamUnitCount : originalSurvivingUnits;
+
+        StartCoroutine(ShowRoundResults(winner, unitsToDisplay));
     }
 
     private void HandleMatchEnd(string winner)
@@ -149,9 +164,13 @@ public class BattleResultsUI : MonoBehaviour
     private string GenerateRoundStats(string winner, int survivingUnits)
     {
         float damage = 5f + (1.5f * survivingUnits);
+        string enemyUnits = winner == "player" ? 
+            "Enemy Units Remaining: 0" : 
+            $"Enemy Units Remaining: {survivingUnits}";
+            
         return $"Round Results:\n" +
-               $"Enemy Units Remaining: {survivingUnits}\n" +
-               $"Damage Dealt: {damage:F1}";
+            $"{enemyUnits}\n" +
+            $"Damage Dealt: {damage:F1}";
     }
 
     private string GenerateMatchStats()

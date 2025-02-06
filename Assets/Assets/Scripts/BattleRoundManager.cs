@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 public class BattleRoundManager : MonoBehaviour
 {
@@ -122,16 +123,32 @@ public class BattleRoundManager : MonoBehaviour
 
     private int CountSurvivingUnits(string winner)
     {
+        if (GameManager.Instance == null) return 0;
+
+        // We want to return the surviving units of the WINNING team
+        // This is used to calculate damage to the losing player
+        List<BaseUnit> unitsToCount;
         if (winner == "player")
         {
-            return GameManager.Instance.GetPlayerUnits().Where(u => 
-                u != null && u.GetCurrentState() != UnitState.Dead).Count();
+            // Player won, count PLAYER surviving units
+            unitsToCount = GameManager.Instance.GetPlayerUnits();
+            Debug.Log($"Counting player surviving units after victory");
         }
         else
         {
-            return GameManager.Instance.GetEnemyUnits().Where(u => 
-                u != null && u.GetCurrentState() != UnitState.Dead).Count();
+            // Enemy won, count ENEMY surviving units
+            unitsToCount = GameManager.Instance.GetEnemyUnits();
+            Debug.Log($"Counting enemy surviving units after victory");
         }
+
+        int count = unitsToCount.Count(u => 
+            u != null && 
+            u.GetCurrentState() != UnitState.Dead &&
+            u.gameObject.activeInHierarchy
+        );
+        
+        Debug.Log($"Surviving units count for {winner}: {count}");
+        return count;
     }
 
     private void PrepareNextRound()

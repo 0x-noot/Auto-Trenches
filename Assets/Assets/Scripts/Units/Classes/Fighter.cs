@@ -15,25 +15,27 @@ public class Fighter : BaseUnit
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem rageParticles;
     
-    private float baseAttackSpeed;
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
 
     private void Awake()
     {
         unitType = UnitType.Fighter;
-        maxHealth = 800f;
-        attackDamage = 150f;
+        baseHealth = 800f;
+        baseDamage = 150f;
+        baseAttackSpeed = 1.2f;
+        baseMoveSpeed = 3.5f;
         attackRange = 3.5f;
-        moveSpeed = 3.5f;
-        attackSpeed = 1.2f;
         
-        // Store base values
-        baseAttackSpeed = attackSpeed;
+        // Set current stats equal to base stats initially
+        maxHealth = baseHealth;
+        attackDamage = baseDamage;
+        attackSpeed = baseAttackSpeed;
+        moveSpeed = baseMoveSpeed;
         currentCriticalStrikeChance = baseCriticalStrikeChance;
 
         // Get and store sprite renderer reference
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        var spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
@@ -83,7 +85,6 @@ public class Fighter : BaseUnit
             GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
             currentState == UnitState.Attacking)
         {
-            Debug.Log($"Fighter {gameObject.name} activating ability!");
             base.ActivateAbility();
             StartCoroutine(ApeShitAbility());
         }
@@ -91,8 +92,6 @@ public class Fighter : BaseUnit
 
     private IEnumerator ApeShitAbility()
     {
-        Debug.Log($"{gameObject.name} activating ApeShit ability!");
-
         // Apply buffs
         attackSpeed = baseAttackSpeed * apeShitAttackSpeedMultiplier;
         currentCriticalStrikeChance += apeShitCritChanceBonus;
@@ -117,7 +116,6 @@ public class Fighter : BaseUnit
         }
 
         ResetAbilityEffects();
-        Debug.Log($"{gameObject.name} ApeShit ability ended!");
     }
 
     private void ResetAbilityEffects()

@@ -1,18 +1,30 @@
 using UnityEngine;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 
 public abstract class BaseUnit : MonoBehaviour
 {
+    [Header("Base Stats")]
     protected UnitType unitType;
+    protected float baseHealth;
+    protected float baseDamage;
+    protected float baseAttackSpeed;
+    protected float baseMoveSpeed;
+    protected float attackRange;
+
+    // Current stats
     protected float maxHealth;
     protected float currentHealth;
     protected float attackDamage;
     protected float attackSpeed;
-    protected float attackRange;
     protected float moveSpeed;
-    
+
+    // Stats with upgrades applied
+    protected float currentMaxHealth;
+    protected float currentAttackDamage;
+    protected float currentAttackSpeed;
+    protected float currentMoveSpeed;
+
     [Header("Team Settings")]
     [SerializeField] protected string teamId;
 
@@ -22,7 +34,7 @@ public abstract class BaseUnit : MonoBehaviour
 
     [Header("Ability Settings")]
     [SerializeField] protected float baseAbilityCooldown = 15f;
-    [SerializeField] protected float abilityChance = 0.2f; // 20% chance to trigger ability
+    [SerializeField] protected float abilityChance = 0.2f;
     protected bool isAbilityActive = false;
     protected float nextAbilityTime = 0f;
 
@@ -31,28 +43,101 @@ public abstract class BaseUnit : MonoBehaviour
     protected float lastAttackTime;
     protected HealthSystem healthSystem;
 
+    private MovementSystem movementSystem;
+    private CombatSystem combatSystem;
+
     public event Action<BaseUnit> OnUnitDeath;
     public event Action<BaseUnit> OnAbilityActivated;
     public event Action<BaseUnit> OnAbilityDeactivated;
 
     protected virtual void Start()
     {
-        currentHealth = maxHealth;
+        InitializeBaseStats();
+        ApplyUpgrades();
+        currentHealth = currentMaxHealth; // Use upgraded max health
         currentState = UnitState.Idle;
-        
+
+        // Get required components
         healthSystem = GetComponent<HealthSystem>();
+        movementSystem = GetComponent<MovementSystem>();
+        combatSystem = GetComponent<CombatSystem>();
+
         if (healthSystem != null)
         {
-            healthSystem.Initialize(maxHealth);
+            healthSystem.Initialize(currentMaxHealth); // Use upgraded max health
         }
 
-        // Initialize ability cooldown
         nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
 
-        // Subscribe to game state changes
+        // Subscribe to events
+        if (EconomyManager.Instance != null)
+        {
+            EconomyManager.Instance.OnUpgradePurchased += HandleUpgradePurchased;
+        }
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+        }
+
+        // Apply movement speed to MovementSystem
+        if (movementSystem != null)
+        {
+            movementSystem.SetMoveSpeed(currentMoveSpeed);
+        }
+
+        Debug.Log($"Unit {gameObject.name} initialized with stats - Health: {currentMaxHealth}, Damage: {currentAttackDamage}, Speed: {currentMoveSpeed}, Attack Speed: {currentAttackSpeed}");
+    }
+
+    protected virtual void InitializeBaseStats()
+    {
+        baseHealth = maxHealth;
+        baseDamage = attackDamage;
+        baseAttackSpeed = attackSpeed;
+        baseMoveSpeed = moveSpeed;
+    }
+
+    protected void ApplyUpgrades()
+    {
+        Debug.Log($"[{teamId}] Unit {unitType} applying upgrades - Round {BattleRoundManager.Instance?.GetCurrentRound()}");
+        if (EconomyManager.Instance == null) return;
+
+        float armorMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Armor);
+        float damageMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Training);
+        float speedMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Speed);
+        float attackSpeedMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.AttackSpeed);
+
+        currentMaxHealth = maxHealth * armorMultiplier;
+        currentAttackDamage = attackDamage * damageMultiplier;
+        currentMoveSpeed = moveSpeed * speedMultiplier;
+        currentAttackSpeed = attackSpeed * attackSpeedMultiplier;
+
+        if (currentHealth > 0)
+        {
+            float healthPercentage = currentHealth / maxHealth;
+            currentHealth = currentMaxHealth * healthPercentage;
+            
+            if (healthSystem != null)
+            {
+                healthSystem.Initialize(currentMaxHealth);
+            }
+        }
+
+        // Update MovementSystem with new speed
+        if (movementSystem != null)
+        {
+            movementSystem.SetMoveSpeed(currentMoveSpeed);
+        }
+
+        Debug.Log($"Upgrades applied to {gameObject.name} - New stats - Health: {currentMaxHealth}, Damage: {currentAttackDamage}, Speed: {currentMoveSpeed}, Attack Speed: {currentAttackSpeed}");
+    }
+
+    private void HandleUpgradePurchased(string team, UpgradeType type, int level)
+    {
+        if (team == teamId)
+        {
+            Debug.Log($"Handling upgrade purchase for {gameObject.name} - Type: {type}, Level: {level}");
+            ApplyUpgrades();
         }
     }
 
@@ -62,11 +147,14 @@ public abstract class BaseUnit : MonoBehaviour
         {
             GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
         }
+        if (EconomyManager.Instance != null)
+        {
+            EconomyManager.Instance.OnUpgradePurchased -= HandleUpgradePurchased;
+        }
     }
 
     protected virtual void HandleGameStateChanged(GameState newState)
     {
-        // Reset ability cooldown when battle starts
         if (newState == GameState.BattleActive)
         {
             nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
@@ -75,7 +163,6 @@ public abstract class BaseUnit : MonoBehaviour
 
     protected virtual void Update()
     {
-        // Only check for ability activation during battle and when attacking
         if (GameManager.Instance != null && 
             GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
             currentState == UnitState.Attacking &&
@@ -131,7 +218,6 @@ public abstract class BaseUnit : MonoBehaviour
         
         currentState = UnitState.Dead;
 
-        var movementSystem = GetComponent<MovementSystem>();
         if (movementSystem != null)
         {
             movementSystem.StopMovement();
@@ -204,12 +290,13 @@ public abstract class BaseUnit : MonoBehaviour
         }
     }
 
+    // Getters that return upgraded stats
     public string GetTeamId() => teamId;
     public virtual UnitState GetCurrentState() => currentState;
     public virtual float GetAttackRange() => attackRange;
-    public virtual float GetAttackDamage() => attackDamage;
-    public virtual float GetAttackSpeed() => attackSpeed;
-    public virtual float GetMoveSpeed() => moveSpeed;
+    public virtual float GetAttackDamage() => currentAttackDamage;
+    public virtual float GetAttackSpeed() => currentAttackSpeed;
+    public virtual float GetMoveSpeed() => currentMoveSpeed;
     public virtual UnitType GetUnitType() => unitType;
     public float GetDeathAnimationDuration() => deathAnimationDuration;
     public bool IsAbilityActive() => isAbilityActive;

@@ -4,20 +4,18 @@ public class PlayerHP : MonoBehaviour
 {
     [SerializeField] private float maxHP = 100f;
     private float currentHP;
-    private int winStreak = 0;
+    public int winStreak { get; private set; } = 0;
     private bool isFirstRound = true;
 
     public event System.Action OnHPChanged;
 
     private void Start()
     {
-        // Only set to full HP on first round
         currentHP = maxHP;
     }
 
     public void TakeDamage(int survivingUnits)
     {
-        // Disable full HP reset after first round
         if (isFirstRound)
         {
             isFirstRound = false;

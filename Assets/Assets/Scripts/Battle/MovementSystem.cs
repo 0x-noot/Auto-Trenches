@@ -43,6 +43,12 @@ public class MovementSystem : MonoBehaviour
         }
     }
 
+    public void SetMoveSpeed(float newSpeed)
+    {
+        moveSpeed = newSpeed;
+        Debug.Log($"Movement speed updated to: {moveSpeed}");
+    }
+
     private void HandleGameStateChanged(GameState newState)
     {
         switch (newState)

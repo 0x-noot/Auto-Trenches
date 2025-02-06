@@ -72,7 +72,6 @@ public class Tank : BaseUnit
         if (!isAbilityActive && 
             GameManager.Instance.GetCurrentState() == GameState.BattleActive)
         {
-            Debug.Log($"Tank {gameObject.name} activating Shield ability!");
             base.ActivateAbility();
             StartCoroutine(ShieldAbility());
         }
@@ -131,6 +130,5 @@ public class Tank : BaseUnit
         }
 
         DeactivateAbility();
-        Debug.Log($"Tank {gameObject.name} Shield ability ended!");
     }
 }

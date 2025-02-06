@@ -181,14 +181,30 @@ public class GameManager : MonoBehaviour
         int count = 0;
         foreach (var unit in units)
         {
-            if (unit != null && 
-                unit.GetCurrentState() != UnitState.Dead && 
-                !pendingDeaths.ContainsKey(unit))
+            if (unit == null) continue;
+
+            // Explicit checks for unit state
+            bool isReallyAlive = unit != null && 
+                                unit.GetCurrentState() != UnitState.Dead && 
+                                !pendingDeaths.ContainsKey(unit) &&
+                                unit.gameObject != null &&
+                                unit.gameObject.activeInHierarchy;
+
+            if (isReallyAlive)
             {
                 count++;
-                Debug.Log($"Counting alive unit: {unit.gameObject.name}, Team: {unit.GetTeamId()}, State: {unit.GetCurrentState()}");
+                Debug.Log($"Counting truly alive unit: {unit.name}, Type: {unit.GetUnitType()}");
+            }
+            else
+            {
+                Debug.Log($"Unit not counted as alive: {unit.name}, " +
+                        $"State: {unit.GetCurrentState()}, " +
+                        $"In Pending Deaths: {pendingDeaths.ContainsKey(unit)}, " +
+                        $"Active in Hierarchy: {unit.gameObject.activeInHierarchy}");
             }
         }
+
+        Debug.Log($"Total truly alive units: {count}");
         return count;
     }
 
@@ -196,42 +212,30 @@ public class GameManager : MonoBehaviour
     {
         if (currentGameState != GameState.BattleActive || isBattleEnding)
         {
-            Debug.Log($"GameManager: CheckBattleEnd early return - currentState: {currentGameState}, isBattleEnding: {isBattleEnding}");
             return;
         }
 
-        // First check if there are any pending deaths
-        bool playersPending = HasPendingDeaths(playerUnits);
-        bool enemiesPending = HasPendingDeaths(enemyUnits);
-
-        Debug.Log($"GameManager: Checking battle end - Players pending: {playersPending}, Enemies pending: {enemiesPending}");
-
-        // Don't check for battle end if there are any pending deaths
-        if (playersPending || enemiesPending) 
+        // Wait for all pending deaths to finish
+        if (HasPendingDeaths(playerUnits) || HasPendingDeaths(enemyUnits))
         {
-            Debug.Log("GameManager: Pending deaths exist, delaying battle end check");
+            Debug.Log("Waiting for pending deaths to complete...");
             return;
         }
-
-        // Clean up lists first
-        playerUnits.RemoveAll(u => u == null);
-        enemyUnits.RemoveAll(u => u == null);
 
         int alivePlayers = CountAliveUnits(playerUnits);
         int aliveEnemies = CountAliveUnits(enemyUnits);
 
-        Debug.Log($"GameManager: Detailed unit count - Player Units: {playerUnits.Count} (Alive: {alivePlayers}), Enemy Units: {enemyUnits.Count} (Alive: {aliveEnemies})");
+        Debug.Log($"Battle check - Player Units Alive: {alivePlayers}, Enemy Units Alive: {aliveEnemies}");
 
-        // Ensure victory only when ALL enemy units are dead while player units are alive
-        if (aliveEnemies == 0 && alivePlayers > 0 && !isBattleEnding)
+        if (alivePlayers == 0 && aliveEnemies > 0)
         {
-            Debug.Log($"GameManager: All enemy units dead, player wins");
-            EndBattle("player");
-        }
-        else if (alivePlayers == 0 && !isBattleEnding)
-        {
-            Debug.Log($"GameManager: No players alive, enemy wins");
+            Debug.Log($"Enemy wins with {aliveEnemies} units remaining");
             EndBattle("enemy");
+        }
+        else if (aliveEnemies == 0 && alivePlayers > 0)
+        {
+            Debug.Log($"Player wins with {alivePlayers} units remaining");
+            EndBattle("player");
         }
     }
 

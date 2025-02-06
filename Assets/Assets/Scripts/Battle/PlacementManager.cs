@@ -128,6 +128,7 @@ public class PlacementManager : MonoBehaviour
     public void SelectUnitType(UnitType type)
     {
         selectedUnitType = type;
+        Debug.Log($"Selected unit type: {type}");
     }
 
     public void PlaceUnit(Vector3 position)
@@ -161,6 +162,18 @@ public class PlacementManager : MonoBehaviour
         }
 
         unit.SetTeam(currentTeam);
+        
+        // Log upgrade levels when placing unit
+        if (EconomyManager.Instance != null)
+        {
+            Debug.Log($"[{currentTeam}] Current upgrade levels when placing {selectedUnitType}:");
+            foreach (UpgradeType upgrade in System.Enum.GetValues(typeof(UpgradeType)))
+            {
+                float multiplier = EconomyManager.Instance.GetUpgradeMultiplier(currentTeam, upgrade);
+                Debug.Log($"  {upgrade}: multiplier {multiplier}");
+            }
+        }
+
         placedUnits.Add(unit);
         
         if (currentTeam == "TeamA")
@@ -174,10 +187,10 @@ public class PlacementManager : MonoBehaviour
             gameManager?.RegisterEnemyUnit(unit);
         }
 
-        var teamUnits = GetTeamUnits(currentTeam);
-        Debug.Log($"After placement - Total units: {placedUnits.Count}, {currentTeam} units: {teamUnits.Count}");
-        
         OnUnitsChanged?.Invoke();
+
+        var teamUnits = GetTeamUnits(currentTeam);
+        Debug.Log($"After placement - {currentTeam} units: {teamUnits.Count}/{maxUnitsPerTeam}");
 
         // Check if current team has placed all units
         if (teamUnits.Count >= maxUnitsPerTeam)
@@ -201,10 +214,12 @@ public class PlacementManager : MonoBehaviour
 
     public void ClearUnits()
     {
+        Debug.Log("Clearing all units before next round");
         foreach (BaseUnit unit in placedUnits)
         {
             if (unit != null && unit.gameObject != null)
             {
+                Debug.Log($"Destroying unit: {unit.GetUnitType()} from team {unit.GetTeamId()}");
                 Destroy(unit.gameObject);
             }
         }
@@ -214,6 +229,7 @@ public class PlacementManager : MonoBehaviour
 
     public void ClearTeamUnits(string team)
     {
+        Debug.Log($"Clearing units for team: {team}");
         placedUnits.RemoveAll(unit => {
             if (unit != null && unit.GetTeamId() == team)
             {
