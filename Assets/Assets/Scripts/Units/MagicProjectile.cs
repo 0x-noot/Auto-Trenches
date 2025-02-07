@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class MagicProjectile : MonoBehaviour
+public class MagicProjectile : MonoBehaviour, IPooledObject
 {
     [Header("Visual Settings")]
     [SerializeField] private SpriteRenderer spellSprite;
@@ -12,6 +12,7 @@ public class MagicProjectile : MonoBehaviour
     [SerializeField] private float rotationSpeed = 360f;
     [SerializeField] private float pulseSpeed = 2f;
     [SerializeField] private float pulseAmount = 0.2f;
+    [SerializeField] private float returnDelay = 0.5f;
     
     private float initialSize;
     private float time;
@@ -27,8 +28,34 @@ public class MagicProjectile : MonoBehaviour
         if (particleEffect == null)
             particleEffect = GetComponent<ParticleSystem>();
 
-        SetupVisuals();
         initialSize = transform.localScale.x;
+    }
+
+    public void OnObjectSpawn()
+    {
+        // Reset components
+        time = 0f;
+        transform.localScale = Vector3.one * initialSize;
+        
+        if (spellSprite != null)
+        {
+            spellSprite.enabled = true;
+            spellSprite.color = spellColor;
+        }
+
+        if (spellTrail != null)
+        {
+            spellTrail.Clear();
+            spellTrail.emitting = true;
+        }
+
+        if (particleEffect != null)
+        {
+            particleEffect.Stop();
+            particleEffect.Clear();
+        }
+
+        SetupVisuals();
     }
 
     private void SetupVisuals()
@@ -85,6 +112,9 @@ public class MagicProjectile : MonoBehaviour
 
         // Create hit effect
         CreateHitEffect();
+
+        // Return to pool after delay
+        StartCoroutine(ReturnToPoolAfterDelay());
     }
 
     private void CreateHitEffect()
@@ -98,5 +128,11 @@ public class MagicProjectile : MonoBehaviour
             emission.SetBurst(0, burstParams);
             particleEffect.Play();
         }
+    }
+
+    private System.Collections.IEnumerator ReturnToPoolAfterDelay()
+    {
+        yield return new WaitForSeconds(returnDelay);
+        ObjectPool.Instance.ReturnToPool("MagicProjectile", gameObject);
     }
 }

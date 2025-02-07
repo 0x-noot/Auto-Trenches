@@ -4,13 +4,13 @@ using System.Collections;
 public class Fighter : BaseUnit
 {
     [Header("Fighter-Specific Settings")]
-    [SerializeField] private float baseCriticalStrikeChance = 0.2f;
+    [SerializeField] private float baseCriticalStrikeChance = 0.15f;
     [SerializeField] private float currentCriticalStrikeChance;
 
     [Header("ApeShit Ability Settings")]
-    [SerializeField] private float apeShitDuration = 5f;
-    [SerializeField] private float apeShitAttackSpeedMultiplier = 2f;
-    [SerializeField] private float apeShitCritChanceBonus = 0.3f;
+    [SerializeField] private float apeShitDuration = 4f;
+    [SerializeField] private float apeShitAttackSpeedMultiplier = 2.2f;
+    [SerializeField] private float apeShitCritChanceBonus = 0.25f;
     
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem rageParticles;
@@ -21,9 +21,9 @@ public class Fighter : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Fighter;
-        baseHealth = 800f;
-        baseDamage = 150f;
-        baseAttackSpeed = 1.2f;
+        baseHealth = 900f;
+        baseDamage = 130f;
+        baseAttackSpeed = 1.3f;
         baseMoveSpeed = 3.5f;
         attackRange = 3.5f;
         

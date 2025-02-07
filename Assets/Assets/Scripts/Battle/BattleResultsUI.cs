@@ -163,11 +163,11 @@ public class BattleResultsUI : MonoBehaviour
 
     private string GenerateRoundStats(string winner, int survivingUnits)
     {
-        float damage = 5f + (1.5f * survivingUnits);
+        float damage = 8f + (1.5f * survivingUnits);  // Match the new formula
         string enemyUnits = winner == "player" ? 
             "Enemy Units Remaining: 0" : 
             $"Enemy Units Remaining: {survivingUnits}";
-            
+                
         return $"Round Results:\n" +
             $"{enemyUnits}\n" +
             $"Damage Dealt: {damage:F1}";

@@ -21,7 +21,7 @@ public class PlayerHP : MonoBehaviour
             isFirstRound = false;
         }
 
-        float damage = 5f + (1.5f * survivingUnits) + winStreak;
+        float damage = 8f + (1.5f * survivingUnits) + winStreak;  // Increased base damage to 8
         currentHP = Mathf.Max(0, currentHP - damage);
         
         StartCoroutine(TriggerHPChangedNextFrame());

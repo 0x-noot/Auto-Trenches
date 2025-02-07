@@ -5,11 +5,11 @@ using System.Collections.Generic;
 public class Mage : BaseUnit
 {
     [Header("Mage-Specific Settings")]
-    [SerializeField] private float magicPenetration = 10f;
+    [SerializeField] private float magicPenetration = 15f;
 
     [Header("Freeze Ability Settings")]
-    [SerializeField] private float freezeDuration = 3f;
-    [SerializeField] private float freezeRadius = 5f;
+    [SerializeField] private float freezeDuration = 2.5f;
+    [SerializeField] private float freezeRadius = 4f;
     [SerializeField] private GameObject freezeEffectPrefab;
     [SerializeField] private float flashInterval = 0.2f;
 
@@ -34,11 +34,11 @@ public class Mage : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Mage;
-        maxHealth = 800f;
-        attackDamage = 200f;
+        maxHealth = 700f;
+        attackDamage = 180f;
         attackRange = 10f;
         moveSpeed = 3f;
-        attackSpeed = 0.8f;
+        attackSpeed = 0.7f;
     }
 
     protected override void HandleGameStateChanged(GameState newState)

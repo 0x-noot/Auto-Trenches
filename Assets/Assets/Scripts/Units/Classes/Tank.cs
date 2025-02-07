@@ -4,12 +4,12 @@ using System.Collections;
 public class Tank : BaseUnit
 {
     [Header("Tank-Specific Settings")]
-    [SerializeField] private float baseArmorBonus = 20f;
+    [SerializeField] private float baseArmorBonus = 25f;
     private float currentArmorBonus;
 
     [Header("Shield Ability Settings")]
-    [SerializeField] private float shieldDuration = 5f;
-    [SerializeField] private float shieldArmorMultiplier = 3f;
+    [SerializeField] private float shieldDuration = 6f;
+    [SerializeField] private float shieldArmorMultiplier = 2.5f;
     
     [Header("Visual Effects")]
     [SerializeField] private GameObject shieldEffectPrefab;
@@ -22,11 +22,11 @@ public class Tank : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Tank;
-        maxHealth = 2000f;
-        attackDamage = 50f;
+        maxHealth = 1800f;
+        attackDamage = 60f;
         attackRange = 3.5f;
-        moveSpeed = 2f;
-        attackSpeed = 0.8f;
+        moveSpeed = 2.5f;
+        attackSpeed = 0.9f;
         
         currentArmorBonus = baseArmorBonus;
         

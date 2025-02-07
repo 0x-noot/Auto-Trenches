@@ -57,10 +57,8 @@ public class CombatSystem : MonoBehaviour
         if (!CanAttack() || target == null || target.GetCurrentState() == UnitState.Dead)
             return;
 
-        // Set next attack time based on attack speed
         nextAttackTime = Time.time + (1f / unit.GetAttackSpeed());
         
-        // Start attack sequence based on unit type
         switch (unit.GetUnitType())
         {
             case UnitType.Tank:
@@ -84,25 +82,16 @@ public class CombatSystem : MonoBehaviour
         Vector3 targetPosition = target.transform.position;
         Vector3 attackDirection = (targetPosition - originalPosition).normalized;
 
-        // Lunge forward
         yield return StartCoroutine(PerformLunge(originalPosition, attackDirection));
 
-        // Spawn attack effect and apply damage
         SpawnMeleeEffect(transform.position, targetPosition);
         ApplyDamage(target);
 
-        // Recoil and return
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
     }
 
     private IEnumerator PerformRangedAttackSequence(BaseUnit target)
     {
-        if (arrowPrefab == null)
-        {
-            Debug.LogError("Arrow prefab is missing!");
-            yield break;
-        }
-
         if (target == null || target.GetCurrentState() == UnitState.Dead)
         {
             yield break;
@@ -110,19 +99,23 @@ public class CombatSystem : MonoBehaviour
 
         Debug.Log($"Starting ranged attack from {unit.gameObject.name} to {target.gameObject.name}");
 
-        // Create arrow at a slightly offset position to avoid clipping
         Vector3 spawnOffset = transform.up * 0.5f;
-        GameObject arrowObj = Instantiate(arrowPrefab, transform.position + spawnOffset, Quaternion.identity);
-        ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
-
-        if (arrow == null)
+        GameObject arrowObj = ObjectPool.Instance.SpawnFromPool("Arrow", transform.position + spawnOffset, Quaternion.identity);
+        
+        if (arrowObj == null)
         {
-            Debug.LogError("ArrowProjectile component missing from prefab!");
-            Destroy(arrowObj);
+            Debug.LogError("Failed to spawn arrow from pool");
             yield break;
         }
 
-        // Initialize the arrow with the source Range unit if applicable
+        ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
+        if (arrow == null)
+        {
+            Debug.LogError("ArrowProjectile component missing from pooled object!");
+            ObjectPool.Instance.ReturnToPool("Arrow", arrowObj);
+            yield break;
+        }
+
         Range rangeUnit = unit as Range;
         if (rangeUnit != null)
         {
@@ -139,10 +132,8 @@ public class CombatSystem : MonoBehaviour
         float duration = initialDistance / arrowSpeed;
         float elapsedTime = 0f;
 
-        // Start arrow flight effects
         arrow.StartFlight();
 
-        // Initial rotation to face target
         Vector3 direction = (target.transform.position - startPos).normalized;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         arrowObj.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
@@ -153,25 +144,19 @@ public class CombatSystem : MonoBehaviour
             elapsedTime += Time.deltaTime;
             float t = elapsedTime / duration;
 
-            // Calculate the current target position
             Vector3 currentTargetPos = target.transform.position;
-            
-            // Calculate midpoint with arc
             Vector3 midPoint = Vector3.Lerp(startPos, currentTargetPos, 0.5f);
             midPoint.y += arrowArcHeight * Mathf.Sin(t * Mathf.PI);
 
-            // Calculate the bezier curve position
             Vector3 idealPosition = Vector3.Lerp(
                 Vector3.Lerp(startPos, midPoint, t),
                 Vector3.Lerp(midPoint, currentTargetPos, t),
                 t
             );
 
-            // Current position is a blend between the ideal arc position and a direct line to the target
             Vector3 directPosition = Vector3.Lerp(arrow.transform.position, currentTargetPos, arrowHomingStrength * Time.deltaTime * arrowSpeed);
             arrow.transform.position = Vector3.Lerp(idealPosition, directPosition, t);
 
-            // Update arrow rotation to face travel direction
             if (arrow.transform.position != previousPosition)
             {
                 direction = (arrow.transform.position - previousPosition).normalized;
@@ -182,7 +167,6 @@ public class CombatSystem : MonoBehaviour
             previousPosition = arrow.transform.position;
             arrow.UpdateArrowInFlight(t);
 
-            // Check if we're close enough to hit
             if (Vector3.Distance(arrow.transform.position, currentTargetPos) < 0.5f)
             {
                 break;
@@ -191,7 +175,6 @@ public class CombatSystem : MonoBehaviour
             yield return null;
         }
 
-        // Arrow hit
         if (arrow != null && target != null && target.GetCurrentState() != UnitState.Dead)
         {
             Debug.Log("Arrow reached target, triggering OnHit");
@@ -201,25 +184,28 @@ public class CombatSystem : MonoBehaviour
         }
         else if (arrow != null)
         {
-            // If target died during flight, just destroy the arrow
-            Destroy(arrow.gameObject);
+            ObjectPool.Instance.ReturnToPool("Arrow", arrow.gameObject);
         }
     }
 
     private IEnumerator PerformMageAttackSequence(BaseUnit target)
     {
-        if (spellPrefab == null)
+        yield return new WaitForSeconds(spellCastDelay);
+
+        GameObject spellObj = ObjectPool.Instance.SpawnFromPool("MagicProjectile", transform.position, Quaternion.identity);
+        if (spellObj == null)
         {
-            Debug.LogError("Spell prefab is missing!");
+            Debug.LogError("Failed to spawn magic projectile from pool");
             yield break;
         }
 
-        // Cast delay
-        yield return new WaitForSeconds(spellCastDelay);
-
-        // Create spell
-        GameObject spellObj = Instantiate(spellPrefab, transform.position, Quaternion.identity);
         MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
+        if (spell == null)
+        {
+            Debug.LogError("MagicProjectile component missing from pooled object!");
+            ObjectPool.Instance.ReturnToPool("MagicProjectile", spellObj);
+            yield break;
+        }
 
         Vector3 startPos = transform.position;
         Vector3 targetPos = target.transform.position;
@@ -238,12 +224,10 @@ public class CombatSystem : MonoBehaviour
             yield return null;
         }
 
-        // Spell hit
         if (spell != null)
         {
             spell.OnSpellHit();
             ApplyDamage(target);
-            Destroy(spellObj, 0.5f);
         }
     }
 
@@ -277,7 +261,6 @@ public class CombatSystem : MonoBehaviour
             yield return null;
         }
 
-        // Return to original position
         float elapsedReturnTime = 0f;
         float returnDuration = attackAnimationDuration * 0.3f;
         while (elapsedReturnTime < returnDuration)
@@ -293,9 +276,9 @@ public class CombatSystem : MonoBehaviour
 
     private void SpawnMeleeEffect(Vector3 attackerPos, Vector3 targetPos)
     {
-        if (meleeAttackEffectPrefab != null)
+        GameObject effectObj = ObjectPool.Instance.SpawnFromPool("MeleeEffect", attackerPos, Quaternion.identity);
+        if (effectObj != null)
         {
-            GameObject effectObj = Instantiate(meleeAttackEffectPrefab);
             MeleeAttackEffect effect = effectObj.GetComponent<MeleeAttackEffect>();
             if (effect != null)
             {
@@ -303,7 +286,8 @@ public class CombatSystem : MonoBehaviour
             }
             else
             {
-                Debug.LogError("MeleeAttackEffect component missing from prefab!");
+                Debug.LogError("MeleeAttackEffect component missing from pooled object!");
+                ObjectPool.Instance.ReturnToPool("MeleeEffect", effectObj);
             }
         }
     }

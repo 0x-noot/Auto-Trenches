@@ -4,23 +4,23 @@ using System.Collections.Generic;
 public class Range : BaseUnit
 {
     [Header("Range-Specific Settings")]
-    [SerializeField] private float longRangeBonus = 5f;
+    [SerializeField] private float longRangeBonus = 15f;
     [SerializeField] private float longRangeThreshold = 4f;
 
     [Header("Explosion Ability Settings")]
-    [SerializeField] private float explosionRadius = 3f;
-    [SerializeField] private float explosionDamageMultiplier = 0.5f; // 50% of normal damage
+    [SerializeField] private float explosionRadius = 3.5f;
+    [SerializeField] private float explosionDamageMultiplier = 0.3f;
     [SerializeField] private GameObject explosionEffectPrefab;
     [SerializeField] private bool isExplosiveArrow = false;
 
     private void Awake()
     {
         unitType = UnitType.Range;
-        maxHealth = 900f;
-        attackDamage = 125f;
-        attackRange = 15f;
-        moveSpeed = 3.2f;
-        attackSpeed = 1f;
+        maxHealth = 700f;
+        attackDamage = 120f;
+        attackRange = 12f;
+        moveSpeed = 3f;
+        attackSpeed = 0.9f;
     }
 
     protected override void TryActivateAbility()

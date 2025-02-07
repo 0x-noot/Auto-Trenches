@@ -1,6 +1,7 @@
 using UnityEngine;
+using System.Collections;
 
-public class ExplosionEffect : MonoBehaviour
+public class ExplosionEffect : MonoBehaviour, IPooledObject
 {
     [Header("Visual Settings")]
     [SerializeField] private ParticleSystem explosionParticles;
@@ -12,15 +13,67 @@ public class ExplosionEffect : MonoBehaviour
     [SerializeField] private Color explosionColor = new Color(1f, 0.5f, 0f, 1f); // Orange
     [SerializeField] private Color sparkColor = new Color(1f, 0.8f, 0f, 1f); // Yellow
     
-    private void Start()
+    private ParticleSystem sparks;
+
+    private void Awake()
     {
         if (explosionParticles == null)
         {
             explosionParticles = GetComponent<ParticleSystem>();
         }
         
+        // Create sparks system if not already a child
+        if (transform.Find("Sparks") == null)
+        {
+            CreateSparksSystem();
+        }
+        else
+        {
+            sparks = transform.Find("Sparks").GetComponent<ParticleSystem>();
+        }
+    }
+
+    public void OnObjectSpawn()
+    {
+        // Reset scale
+        transform.localScale = Vector3.one;
+        
+        // Reset and setup particles
+        if (explosionParticles != null)
+        {
+            explosionParticles.Stop();
+            explosionParticles.Clear();
+        }
+        if (sparks != null)
+        {
+            sparks.Stop();
+            sparks.Clear();
+        }
+
         SetupParticles();
         StartExplosion();
+    }
+
+    private void CreateSparksSystem()
+    {
+        var sparksObj = new GameObject("Sparks");
+        sparksObj.transform.SetParent(transform);
+        sparksObj.transform.localPosition = Vector3.zero;
+        
+        sparks = sparksObj.AddComponent<ParticleSystem>();
+        var sparkMain = sparks.main;
+        sparkMain.startColor = sparkColor;
+        sparkMain.startLifetime = 0.3f;
+        sparkMain.startSpeed = 5f;
+        sparkMain.startSize = 0.2f;
+        
+        var sparkEmission = sparks.emission;
+        sparkEmission.rateOverTime = 0;
+        sparkEmission.SetBurst(0, new ParticleSystem.Burst(0f, 20));
+        
+        var sparkShape = sparks.shape;
+        sparkShape.shapeType = ParticleSystemShapeType.Sphere;
+        sparkShape.radius = 0.1f;
     }
 
     private void SetupParticles()
@@ -29,25 +82,6 @@ public class ExplosionEffect : MonoBehaviour
         {
             var main = explosionParticles.main;
             main.startColor = explosionColor;
-            
-            // Create a child particle system for sparks
-            var sparks = new GameObject("Sparks").AddComponent<ParticleSystem>();
-            sparks.transform.SetParent(transform);
-            sparks.transform.localPosition = Vector3.zero;
-            
-            var sparkMain = sparks.main;
-            sparkMain.startColor = sparkColor;
-            sparkMain.startLifetime = 0.3f;
-            sparkMain.startSpeed = 5f;
-            sparkMain.startSize = 0.2f;
-            
-            var sparkEmission = sparks.emission;
-            sparkEmission.rateOverTime = 0;
-            sparkEmission.SetBurst(0, new ParticleSystem.Burst(0f, 20));
-            
-            var sparkShape = sparks.shape;
-            sparkShape.shapeType = ParticleSystemShapeType.Sphere;
-            sparkShape.radius = 0.1f;
         }
     }
 
@@ -57,11 +91,15 @@ public class ExplosionEffect : MonoBehaviour
         {
             explosionParticles.Play();
         }
+        if (sparks != null)
+        {
+            sparks.Play();
+        }
         
         StartCoroutine(ExplosionSequence());
     }
 
-    private System.Collections.IEnumerator ExplosionSequence()
+    private IEnumerator ExplosionSequence()
     {
         float elapsedTime = 0f;
         Vector3 initialScale = transform.localScale;
@@ -78,7 +116,7 @@ public class ExplosionEffect : MonoBehaviour
             yield return null;
         }
         
-        // Cleanup after explosion
-        Destroy(gameObject);
+        // Return to pool instead of destroying
+        ObjectPool.Instance.ReturnToPool("ExplosionEffect", gameObject);
     }
 }

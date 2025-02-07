@@ -1,6 +1,7 @@
 using UnityEngine;
+using System.Collections;
 
-public class ArrowProjectile : MonoBehaviour
+public class ArrowProjectile : MonoBehaviour, IPooledObject
 {
     [Header("Visual Components")]
     [SerializeField] private SpriteRenderer arrowSprite;
@@ -28,7 +29,6 @@ public class ArrowProjectile : MonoBehaviour
 
     private void Awake()
     {
-        // Get or add required components
         if (arrowSprite == null)
             arrowSprite = GetComponent<SpriteRenderer>();
             
@@ -56,11 +56,38 @@ public class ArrowProjectile : MonoBehaviour
         }
     }
 
+    public void OnObjectSpawn()
+    {
+        // Reset all components to initial state
+        transform.localScale = originalScale;
+        isFlying = false;
+
+        if (arrowSprite != null)
+        {
+            arrowSprite.enabled = true;
+            arrowSprite.color = Color.white;
+        }
+
+        if (arrowTrail != null)
+        {
+            arrowTrail.Clear();
+            arrowTrail.emitting = true;
+        }
+
+        if (arrowParticles != null)
+        {
+            arrowParticles.Stop();
+            arrowParticles.Clear();
+        }
+
+        sourceUnit = null;
+        targetUnit = null;
+    }
+
     private void SetupExplosiveArrow()
     {
         if (arrowTrail != null)
         {
-            // Create a gradient for the explosive trail
             Gradient gradient = new Gradient();
             gradient.SetKeys(
                 new GradientColorKey[] { 
@@ -75,7 +102,6 @@ public class ArrowProjectile : MonoBehaviour
             arrowTrail.colorGradient = gradient;
         }
 
-        // Setup explosive particles
         if (explosiveParticles != null)
         {
             explosiveParticles.Play();
@@ -94,7 +120,6 @@ public class ArrowProjectile : MonoBehaviour
         {
             arrowTrail.time = trailTime;
             
-            // Create a gradient for the trail
             Gradient gradient = new Gradient();
             gradient.SetKeys(
                 new GradientColorKey[] { 
@@ -154,37 +179,17 @@ public class ArrowProjectile : MonoBehaviour
         if (arrowParticles != null)
             arrowParticles.Stop();
 
-        // Create explosion if this is an explosive arrow
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
         {
             sourceUnit.CreateExplosion(transform.position, targetUnit);
         }
 
-        StartFadeOut();
+        StartCoroutine(ReturnToPoolAfterDelay());
     }
 
-    private void StartFadeOut()
+    private IEnumerator ReturnToPoolAfterDelay()
     {
-        if (arrowSprite != null)
-        {
-            Color startColor = arrowSprite.color;
-            Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
-            StartCoroutine(FadeSprite(startColor, endColor, hitEffectDuration));
-        }
-    }
-
-    private System.Collections.IEnumerator FadeSprite(Color startColor, Color endColor, float duration)
-    {
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            if (arrowSprite != null)
-            {
-                arrowSprite.color = Color.Lerp(startColor, endColor, elapsed / duration);
-            }
-            yield return null;
-        }
-        Destroy(gameObject);
+        yield return new WaitForSeconds(hitEffectDuration);
+        ObjectPool.Instance.ReturnToPool("Arrow", gameObject);
     }
 }
