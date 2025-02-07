@@ -5,21 +5,16 @@ public class ClickPlacementSystem : MonoBehaviour
     [SerializeField] private PlacementManager placementManager;
     [SerializeField] private ValidPlacementSystem validPlacement;
     [SerializeField] private Camera mainCamera;
-
-    private void Start()
-    {
-        if (mainCamera == null)
-            mainCamera = Camera.main;
-
-        if (placementManager == null)
-            placementManager = FindFirstObjectByType<PlacementManager>();
-
-        if (validPlacement == null)
-            validPlacement = FindFirstObjectByType<ValidPlacementSystem>();
-    }
+    [SerializeField] private UpgradeUI upgradeUI; // Add this reference
 
     private void Update()
     {
+        // Check if upgrade panel is visible before allowing placement
+        if (upgradeUI != null && upgradeUI.IsPanelVisible())
+        {
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             Vector3 mousePos = Input.mousePosition;
