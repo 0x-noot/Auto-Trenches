@@ -57,16 +57,12 @@ public class Range : BaseUnit
     {
         if (!isExplosiveArrow) return;
 
-        // Use object pool instead of Instantiate
-        GameObject explosionObj = ObjectPool.Instance.SpawnFromPool("ExplosionEffect", position, Quaternion.identity);
-        
-        if (explosionObj == null)
+        if (explosionEffectPrefab != null)
         {
-            Debug.LogError("Failed to spawn explosion effect from pool");
-            return;
+            Instantiate(explosionEffectPrefab, position, Quaternion.identity);
         }
 
-        // Get affected units and apply damage
+        // Get all units in explosion radius
         string enemyLayer = teamId == "TeamA" ? "TeamB" : "TeamA";
         Collider2D[] hitColliders = Physics2D.OverlapCircleAll(
             position,
@@ -80,20 +76,22 @@ public class Range : BaseUnit
         {
             BaseUnit enemy = col.GetComponent<BaseUnit>();
             if (enemy != null && 
-                enemy != primaryTarget && 
+                enemy != primaryTarget && // Don't damage primary target again
                 enemy.GetCurrentState() != UnitState.Dead)
             {
                 affectedUnits.Add(enemy);
             }
         }
 
+        // Calculate and apply explosion damage
         float explosionDamage = GetAttackDamage() * explosionDamageMultiplier;
         foreach (BaseUnit unit in affectedUnits)
         {
             unit.TakeDamage(explosionDamage);
         }
 
-        if (Random.value < 0.3f)
+        // Small chance to deactivate ability after explosion
+        if (Random.value < 0.3f) // 30% chance to end
         {
             DeactivateAbility();
         }
