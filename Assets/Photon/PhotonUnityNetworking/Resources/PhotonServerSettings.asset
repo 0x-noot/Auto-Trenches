@@ -39,6 +39,27 @@ MonoBehaviour:
   - DestroySpaceship
   - Fire
   - RespawnSpaceship
+  - RPCMoveTo
+  - RPCSetMoveSpeed
+  - RPCStopMovement
+  - RPCUpdateTargetPosition
+  - RPCActivateAbility
+  - RPCApplyUpgrades
+  - RPCDeactivateAbility
+  - RPCDie
+  - RPCExecuteAttack
+  - RPCFaceTarget
+  - RPCInitialize
+  - RPCSetTarget
+  - RPCSetTeam
+  - RPCSpawnArrow
+  - RPCSpawnMeleeEffect
+  - RPCSpawnSpell
+  - RPCStartTargeting
+  - RPCStopTargeting
+  - RPCTakeDamage
+  - RPCUpdateState
+  - RPCResetAbilityEffects
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 0

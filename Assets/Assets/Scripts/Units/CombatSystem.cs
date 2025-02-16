@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class CombatSystem : MonoBehaviour
+public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
     private BaseUnit unit;
     private float nextAttackTime = 0f;
@@ -54,10 +55,22 @@ public class CombatSystem : MonoBehaviour
 
     public void ExecuteAttack(BaseUnit target)
     {
-        if (!CanAttack() || target == null || target.GetCurrentState() == UnitState.Dead)
+        if (!CanAttack() || target == null || target.GetCurrentState() == UnitState.Dead || !photonView.IsMine)
             return;
 
         nextAttackTime = Time.time + (1f / unit.GetAttackSpeed());
+        
+        photonView.RPC("RPCExecuteAttack", RpcTarget.All, target.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPCExecuteAttack(int targetViewID)
+    {
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView == null) return;
+
+        BaseUnit target = targetView.GetComponent<BaseUnit>();
+        if (target == null || target.GetCurrentState() == UnitState.Dead) return;
         
         switch (unit.GetUnitType())
         {
@@ -84,8 +97,11 @@ public class CombatSystem : MonoBehaviour
 
         yield return StartCoroutine(PerformLunge(originalPosition, attackDirection));
 
-        SpawnMeleeEffect(transform.position, targetPosition);
-        ApplyDamage(target);
+        if (photonView.IsMine)
+        {
+            photonView.RPC("RPCSpawnMeleeEffect", RpcTarget.All, originalPosition, targetPosition);
+            target.TakeDamage(unit.GetAttackDamage());
+        }
 
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
     }
@@ -97,46 +113,48 @@ public class CombatSystem : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"Starting ranged attack from {unit.gameObject.name} to {target.gameObject.name}");
-
         Vector3 spawnOffset = transform.up * 0.5f;
-        GameObject arrowObj = ObjectPool.Instance.SpawnFromPool("Arrow", transform.position + spawnOffset, Quaternion.identity);
-        
-        if (arrowObj == null)
+        if (photonView.IsMine)
         {
-            Debug.LogError("Failed to spawn arrow from pool");
-            yield break;
+            photonView.RPC("RPCSpawnArrow", RpcTarget.All, 
+                transform.position + spawnOffset, 
+                target.photonView.ViewID,
+                unit is Range ? (unit as Range).IsExplosiveArrow() : false);
         }
+
+        yield return null;
+    }
+
+    [PunRPC]
+    private void RPCSpawnArrow(Vector3 spawnPosition, int targetViewID, bool isExplosive)
+    {
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView == null) return;
+
+        BaseUnit target = targetView.GetComponent<BaseUnit>();
+        if (target == null) return;
+
+        GameObject arrowObj = ObjectPool.Instance.SpawnFromPool("Arrow", spawnPosition, Quaternion.identity);
+        if (arrowObj == null) return;
 
         ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
         if (arrow == null)
         {
-            Debug.LogError("ArrowProjectile component missing from pooled object!");
             ObjectPool.Instance.ReturnToPool("Arrow", arrowObj);
-            yield break;
+            return;
         }
 
-        Range rangeUnit = unit as Range;
-        if (rangeUnit != null)
-        {
-            Debug.Log($"Initializing arrow with Range unit: {unit.gameObject.name}");
-            arrow.Initialize(rangeUnit, target);
-        }
-        else
-        {
-            Debug.LogError($"Unit {unit.gameObject.name} is not a Range unit!");
-        }
+        StartCoroutine(AnimateArrow(arrow, target, isExplosive));
+    }
 
-        Vector3 startPos = arrowObj.transform.position;
+    private IEnumerator AnimateArrow(ArrowProjectile arrow, BaseUnit target, bool isExplosive)
+    {
+        Vector3 startPos = arrow.transform.position;
         float initialDistance = Vector3.Distance(startPos, target.transform.position);
         float duration = initialDistance / arrowSpeed;
         float elapsedTime = 0f;
 
         arrow.StartFlight();
-
-        Vector3 direction = (target.transform.position - startPos).normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        arrowObj.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
         Vector3 previousPosition = startPos;
         while (elapsedTime < duration && target != null && target.GetCurrentState() != UnitState.Dead)
@@ -159,8 +177,8 @@ public class CombatSystem : MonoBehaviour
 
             if (arrow.transform.position != previousPosition)
             {
-                direction = (arrow.transform.position - previousPosition).normalized;
-                angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                Vector3 direction = (arrow.transform.position - previousPosition).normalized;
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
                 arrow.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
             }
 
@@ -177,10 +195,16 @@ public class CombatSystem : MonoBehaviour
 
         if (arrow != null && target != null && target.GetCurrentState() != UnitState.Dead)
         {
-            Debug.Log("Arrow reached target, triggering OnHit");
             arrow.transform.position = target.transform.position;
             arrow.OnHit();
-            ApplyDamage(target);
+            if (photonView.IsMine)
+            {
+                target.TakeDamage(unit.GetAttackDamage());
+                if (isExplosive && unit is Range rangeUnit)
+                {
+                    rangeUnit.CreateExplosion(target.transform.position, target);
+                }
+            }
         }
         else if (arrow != null)
         {
@@ -192,21 +216,36 @@ public class CombatSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(spellCastDelay);
 
-        GameObject spellObj = ObjectPool.Instance.SpawnFromPool("MagicProjectile", transform.position, Quaternion.identity);
-        if (spellObj == null)
+        if (photonView.IsMine)
         {
-            Debug.LogError("Failed to spawn magic projectile from pool");
-            yield break;
+            photonView.RPC("RPCSpawnSpell", RpcTarget.All, transform.position, target.photonView.ViewID);
         }
+    }
+
+    [PunRPC]
+    private void RPCSpawnSpell(Vector3 spawnPosition, int targetViewID)
+    {
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView == null) return;
+
+        BaseUnit target = targetView.GetComponent<BaseUnit>();
+        if (target == null) return;
+
+        GameObject spellObj = ObjectPool.Instance.SpawnFromPool("MagicProjectile", spawnPosition, Quaternion.identity);
+        if (spellObj == null) return;
 
         MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
         if (spell == null)
         {
-            Debug.LogError("MagicProjectile component missing from pooled object!");
             ObjectPool.Instance.ReturnToPool("MagicProjectile", spellObj);
-            yield break;
+            return;
         }
 
+        StartCoroutine(AnimateSpell(spell, target));
+    }
+
+    private IEnumerator AnimateSpell(MagicProjectile spell, BaseUnit target)
+    {
         Vector3 startPos = transform.position;
         Vector3 targetPos = target.transform.position;
         float distance = Vector3.Distance(startPos, targetPos);
@@ -227,7 +266,28 @@ public class CombatSystem : MonoBehaviour
         if (spell != null)
         {
             spell.OnSpellHit();
-            ApplyDamage(target);
+            if (photonView.IsMine && target != null && target.GetCurrentState() != UnitState.Dead)
+            {
+                target.TakeDamage(unit.GetAttackDamage());
+            }
+        }
+    }
+
+    [PunRPC]
+    private void RPCSpawnMeleeEffect(Vector3 attackerPos, Vector3 targetPos)
+    {
+        GameObject effectObj = ObjectPool.Instance.SpawnFromPool("MeleeEffect", attackerPos, Quaternion.identity);
+        if (effectObj != null)
+        {
+            MeleeAttackEffect effect = effectObj.GetComponent<MeleeAttackEffect>();
+            if (effect != null)
+            {
+                effect.SetupEffect(attackerPos, targetPos);
+            }
+            else
+            {
+                ObjectPool.Instance.ReturnToPool("MeleeEffect", effectObj);
+            }
         }
     }
 
@@ -274,30 +334,17 @@ public class CombatSystem : MonoBehaviour
         transform.position = originalPosition;
     }
 
-    private void SpawnMeleeEffect(Vector3 attackerPos, Vector3 targetPos)
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        GameObject effectObj = ObjectPool.Instance.SpawnFromPool("MeleeEffect", attackerPos, Quaternion.identity);
-        if (effectObj != null)
+        if (stream.IsWriting)
         {
-            MeleeAttackEffect effect = effectObj.GetComponent<MeleeAttackEffect>();
-            if (effect != null)
-            {
-                effect.SetupEffect(attackerPos, targetPos);
-            }
-            else
-            {
-                Debug.LogError("MeleeAttackEffect component missing from pooled object!");
-                ObjectPool.Instance.ReturnToPool("MeleeEffect", effectObj);
-            }
+            // We own this player: send the others our data
+            stream.SendNext(nextAttackTime);
         }
-    }
-
-    private void ApplyDamage(BaseUnit target)
-    {
-        if (target != null && target.GetCurrentState() != UnitState.Dead)
+        else
         {
-            float damage = unit.GetAttackDamage();
-            target.TakeDamage(damage);
+            // Network player, receive data
+            this.nextAttackTime = (float)stream.ReceiveNext();
         }
     }
 }

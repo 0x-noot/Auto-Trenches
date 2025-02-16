@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class Fighter : BaseUnit
+public class Fighter : BaseUnit, IPunObservable
 {
     [Header("Fighter-Specific Settings")]
     [SerializeField] private float baseCriticalStrikeChance = 0.15f;
@@ -34,14 +35,12 @@ public class Fighter : BaseUnit
         moveSpeed = baseMoveSpeed;
         currentCriticalStrikeChance = baseCriticalStrikeChance;
 
-        // Get and store sprite renderer reference
-        var spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             originalColor = spriteRenderer.color;
         }
 
-        // Get particle system reference if not set
         if (rageParticles == null)
         {
             rageParticles = GetComponent<ParticleSystem>();
@@ -55,7 +54,10 @@ public class Fighter : BaseUnit
         if (newState != GameState.BattleActive && isAbilityActive)
         {
             StopAllCoroutines();
-            ResetAbilityEffects();
+            if (photonView.IsMine)
+            {
+                ResetAbilityEffects();
+            }
         }
     }
 
@@ -64,7 +66,10 @@ public class Fighter : BaseUnit
         if (currentState == UnitState.Attacking && newState != UnitState.Attacking && isAbilityActive)
         {
             StopAllCoroutines();
-            ResetAbilityEffects();
+            if (photonView.IsMine)
+            {
+                ResetAbilityEffects();
+            }
         }
         
         base.UpdateState(newState);
@@ -79,15 +84,10 @@ public class Fighter : BaseUnit
         return attackDamage;
     }
 
-    protected override void ActivateAbility()
+    protected override void RPCActivateAbility()
     {
-        if (!isAbilityActive && 
-            GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
-            currentState == UnitState.Attacking)
-        {
-            base.ActivateAbility();
-            StartCoroutine(ApeShitAbility());
-        }
+        base.RPCActivateAbility();
+        StartCoroutine(ApeShitAbility());
     }
 
     private IEnumerator ApeShitAbility()
@@ -115,10 +115,20 @@ public class Fighter : BaseUnit
             yield return null;
         }
 
-        ResetAbilityEffects();
+        if (photonView.IsMine)
+        {
+            ResetAbilityEffects();
+        }
     }
 
     private void ResetAbilityEffects()
+    {
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCResetAbilityEffects", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCResetAbilityEffects()
     {
         // Reset stats
         attackSpeed = baseAttackSpeed;
@@ -143,4 +153,46 @@ public class Fighter : BaseUnit
     {
         return Mathf.Max(0, nextAbilityTime - Time.time);
     }
+
+    // Override RPCApplyUpgrades to include fighter-specific stats
+    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
+    {
+        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
+        
+        // No need for RPC here as this is called from an RPC
+        currentCriticalStrikeChance = baseCriticalStrikeChance;
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send Fighter-specific data
+            stream.SendNext(currentCriticalStrikeChance);
+            stream.SendNext(isAbilityActive);
+        }
+        else
+        {
+            // Receive Fighter-specific data
+            this.currentCriticalStrikeChance = (float)stream.ReceiveNext();
+            bool wasAbilityActive = isAbilityActive;
+            this.isAbilityActive = (bool)stream.ReceiveNext();
+
+            // Handle visual updates if ability state changed
+            if (wasAbilityActive != isAbilityActive)
+            {
+                if (isAbilityActive)
+                {
+                    if (spriteRenderer != null) spriteRenderer.color = Color.red;
+                    if (rageParticles != null) rageParticles.Play();
+                }
+                else
+                {
+                    if (spriteRenderer != null) spriteRenderer.color = originalColor;
+                    if (rageParticles != null) rageParticles.Stop();
+                }
+            }
+        }
+    }
+
 }

@@ -2,8 +2,9 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Photon.Pun;
 
-public class MovementSystem : MonoBehaviour
+public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
     private BaseUnit unit;
     private Grid grid;
@@ -45,6 +46,13 @@ public class MovementSystem : MonoBehaviour
 
     public void SetMoveSpeed(float newSpeed)
     {
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCSetMoveSpeed", RpcTarget.All, newSpeed);
+    }
+
+    [PunRPC]
+    private void RPCSetMoveSpeed(float newSpeed)
+    {
         moveSpeed = newSpeed;
         Debug.Log($"Movement speed updated to: {moveSpeed}");
     }
@@ -69,7 +77,7 @@ public class MovementSystem : MonoBehaviour
 
     private void Update()
     {
-        if (!isEnabled) return;
+        if (!isEnabled || !photonView.IsMine) return;
 
         if (isMoving)
         {
@@ -84,18 +92,33 @@ public class MovementSystem : MonoBehaviour
 
     public bool MoveTo(Vector3 destination)
     {
-        if (!isEnabled) return false;
+        if (!isEnabled || !photonView.IsMine) return false;
         
+        photonView.RPC("RPCMoveTo", RpcTarget.All, destination);
+        return true;
+    }
+
+    [PunRPC]
+    private void RPCMoveTo(Vector3 destination)
+    {
         currentTargetPosition = destination;
-        return CalculateAndFollowPath();
+        CalculateAndFollowPath();
     }
 
     public void UpdateTargetPosition(Vector3 newPosition)
     {
+        if (!photonView.IsMine) return;
+        
         if (Vector3.Distance(currentTargetPosition, newPosition) > stoppingDistance)
         {
-            currentTargetPosition = newPosition;
+            photonView.RPC("RPCUpdateTargetPosition", RpcTarget.All, newPosition);
         }
+    }
+
+    [PunRPC]
+    private void RPCUpdateTargetPosition(Vector3 newPosition)
+    {
+        currentTargetPosition = newPosition;
     }
 
     private bool CalculateAndFollowPath()
@@ -173,12 +196,39 @@ public class MovementSystem : MonoBehaviour
 
     public void StopMovement()
     {
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCStopMovement", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCStopMovement()
+    {
         if (isMoving)
         {
             StopAllCoroutines();
             currentPath.Clear();
             isMoving = false;
             unit.UpdateState(UnitState.Idle);
+        }
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(isMoving);
+            stream.SendNext(isEnabled);
+            stream.SendNext(moveSpeed);
+            stream.SendNext(currentTargetPosition);
+        }
+        else
+        {
+            // Network player, receive data
+            this.isMoving = (bool)stream.ReceiveNext();
+            this.isEnabled = (bool)stream.ReceiveNext();
+            this.moveSpeed = (float)stream.ReceiveNext();
+            this.currentTargetPosition = (Vector3)stream.ReceiveNext();
         }
     }
 }

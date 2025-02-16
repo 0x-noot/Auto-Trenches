@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class EnemyTargeting : MonoBehaviour
+public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
 {
     private MovementSystem movementSystem;
     private CombatSystem combatSystem;
@@ -38,10 +39,8 @@ public class EnemyTargeting : MonoBehaviour
         {
             attackRange = unit.GetAttackRange();
             
-            // Set the target team layer based on this unit's team
             string targetTeamLayer = unit.GetTeamId() == "TeamA" ? "TeamB" : "TeamA";
             enemyLayer = LayerMask.GetMask(targetTeamLayer);
-            Debug.Log($"Unit {gameObject.name} on team {unit.GetTeamId()} targeting layer: {targetTeamLayer}");
 
             if (GameManager.Instance != null)
             {
@@ -63,18 +62,24 @@ public class EnemyTargeting : MonoBehaviour
         switch (newState)
         {
             case GameState.BattleActive:
-                StartTargeting();
+                if (photonView.IsMine)
+                {
+                    StartTargeting();
+                }
                 break;
             case GameState.BattleEnd:
             case GameState.GameOver:
-                StopTargeting();
+                if (photonView.IsMine)
+                {
+                    StopTargeting();
+                }
                 break;
         }
     }
 
     private void UpdateTargeting()
     {
-        if (!isTargeting || unit.GetCurrentState() == UnitState.Dead) return;
+        if (!isTargeting || !photonView.IsMine || unit.GetCurrentState() == UnitState.Dead) return;
 
         if (currentTarget == null)
         {
@@ -91,7 +96,7 @@ public class EnemyTargeting : MonoBehaviour
             if (distanceToTarget <= unit.GetAttackRange())
             {
                 movementSystem.StopMovement();
-                FaceTarget(targetPos);
+                photonView.RPC("RPCFaceTarget", RpcTarget.All, targetPos);
                 unit.UpdateState(UnitState.Attacking);
                 
                 if (currentTargetUnit == null || currentTargetUnit.gameObject != currentTarget.gameObject)
@@ -105,8 +110,7 @@ public class EnemyTargeting : MonoBehaviour
                 }
                 else
                 {
-                    currentTarget = null;
-                    currentTargetUnit = null;
+                    SetCurrentTarget(null);
                     FindNewTarget();
                 }
             }
@@ -118,14 +122,14 @@ public class EnemyTargeting : MonoBehaviour
         }
         else
         {
-            currentTarget = null;
-            currentTargetUnit = null;
+            SetCurrentTarget(null);
             unit.UpdateState(UnitState.Idle);
             FindNewTarget();
         }
     }
 
-    private void FaceTarget(Vector3 targetPos)
+    [PunRPC]
+    private void RPCFaceTarget(Vector3 targetPos)
     {
         Vector2 direction = (targetPos - transform.position).normalized;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -152,19 +156,22 @@ public class EnemyTargeting : MonoBehaviour
 
     private void FindNewTarget()
     {
-        if (!isTargeting) return;
+        if (!isTargeting || !photonView.IsMine) return;
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, targetingRange, enemyLayer);
         
         Transform bestTarget = null;
         float bestScore = float.MinValue;
+        int bestTargetViewID = -1;
 
         foreach (var hit in hits)
         {
             if (hit.gameObject == gameObject) continue;
 
             BaseUnit targetUnit = hit.GetComponent<BaseUnit>();
-            if (targetUnit == null || targetUnit.GetCurrentState() == UnitState.Dead) continue;
+            PhotonView targetView = hit.GetComponent<PhotonView>();
+            
+            if (targetUnit == null || targetView == null || targetUnit.GetCurrentState() == UnitState.Dead) continue;
 
             float distance = Vector2.Distance(transform.position, hit.transform.position);
             float score = 100f - distance;
@@ -182,19 +189,45 @@ public class EnemyTargeting : MonoBehaviour
             {
                 bestScore = score;
                 bestTarget = hit.transform;
+                bestTargetViewID = targetView.ViewID;
             }
         }
 
         if (bestTarget != null)
         {
-            currentTarget = bestTarget;
-            currentTargetUnit = bestTarget.GetComponent<BaseUnit>();
+            photonView.RPC("RPCSetTarget", RpcTarget.All, bestTargetViewID);
             Vector3 idealPosition = CalculateIdealPosition(transform.position, bestTarget.position);
             movementSystem.MoveTo(idealPosition);
         }
     }
 
+    [PunRPC]
+    private void RPCSetTarget(int targetViewID)
+    {
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView != null)
+        {
+            SetCurrentTarget(targetView.transform);
+            currentTargetUnit = targetView.GetComponent<BaseUnit>();
+        }
+    }
+
+    private void SetCurrentTarget(Transform target)
+    {
+        currentTarget = target;
+        currentTargetUnit = target?.GetComponent<BaseUnit>();
+    }
+
     public void StartTargeting()
+    {
+        if (!isTargeting && photonView.IsMine)
+        {
+            photonView.RPC("RPCStartTargeting", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
+    private void RPCStartTargeting()
     {
         if (!isTargeting)
         {
@@ -205,9 +238,17 @@ public class EnemyTargeting : MonoBehaviour
 
     public void StopTargeting()
     {
+        if (isTargeting && photonView.IsMine)
+        {
+            photonView.RPC("RPCStopTargeting", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
+    private void RPCStopTargeting()
+    {
         isTargeting = false;
-        currentTarget = null;
-        currentTargetUnit = null;
+        SetCurrentTarget(null);
         StopAllCoroutines();
     }
 
@@ -215,8 +256,45 @@ public class EnemyTargeting : MonoBehaviour
     {
         while (isTargeting && unit != null)
         {
-            UpdateTargeting();
+            if (photonView.IsMine)
+            {
+                UpdateTargeting();
+            }
             yield return new WaitForSeconds(updateInterval);
         }
     }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // We own this player: send the others our data
+            stream.SendNext(isTargeting);
+            // Send target's ViewID if it exists, -1 if not
+            stream.SendNext(currentTarget != null ? currentTarget.GetComponent<PhotonView>()?.ViewID ?? -1 : -1);
+        }
+        else
+        {
+            // Network player, receive data
+            this.isTargeting = (bool)stream.ReceiveNext();
+            int targetViewID = (int)stream.ReceiveNext();
+            
+            // Update target based on ViewID
+            if (targetViewID != -1)
+            {
+                PhotonView targetView = PhotonView.Find(targetViewID);
+                if (targetView != null)
+                {
+                    currentTarget = targetView.transform;
+                    currentTargetUnit = targetView.GetComponent<BaseUnit>();
+                }
+            }
+            else
+            {
+                currentTarget = null;
+                currentTargetUnit = null;
+            }
+        }
+    }
+
 }
