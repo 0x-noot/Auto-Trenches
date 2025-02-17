@@ -3,8 +3,9 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class UpgradeUI : MonoBehaviour
+public class UpgradeUI : MonoBehaviourPunCallbacks
 {
     [System.Serializable]
     public class UpgradeButton
@@ -32,10 +33,9 @@ public class UpgradeUI : MonoBehaviour
             return;
         }
 
-        // Set initial team based on current game state
-        currentTeam = GameManager.Instance.GetCurrentState() == GameState.PlayerAPlacement 
-            ? "TeamA" 
-            : "TeamB";
+        // Set team based on network role
+        currentTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
+        Debug.Log($"UpgradeUI initialized for {currentTeam}");
 
         InitializeUI();
         
@@ -77,7 +77,7 @@ public class UpgradeUI : MonoBehaviour
             if (upgradeButton.button != null)
             {
                 UpgradeType type = upgradeButton.type;
-                upgradeButton.button.onClick.RemoveAllListeners(); // Clear existing listeners
+                upgradeButton.button.onClick.RemoveAllListeners();
                 upgradeButton.button.onClick.AddListener(() => 
                 {
                     Debug.Log($"Upgrade button clicked: {type}");
@@ -96,18 +96,17 @@ public class UpgradeUI : MonoBehaviour
 
     private void HandleGameStateChanged(GameState newState)
     {
+        Debug.Log($"UpgradeUI: Handling state change to {newState}");
+
         switch (newState)
         {
             case GameState.PlayerAPlacement:
-                currentTeam = "TeamA";
-                upgradePanel.SetActive(true);
-                UpdateAllUI();
-                break;
-                
             case GameState.PlayerBPlacement:
-                currentTeam = "TeamB";
-                upgradePanel.SetActive(true);
-                UpdateAllUI();
+                // Only show panel during your team's placement phase
+                bool isYourTurn = (newState == GameState.PlayerAPlacement && PhotonNetwork.IsMasterClient) ||
+                                (newState == GameState.PlayerBPlacement && !PhotonNetwork.IsMasterClient);
+                upgradePanel.SetActive(isYourTurn);
+                if (isYourTurn) UpdateAllUI();
                 break;
                 
             case GameState.BattleStart:

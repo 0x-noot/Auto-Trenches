@@ -1,6 +1,7 @@
 using UnityEngine;
+using Photon.Pun;
 
-public class ClickPlacementSystem : MonoBehaviour
+public class ClickPlacementSystem : MonoBehaviourPunCallbacks
 {
     [SerializeField] private PlacementManager placementManager;
     [SerializeField] private ValidPlacementSystem validPlacement;
@@ -20,6 +21,17 @@ public class ClickPlacementSystem : MonoBehaviour
 
     private void Update()
     {
+        // Only process clicks during placement phase and if it's the local player's turn
+        if (GameManager.Instance.GetCurrentState() != GameState.PlayerAPlacement && 
+            GameManager.Instance.GetCurrentState() != GameState.PlayerBPlacement)
+            return;
+
+        // If we're master client (Player A) during Player B's turn, or
+        // if we're not master client (Player B) during Player A's turn, don't process clicks
+        if ((PhotonNetwork.IsMasterClient && GameManager.Instance.GetCurrentState() == GameState.PlayerBPlacement) ||
+            (!PhotonNetwork.IsMasterClient && GameManager.Instance.GetCurrentState() == GameState.PlayerAPlacement))
+            return;
+
         if (Input.GetMouseButtonDown(0))
         {
             Vector3 mousePos = Input.mousePosition;

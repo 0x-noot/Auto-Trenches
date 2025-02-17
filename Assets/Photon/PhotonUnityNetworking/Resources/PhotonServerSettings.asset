@@ -60,6 +60,34 @@ MonoBehaviour:
   - RPCTakeDamage
   - RPCUpdateState
   - RPCResetAbilityEffects
+  - RPCFreezeUnit
+  - RPCUnfreezeAllUnits
+  - RPCCreateExplosion
+  - RPCSetExplosiveArrow
+  - RPCActivateShieldEffects
+  - RPCResetShieldEffects
+  - RPCOnSpellHit
+  - RPCActivateShield
+  - RPCDeactivateShield
+  - RPCStartExplosion
+  - RPCTeamReadyForBattle
+  - RPCTeamUnitsCleared
+  - RPCUnitPlaced
+  - RPCUnitsCleared
+  - RPCEndBattle
+  - RPCHandleUnitDeath
+  - RPCPrepareNextRound
+  - RPCStartBattle
+  - RPCUpdateGameState
+  - RPCHandleRoundEnd
+  - RPCStartNewRound
+  - RPC_ApplyDamage
+  - RPC_IncrementWinStreak
+  - RPC_ResetWinStreak
+  - RPCIncrementWinStreak
+  - RPCResetWinStreak
+  - RPCAddSupplyPoints
+  - RPCProcessUpgradePurchase
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 0

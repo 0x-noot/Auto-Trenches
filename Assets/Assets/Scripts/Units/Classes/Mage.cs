@@ -1,8 +1,9 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class Mage : BaseUnit
+public class Mage : BaseUnit, IPunObservable
 {
     [Header("Mage-Specific Settings")]
     [SerializeField] private float magicPenetration = 15f;
@@ -30,6 +31,7 @@ public class Mage : BaseUnit
     }
 
     private List<FrozenUnitData> frozenUnits = new List<FrozenUnitData>();
+    private HashSet<int> frozenUnitViewIDs = new HashSet<int>(); // For network synchronization
 
     private void Awake()
     {
@@ -78,7 +80,8 @@ public class Mage : BaseUnit
     protected override void ActivateAbility()
     {
         if (!isAbilityActive && 
-            GameManager.Instance.GetCurrentState() == GameState.BattleActive)
+            GameManager.Instance.GetCurrentState() == GameState.BattleActive &&
+            photonView.IsMine)
         {
             base.ActivateAbility();
             StartCoroutine(FreezeAbility());
@@ -99,36 +102,52 @@ public class Mage : BaseUnit
             BaseUnit enemy = col.GetComponent<BaseUnit>();
             if (enemy != null && enemy.GetCurrentState() != UnitState.Dead)
             {
-                FreezeUnit(enemy);
+                PhotonView enemyView = enemy.GetComponent<PhotonView>();
+                if (enemyView != null)
+                {
+                    photonView.RPC("RPCFreezeUnit", RpcTarget.All, enemyView.ViewID);
+                }
             }
         }
 
         yield return new WaitForSeconds(freezeDuration);
-        UnfreezeAllUnits();
-        DeactivateAbility();
+        
+        if (photonView.IsMine)
+        {
+            UnfreezeAllUnits();
+            DeactivateAbility();
+        }
     }
 
-    private void FreezeUnit(BaseUnit unit)
+    [PunRPC]
+    private void RPCFreezeUnit(int targetViewID)
     {
-        // First unfreeze if already frozen to prevent stacking effects
-        UnfreezeUnit(unit);
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView == null) return;
 
-        SpriteRenderer spriteRenderer = unit.GetComponent<SpriteRenderer>();
+        BaseUnit enemy = targetView.GetComponent<BaseUnit>();
+        if (enemy == null || enemy.GetCurrentState() == UnitState.Dead) return;
+
+        // First unfreeze if already frozen to prevent stacking effects
+        UnfreezeUnit(enemy);
+
+        SpriteRenderer spriteRenderer = enemy.GetComponent<SpriteRenderer>();
         if (spriteRenderer == null) return;
 
         Color originalColor = spriteRenderer.color;
-        Coroutine flashRoutine = StartCoroutine(FlashUnit(unit, spriteRenderer, originalColor));
+        Coroutine flashRoutine = StartCoroutine(FlashUnit(enemy, spriteRenderer, originalColor));
         
-        frozenUnits.Add(new FrozenUnitData(unit, originalColor, flashRoutine, spriteRenderer));
+        frozenUnits.Add(new FrozenUnitData(enemy, originalColor, flashRoutine, spriteRenderer));
+        frozenUnitViewIDs.Add(targetViewID);
 
         // Spawn freeze effect
         if (freezeEffectPrefab != null)
         {
             GameObject freezeEffect = Instantiate(
                 freezeEffectPrefab,
-                unit.transform.position,
+                enemy.transform.position,
                 Quaternion.identity,
-                unit.transform
+                enemy.transform
             );
             
             ParticleSystem particles = freezeEffect.GetComponent<ParticleSystem>();
@@ -138,7 +157,7 @@ public class Mage : BaseUnit
             }
         }
 
-        DisableUnitSystems(unit);
+        DisableUnitSystems(enemy);
     }
 
     private IEnumerator FlashUnit(BaseUnit unit, SpriteRenderer spriteRenderer, Color originalColor)
@@ -208,10 +227,25 @@ public class Mage : BaseUnit
 
             EnableUnitSystems(frozenUnit.unit);
             frozenUnits.Remove(frozenUnit);
+
+            PhotonView unitView = unit.GetComponent<PhotonView>();
+            if (unitView != null)
+            {
+                frozenUnitViewIDs.Remove(unitView.ViewID);
+            }
         }
     }
 
     private void UnfreezeAllUnits()
+    {
+        if (photonView.IsMine)
+        {
+            photonView.RPC("RPCUnfreezeAllUnits", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
+    private void RPCUnfreezeAllUnits()
     {
         foreach (var frozenUnit in frozenUnits.ToArray())
         {
@@ -221,6 +255,81 @@ public class Mage : BaseUnit
             }
         }
         frozenUnits.Clear();
+        frozenUnitViewIDs.Clear();
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send Mage-specific data
+            stream.SendNext(magicPenetration);
+            stream.SendNext(isAbilityActive);
+            
+            // Send frozen units count and their ViewIDs
+            stream.SendNext(frozenUnitViewIDs.Count);
+            foreach (int viewID in frozenUnitViewIDs)
+            {
+                stream.SendNext(viewID);
+            }
+        }
+        else
+        {
+            // Receive Mage-specific data
+            this.magicPenetration = (float)stream.ReceiveNext();
+            this.isAbilityActive = (bool)stream.ReceiveNext();
+
+            // Receive and update frozen units
+            int frozenCount = (int)stream.ReceiveNext();
+            HashSet<int> newFrozenViewIDs = new HashSet<int>();
+            for (int i = 0; i < frozenCount; i++)
+            {
+                newFrozenViewIDs.Add((int)stream.ReceiveNext());
+            }
+
+            // Update frozen units based on received data
+            if (!photonView.IsMine) // Only update if we're not the owner
+            {
+                UpdateFrozenUnits(newFrozenViewIDs);
+            }
+        }
+    }
+
+    private void UpdateFrozenUnits(HashSet<int> newFrozenViewIDs)
+    {
+        // Unfreeze units that are no longer frozen
+        foreach (int viewID in frozenUnitViewIDs)
+        {
+            if (!newFrozenViewIDs.Contains(viewID))
+            {
+                PhotonView unitView = PhotonView.Find(viewID);
+                if (unitView != null)
+                {
+                    BaseUnit unit = unitView.GetComponent<BaseUnit>();
+                    if (unit != null)
+                    {
+                        UnfreezeUnit(unit);
+                    }
+                }
+            }
+        }
+
+        // Freeze new units
+        foreach (int viewID in newFrozenViewIDs)
+        {
+            if (!frozenUnitViewIDs.Contains(viewID))
+            {
+                PhotonView unitView = PhotonView.Find(viewID);
+                if (unitView != null)
+                {
+                    BaseUnit unit = unitView.GetComponent<BaseUnit>();
+                    if (unit != null)
+                    {
+                        RPCFreezeUnit(viewID);
+                    }
+                }
+            }
+        }
     }
 
     private void OnDrawGizmosSelected()

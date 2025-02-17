@@ -1,8 +1,9 @@
 using UnityEngine;
 using TMPro;
 using System.Linq;
+using Photon.Pun;
 
-public class ScoreDisplayUI : MonoBehaviour
+public class ScoreDisplayUI : MonoBehaviourPunCallbacks
 {
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI currentRoundText;
@@ -23,8 +24,10 @@ public class ScoreDisplayUI : MonoBehaviour
 
         if (BattleRoundManager.Instance != null)
         {
-            playerAHealthUI.SetPlayerColor(true);
-            playerBHealthUI.SetPlayerColor(false);
+            // Set colors based on whether this client is Player A or B
+            bool isPlayerA = PhotonNetwork.IsMasterClient;
+            playerAHealthUI.SetPlayerColor(isPlayerA);
+            playerBHealthUI.SetPlayerColor(!isPlayerA);
             
             // Get references to specific PlayerHP components
             playerAHP = playerAHPObject?.GetComponent<PlayerHP>();
@@ -108,9 +111,11 @@ public class ScoreDisplayUI : MonoBehaviour
 
         Debug.Log($"ScoreDisplayUI: UpdateDisplay - Round: {currentRound}, PlayerA HP: {playerAHP}, PlayerB HP: {playerBHP}");
 
+        // Show round number
         currentRoundText.text = $"Round {currentRound}";
         
-        // Always update both HP displays
+        // Update HP displays - note that the display order is the same for both players,
+        // but the colors indicate which is the local player
         playerAHealthUI.SetHP(playerAHP, 100f);
         playerBHealthUI.SetHP(playerBHP, 100f);
     }

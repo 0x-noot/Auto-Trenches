@@ -2,8 +2,9 @@ using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class BattleRoundManager : MonoBehaviour
+public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     public static BattleRoundManager Instance { get; private set; }
 
@@ -64,6 +65,13 @@ public class BattleRoundManager : MonoBehaviour
 
     public void StartNewRound()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+        photonView.RPC("RPCStartNewRound", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCStartNewRound()
+    {
         // Force HP update when starting a new round
         ForceHPUpdate();
         OnRoundStart?.Invoke(currentRound);
@@ -74,20 +82,25 @@ public class BattleRoundManager : MonoBehaviour
         // Manually trigger HP update through BattleRoundManager methods
         if (playerAHP != null)
         {
-            float currentAHP = playerAHP.GetCurrentHP();
             playerAHP.TriggerHPChanged();
         }
         if (playerBHP != null)
         {
-            float currentBHP = playerBHP.GetCurrentHP();
             playerBHP.TriggerHPChanged();
         }
     }
 
     private void HandleRoundEnd(string winner)
     {
-        int survivingUnits = CountSurvivingUnits(winner);
+        if (!PhotonNetwork.IsMasterClient) return;
 
+        int survivingUnits = CountSurvivingUnits(winner);
+        photonView.RPC("RPCHandleRoundEnd", RpcTarget.All, winner, survivingUnits);
+    }
+
+    [PunRPC]
+    private void RPCHandleRoundEnd(string winner, int survivingUnits)
+    {
         if (winner == "player")
         {
             playerAHP.IncrementWinStreak();
@@ -153,6 +166,8 @@ public class BattleRoundManager : MonoBehaviour
 
     private void PrepareNextRound()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+
         PlacementManager placementManager = FindFirstObjectByType<PlacementManager>();
         if (placementManager != null) placementManager.ClearUnits();
 
@@ -162,4 +177,20 @@ public class BattleRoundManager : MonoBehaviour
     public int GetCurrentRound() => currentRound;
     public float GetPlayerAHP() => playerAHP.GetCurrentHP();
     public float GetPlayerBHP() => playerBHP.GetCurrentHP();
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Sync round info
+            stream.SendNext(currentRound);
+            stream.SendNext(isRoundActive);
+        }
+        else
+        {
+            // Receive round info
+            this.currentRound = (int)stream.ReceiveNext();
+            this.isRoundActive = (bool)stream.ReceiveNext();
+        }
+    }
 }

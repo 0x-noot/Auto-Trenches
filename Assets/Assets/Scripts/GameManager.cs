@@ -3,13 +3,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Photon.Pun;
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviourPunCallbacks
 {
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private int maxUnitsPerPlayer = 11;
     [SerializeField] private float battleStartDelay = 0.1f;
     [SerializeField] private float endGameDelay = 5f;
     [SerializeField] private float unitActivationInterval = 0.1f;
@@ -51,6 +51,13 @@ public class GameManager : MonoBehaviour
     private void Initialize()
     {
         Debug.Log("GameManager: Initializing");
+        
+        if (!PhotonNetwork.IsConnected)
+        {
+            Debug.LogError("Not connected to Photon Network!");
+            return;
+        }
+
         UpdateGameState(GameState.Setup);
         
         if (placementManager == null)
@@ -59,37 +66,31 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Start with Player A's placement turn
+        // Game starts with simultaneous placement
         UpdateGameState(GameState.PlayerAPlacement);
         Debug.Log("GameManager: Initialization complete");
     }
 
     public void PrepareNextRound()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+
         Debug.Log("GameManager: Preparing next round");
         
+        photonView.RPC("RPCPrepareNextRound", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCPrepareNextRound()
+    {
         // Clear all units
         playerUnits.Clear();
         enemyUnits.Clear();
         pendingDeaths.Clear();
         isBattleEnding = false;
 
-        // Reset game state for Player A's placement
+        // Reset game state for placement
         UpdateGameState(GameState.PlayerAPlacement);
-    }
-
-    private void RegisterExistingEnemyUnits()
-    {
-        Debug.Log("GameManager: Registering existing enemy units");
-        BaseUnit[] sceneUnits = FindObjectsOfType<BaseUnit>();
-        foreach (BaseUnit unit in sceneUnits)
-        {
-            if (!playerUnits.Contains(unit))
-            {
-                RegisterEnemyUnit(unit);
-            }
-        }
-        Debug.Log($"GameManager: Registered {enemyUnits.Count} existing enemy units");
     }
 
     public void RegisterPlayerUnit(BaseUnit unit)
@@ -127,9 +128,23 @@ public class GameManager : MonoBehaviour
 
     public void HandleUnitDeath(BaseUnit unit)
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+        
         Debug.Log($"GameManager: HandleUnitDeath called for unit: {unit.gameObject.name}");
         if (currentGameState != GameState.BattleActive || unit == null) return;
         
+        photonView.RPC("RPCHandleUnitDeath", RpcTarget.All, unit.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPCHandleUnitDeath(int unitViewId)
+    {
+        PhotonView unitView = PhotonView.Find(unitViewId);
+        if (unitView == null) return;
+
+        BaseUnit unit = unitView.GetComponent<BaseUnit>();
+        if (unit == null) return;
+
         OnUnitDied?.Invoke(unit);
 
         if (!pendingDeaths.ContainsKey(unit))
@@ -166,7 +181,7 @@ public class GameManager : MonoBehaviour
         playerUnits.RemoveAll(u => u == null);
         enemyUnits.RemoveAll(u => u == null);
 
-        if (currentGameState == GameState.BattleActive && !isBattleEnding)
+        if (currentGameState == GameState.BattleActive && !isBattleEnding && PhotonNetwork.IsMasterClient)
         {
             Debug.Log("GameManager: Checking battle end after unit death");
             CheckBattleEnd();
@@ -175,7 +190,6 @@ public class GameManager : MonoBehaviour
 
     private int CountAliveUnits(List<BaseUnit> units)
     {
-        // First remove any null references
         units.RemoveAll(u => u == null);
 
         int count = 0;
@@ -183,7 +197,6 @@ public class GameManager : MonoBehaviour
         {
             if (unit == null) continue;
 
-            // Explicit checks for unit state
             bool isReallyAlive = unit != null && 
                                 unit.GetCurrentState() != UnitState.Dead && 
                                 !pendingDeaths.ContainsKey(unit) &&
@@ -193,24 +206,20 @@ public class GameManager : MonoBehaviour
             if (isReallyAlive)
             {
                 count++;
-                Debug.Log($"Counting truly alive unit: {unit.name}, Type: {unit.GetUnitType()}");
-            }
-            else
-            {
-                Debug.Log($"Unit not counted as alive: {unit.name}, " +
-                        $"State: {unit.GetCurrentState()}, " +
-                        $"In Pending Deaths: {pendingDeaths.ContainsKey(unit)}, " +
-                        $"Active in Hierarchy: {unit.gameObject.activeInHierarchy}");
             }
         }
 
-        Debug.Log($"Total truly alive units: {count}");
         return count;
+    }
+
+    private bool HasPendingDeaths(List<BaseUnit> units)
+    {
+        return units.Count(u => pendingDeaths.ContainsKey(u)) > 0;
     }
 
     private void CheckBattleEnd()
     {
-        if (currentGameState != GameState.BattleActive || isBattleEnding)
+        if (!PhotonNetwork.IsMasterClient || currentGameState != GameState.BattleActive || isBattleEnding)
         {
             return;
         }
@@ -239,27 +248,24 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private bool HasPendingDeaths(List<BaseUnit> units)
-    {
-        return units.Count(u => pendingDeaths.ContainsKey(u)) > 0;
-    }
-
     public void StartBattle()
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+
         Debug.Log("GameManager: StartBattle called");
-        if (currentGameState != GameState.PlayerBPlacement)
+        if (currentGameState != GameState.PlayerAPlacement && currentGameState != GameState.PlayerBPlacement)
         {
             Debug.Log($"GameManager: Cannot start battle in current state: {currentGameState}");
             return;
         }
 
-        if (playerUnits.Count == 0 || enemyUnits.Count == 0)
-        {
-            Debug.LogWarning("GameManager: Missing units from one or both teams!");
-            return;
-        }
+        photonView.RPC("RPCStartBattle", RpcTarget.All);
+    }
 
-        Debug.Log("GameManager: Starting battle sequence");
+    [PunRPC]
+    private void RPCStartBattle()
+    {
+        Debug.Log("GameManager: Battle sequence beginning");
         isBattleEnding = false;
         UpdateGameState(GameState.BattleStart);
         StartCoroutine(BattleStartSequence());
@@ -283,7 +289,6 @@ public class GameManager : MonoBehaviour
         
         Debug.Log("GameManager: Battle start sequence complete");
         UpdateGameState(GameState.BattleActive);
-        yield return null;
     }
 
     private void EnableUnitCombat(BaseUnit unit)
@@ -298,6 +303,8 @@ public class GameManager : MonoBehaviour
 
     private void EndBattle(string winner)
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+
         Debug.Log($"GameManager: EndBattle called with winner: {winner}");
         if (isBattleEnding)
         {
@@ -305,6 +312,12 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        photonView.RPC("RPCEndBattle", RpcTarget.All, winner);
+    }
+
+    [PunRPC]
+    private void RPCEndBattle(string winner)
+    {
         isBattleEnding = true;
         Debug.Log("GameManager: Setting battle end state and triggering OnGameOver");
         UpdateGameState(GameState.BattleEnd);
@@ -333,6 +346,14 @@ public class GameManager : MonoBehaviour
 
     public void UpdateGameState(GameState newState)
     {
+        if (!PhotonNetwork.IsMasterClient) return;
+        photonView.RPC("RPCUpdateGameState", RpcTarget.All, (int)newState);
+    }
+
+    [PunRPC]
+    private void RPCUpdateGameState(int newStateInt)
+    {
+        GameState newState = (GameState)newStateInt;
         Debug.Log($"GameManager: Changing state from {currentGameState} to {newState}");
         currentGameState = newState;
         OnGameStateChanged?.Invoke(newState);

@@ -11,13 +11,16 @@ GameObject:
   - component: {fileID: 8908136176551003926}
   - component: {fileID: 5431602963762861563}
   - component: {fileID: 8731622869810608785}
+  - component: {fileID: 1032789433240727452}
   - component: {fileID: 4093855614760905040}
-  - component: {fileID: 5214011029993657922}
-  - component: {fileID: 6242076655360780094}
-  - component: {fileID: 8026853603894329445}
-  - component: {fileID: 4290822579935511551}
+  - component: {fileID: 8158063898966457997}
+  - component: {fileID: 8339836777071340575}
+  - component: {fileID: 1987214769941732356}
+  - component: {fileID: 5021277451700102207}
+  - component: {fileID: 6077176449122068341}
+  - component: {fileID: 4957667527491852467}
   m_Layer: 0
-  m_Name: Tank
+  m_Name: Mage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84,7 +87,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 6
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.56261224, g: 0.28439835, b: 0.7264151, a: 1}
+  m_Color: {r: 0.44139376, g: 0.58041185, b: 0.8584906, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -130,6 +133,18 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.5
+--- !u!114 &1032789433240727452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0089620c53087fc4b93d105c237c736f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &4093855614760905040
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,7 +158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthBar: {fileID: 3673904148925746965}
---- !u!114 &5214011029993657922
+--- !u!114 &8158063898966457997
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -164,7 +179,7 @@ MonoBehaviour:
   unitLayer:
     serializedVersion: 2
     m_Bits: 0
---- !u!114 &6242076655360780094
+--- !u!114 &8339836777071340575
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -182,7 +197,7 @@ MonoBehaviour:
   targetingRange: 100
   updateInterval: 0.5
   positionVariance: 0.5
---- !u!114 &8026853603894329445
+--- !u!114 &1987214769941732356
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -191,7 +206,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5973173910556211883}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 93c78ea7da2ee8c4094df61ba78952e1, type: 3}
+  m_Script: {fileID: 11500000, guid: 74b32e45ef55d4e4fb1dd46043e93d03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   teamId: 
@@ -199,14 +214,12 @@ MonoBehaviour:
   useDeathAnimation: 1
   baseAbilityCooldown: 15
   abilityChance: 0.2
-  baseArmorBonus: 20
-  shieldDuration: 5
-  shieldArmorMultiplier: 3
-  allyProtectionRadius: 5
-  allyArmorBonus: 10
-  shieldEffectPrefab: {fileID: 2706341720612109025, guid: 5a37432869b614448834a4aa2342dc83, type: 3}
-  shieldActiveColor: {r: 0, g: 0.8, b: 1, a: 1}
---- !u!114 &4290822579935511551
+  magicPenetration: 10
+  freezeDuration: 3
+  freezeRadius: 5
+  freezeEffectPrefab: {fileID: 8194950356070885071, guid: 8de2c99d786d24b40b0baeed0e2e2513, type: 3}
+  flashInterval: 0.2
+--- !u!114 &5021277451700102207
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -219,16 +232,77 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attackAnimationDuration: 0.5
-  meleeAttackEffectPrefab: {fileID: 7712415899826019650, guid: 523c2691ff71cb54da7bdc85369cbbff, type: 3}
+  meleeAttackEffectPrefab: {fileID: 0}
   meleeAttackRecoil: 0.3
   meleeAttackLunge: 0.5
   arrowPrefab: {fileID: 0}
   arrowSpeed: 15
   arrowArcHeight: 1
   arrowHomingStrength: 0.8
-  spellPrefab: {fileID: 0}
+  spellPrefab: {fileID: 5755857881989349283, guid: a5ea9879854b33c41bc2cd2ce184bf62, type: 3}
   spellSpeed: 10
   spellCastDelay: 0.2
+--- !u!114 &6077176449122068341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 0
+  ObservedComponents:
+  - {fileID: 4093855614760905040}
+  - {fileID: 8158063898966457997}
+  - {fileID: 8339836777071340575}
+  - {fileID: 1987214769941732356}
+  - {fileID: 5021277451700102207}
+  - {fileID: 4957667527491852467}
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
+--- !u!114 &4957667527491852467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8efc6b1d64977384eb3405357896c656, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PositionModel:
+    SynchronizeEnabled: 1
+    TeleportEnabled: 0
+    TeleportIfDistanceGreaterThan: 3
+    InterpolateOption: 4
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 10
+    ExtrapolateOption: 0
+    ExtrapolateSpeed: 1
+    ExtrapolateIncludingRoundTripTime: 1
+    ExtrapolateNumberOfStoredPositions: 1
+  m_RotationModel:
+    SynchronizeEnabled: 1
+    InterpolateOption: 2
+    InterpolateRotateTowardsSpeed: 180
+    InterpolateLerpSpeed: 10
+  m_ScaleModel:
+    SynchronizeEnabled: 0
+    InterpolateOption: 0
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 0
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -239,19 +313,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 941528250072038729, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
-      value: -1.83
+      value: -0.37
       objectReference: {fileID: 0}
     - target: {fileID: 941528250072038729, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.86
+      value: -0.11000061
       objectReference: {fileID: 0}
     - target: {fileID: 2336350893242099624, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
-      value: -11.09
+      value: -11.12
       objectReference: {fileID: 0}
     - target: {fileID: 2336350893242099624, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.11999893
+      value: -0.049999237
       objectReference: {fileID: 0}
     - target: {fileID: 4594886488395010397, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchorMax.x
@@ -268,6 +342,10 @@ PrefabInstance:
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
       value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.y

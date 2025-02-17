@@ -13,12 +13,14 @@ GameObject:
   - component: {fileID: 8731622869810608785}
   - component: {fileID: 1032789433240727452}
   - component: {fileID: 4093855614760905040}
-  - component: {fileID: 8158063898966457997}
-  - component: {fileID: 8339836777071340575}
-  - component: {fileID: 1987214769941732356}
-  - component: {fileID: 5021277451700102207}
+  - component: {fileID: 6366450414728439361}
+  - component: {fileID: 2565664993874433029}
+  - component: {fileID: 3647747275820437899}
+  - component: {fileID: 7539634553804937470}
+  - component: {fileID: 6030070334100721817}
+  - component: {fileID: 5290741309686288579}
   m_Layer: 0
-  m_Name: Mage
+  m_Name: Range
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -85,7 +87,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 6
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.44139376, g: 0.58041185, b: 0.8584906, a: 1}
+  m_Color: {r: 0.50614095, g: 0.8867924, b: 0.5375339, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -156,7 +158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthBar: {fileID: 3673904148925746965}
---- !u!114 &8158063898966457997
+--- !u!114 &6366450414728439361
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -177,7 +179,7 @@ MonoBehaviour:
   unitLayer:
     serializedVersion: 2
     m_Bits: 0
---- !u!114 &8339836777071340575
+--- !u!114 &2565664993874433029
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -195,7 +197,7 @@ MonoBehaviour:
   targetingRange: 100
   updateInterval: 0.5
   positionVariance: 0.5
---- !u!114 &1987214769941732356
+--- !u!114 &3647747275820437899
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -204,7 +206,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5973173910556211883}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74b32e45ef55d4e4fb1dd46043e93d03, type: 3}
+  m_Script: {fileID: 11500000, guid: 3f5da0bf698a5f84ba3cb0bc3a8786d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   teamId: 
@@ -212,13 +214,13 @@ MonoBehaviour:
   useDeathAnimation: 1
   baseAbilityCooldown: 15
   abilityChance: 0.2
-  magicPenetration: 10
-  freezeDuration: 3
-  freezeRadius: 5
-  freezeEffectPrefab: {fileID: 8194950356070885071, guid: 8de2c99d786d24b40b0baeed0e2e2513, type: 3}
-  frozenTint: {r: 0.7, g: 0.9, b: 1, a: 1}
-  freezeParticles: {fileID: 7036556334562212561, guid: 8de2c99d786d24b40b0baeed0e2e2513, type: 3}
---- !u!114 &5021277451700102207
+  longRangeBonus: 5
+  longRangeThreshold: 4
+  explosionRadius: 3
+  explosionDamageMultiplier: 0.5
+  explosionEffectPrefab: {fileID: 7475421778096362061, guid: 9ffee3269ab3f2846abc6b3b95a38dab, type: 3}
+  isExplosiveArrow: 0
+--- !u!114 &7539634553804937470
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -234,13 +236,74 @@ MonoBehaviour:
   meleeAttackEffectPrefab: {fileID: 0}
   meleeAttackRecoil: 0.3
   meleeAttackLunge: 0.5
-  arrowPrefab: {fileID: 0}
+  arrowPrefab: {fileID: 7661146755148989948, guid: 99a56206f5be9d5419eabdf4affd5abb, type: 3}
   arrowSpeed: 15
   arrowArcHeight: 1
   arrowHomingStrength: 0.8
-  spellPrefab: {fileID: 5755857881989349283, guid: a5ea9879854b33c41bc2cd2ce184bf62, type: 3}
+  spellPrefab: {fileID: 0}
   spellSpeed: 10
   spellCastDelay: 0.2
+--- !u!114 &6030070334100721817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 0
+  ObservedComponents:
+  - {fileID: 4093855614760905040}
+  - {fileID: 6366450414728439361}
+  - {fileID: 2565664993874433029}
+  - {fileID: 3647747275820437899}
+  - {fileID: 7539634553804937470}
+  - {fileID: 5290741309686288579}
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
+--- !u!114 &5290741309686288579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8efc6b1d64977384eb3405357896c656, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_PositionModel:
+    SynchronizeEnabled: 1
+    TeleportEnabled: 0
+    TeleportIfDistanceGreaterThan: 3
+    InterpolateOption: 4
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 10
+    ExtrapolateOption: 0
+    ExtrapolateSpeed: 1
+    ExtrapolateIncludingRoundTripTime: 1
+    ExtrapolateNumberOfStoredPositions: 1
+  m_RotationModel:
+    SynchronizeEnabled: 1
+    InterpolateOption: 2
+    InterpolateRotateTowardsSpeed: 180
+    InterpolateLerpSpeed: 10
+  m_ScaleModel:
+    SynchronizeEnabled: 0
+    InterpolateOption: 0
+    InterpolateMoveTowardsSpeed: 1
+    InterpolateLerpSpeed: 0
 --- !u!1001 &4025948486329026163
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -251,19 +314,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 941528250072038729, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
-      value: -0.37
+      value: -2.73
       objectReference: {fileID: 0}
     - target: {fileID: 941528250072038729, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.11000061
+      value: -0.11999893
       objectReference: {fileID: 0}
     - target: {fileID: 2336350893242099624, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
-      value: -11.12
+      value: -11.39
       objectReference: {fileID: 0}
     - target: {fileID: 2336350893242099624, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.049999237
+      value: -0.1800003
       objectReference: {fileID: 0}
     - target: {fileID: 4594886488395010397, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchorMax.x
@@ -280,10 +343,6 @@ PrefabInstance:
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_SizeDelta.x
       value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5307584492516263952, guid: cb8d7da62ce03e744a5d8bd7422fc0fa, type: 3}
       propertyPath: m_AnchoredPosition.y

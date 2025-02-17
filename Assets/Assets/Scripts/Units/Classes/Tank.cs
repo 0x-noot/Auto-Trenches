@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class Tank : BaseUnit
+public class Tank : BaseUnit, IPunObservable
 {
     [Header("Tank-Specific Settings")]
     [SerializeField] private float baseArmorBonus = 25f;
@@ -63,6 +64,7 @@ public class Tank : BaseUnit
 
     public override void TakeDamage(float damage)
     {
+        if (!photonView.IsMine) return;
         float reducedDamage = damage * (100f / (100f + currentArmorBonus));
         base.TakeDamage(reducedDamage);
     }
@@ -70,7 +72,8 @@ public class Tank : BaseUnit
     protected override void ActivateAbility()
     {
         if (!isAbilityActive && 
-            GameManager.Instance.GetCurrentState() == GameState.BattleActive)
+            GameManager.Instance.GetCurrentState() == GameState.BattleActive &&
+            photonView.IsMine)
         {
             base.ActivateAbility();
             StartCoroutine(ShieldAbility());
@@ -79,11 +82,7 @@ public class Tank : BaseUnit
 
     private IEnumerator ShieldAbility()
     {
-        // Activate shield effects
-        ActivateShieldEffects();
-
-        // Increase own armor
-        currentArmorBonus = baseArmorBonus * shieldArmorMultiplier;
+        photonView.RPC("RPCActivateShieldEffects", RpcTarget.All);
 
         float elapsedTime = 0f;
         while (elapsedTime < shieldDuration && currentState != UnitState.Dead)
@@ -92,12 +91,18 @@ public class Tank : BaseUnit
             yield return null;
         }
 
-        // Reset everything
-        ResetShieldEffects();
+        if (photonView.IsMine)
+        {
+            ResetShieldEffects();
+        }
     }
 
-    private void ActivateShieldEffects()
+    [PunRPC]
+    private void RPCActivateShieldEffects()
     {
+        // Increase armor
+        currentArmorBonus = baseArmorBonus * shieldArmorMultiplier;
+
         // Visual feedback on tank
         if (spriteRenderer != null)
         {
@@ -108,10 +113,22 @@ public class Tank : BaseUnit
         if (shieldEffectPrefab != null && activeShieldEffect == null)
         {
             activeShieldEffect = Instantiate(shieldEffectPrefab, transform);
+            var shieldEffect = activeShieldEffect.GetComponent<ShieldEffect>();
+            if (shieldEffect != null)
+            {
+                shieldEffect.ActivateShield();
+            }
         }
     }
 
     private void ResetShieldEffects()
+    {
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCResetShieldEffects", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCResetShieldEffects()
     {
         // Reset armor
         currentArmorBonus = baseArmorBonus;
@@ -125,10 +142,64 @@ public class Tank : BaseUnit
         // Clean up shield effect
         if (activeShieldEffect != null)
         {
+            var shieldEffect = activeShieldEffect.GetComponent<ShieldEffect>();
+            if (shieldEffect != null)
+            {
+                shieldEffect.DeactivateShield();
+            }
             Destroy(activeShieldEffect);
             activeShieldEffect = null;
         }
 
         DeactivateAbility();
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send Tank-specific data
+            stream.SendNext(currentArmorBonus);
+            stream.SendNext(isAbilityActive);
+            stream.SendNext(activeShieldEffect != null);
+        }
+        else
+        {
+            // Receive Tank-specific data
+            this.currentArmorBonus = (float)stream.ReceiveNext();
+            bool wasAbilityActive = isAbilityActive;
+            this.isAbilityActive = (bool)stream.ReceiveNext();
+            bool hasShieldEffect = (bool)stream.ReceiveNext();
+
+            // Handle visual updates if shield state changed
+            if (wasAbilityActive != isAbilityActive)
+            {
+                if (isAbilityActive && !hasShieldEffect)
+                {
+                    RPCActivateShieldEffects();
+                }
+                else if (!isAbilityActive && hasShieldEffect)
+                {
+                    RPCResetShieldEffects();
+                }
+            }
+        }
+    }
+
+    // Override RPCApplyUpgrades to include tank-specific stats
+    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
+    {
+        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
+        
+        // Update base armor bonus with upgrades
+        baseArmorBonus = 25f * armorMultiplier;
+        if (!isAbilityActive)
+        {
+            currentArmorBonus = baseArmorBonus;
+        }
+        else
+        {
+            currentArmorBonus = baseArmorBonus * shieldArmorMultiplier;
+        }
     }
 }

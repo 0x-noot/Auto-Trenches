@@ -1,6 +1,7 @@
 using UnityEngine;
+using Photon.Pun;
 
-public class MagicProjectile : MonoBehaviour, IPooledObject
+public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
 {
     [Header("Visual Settings")]
     [SerializeField] private SpriteRenderer spellSprite;
@@ -16,6 +17,7 @@ public class MagicProjectile : MonoBehaviour, IPooledObject
     
     private float initialSize;
     private float time;
+    private bool isActive = false;
 
     private void Awake()
     {
@@ -35,6 +37,7 @@ public class MagicProjectile : MonoBehaviour, IPooledObject
     {
         // Reset components
         time = 0f;
+        isActive = true;
         transform.localScale = Vector3.one * initialSize;
         
         if (spellSprite != null)
@@ -93,6 +96,8 @@ public class MagicProjectile : MonoBehaviour, IPooledObject
 
     private void Update()
     {
+        if (!isActive) return;
+
         // Rotate the spell
         transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
 
@@ -104,6 +109,16 @@ public class MagicProjectile : MonoBehaviour, IPooledObject
 
     public void OnSpellHit()
     {
+        if (!isActive) return;
+
+        photonView.RPC("RPCOnSpellHit", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCOnSpellHit()
+    {
+        isActive = false;
+
         // Disable trail and sprite
         if (spellTrail != null)
             spellTrail.emitting = false;
@@ -134,5 +149,21 @@ public class MagicProjectile : MonoBehaviour, IPooledObject
     {
         yield return new WaitForSeconds(returnDelay);
         ObjectPool.Instance.ReturnToPool("MagicProjectile", gameObject);
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send spell state
+            stream.SendNext(isActive);
+            stream.SendNext(time);
+        }
+        else
+        {
+            // Receive spell state
+            this.isActive = (bool)stream.ReceiveNext();
+            this.time = (float)stream.ReceiveNext();
+        }
     }
 }

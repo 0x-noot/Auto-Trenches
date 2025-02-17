@@ -2,8 +2,9 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Photon.Pun;
 
-public class EconomyManager : MonoBehaviour
+public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     private static EconomyManager instance;
     public static EconomyManager Instance => instance;
@@ -61,8 +62,10 @@ public class EconomyManager : MonoBehaviour
             }
         }
     }
+
     private void HandleRoundEnd(string winner, int survivingUnits)
     {
+        if (!PhotonNetwork.IsMasterClient) return;
         
         string winningTeam = winner == "player" ? "TeamA" : "TeamB";
         
@@ -75,6 +78,7 @@ public class EconomyManager : MonoBehaviour
                 Debug.Log($"  {upgrade}: {playerEconomies[team].upgradeLevels[upgrade]}");
             }
         }
+
         int basePoints = survivingUnits;
         int killPoints = CalculateKillPoints(winningTeam);
         int victoryPoints = 3;
@@ -89,7 +93,7 @@ public class EconomyManager : MonoBehaviour
                 $"\nStreak Bonus: {streakBonus}" +
                 $"\nTotal Points: {totalPoints}");
 
-        AddSupplyPoints(winningTeam, totalPoints);
+        photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, winningTeam, totalPoints);
     }
 
     private int CalculateKillPoints(string winner)
@@ -110,7 +114,6 @@ public class EconomyManager : MonoBehaviour
 
     private int GetWinStreakBonus(string team)
     {
-        // Assuming team directly corresponds to the HP object name
         PlayerHP playerHP = GameObject.Find($"{team}HP")?.GetComponent<PlayerHP>();
         if (playerHP == null) return 0;
         return playerHP.winStreak;
@@ -129,12 +132,26 @@ public class EconomyManager : MonoBehaviour
 
     public bool PurchaseUpgrade(string team, UpgradeType upgradeType)
     {
+        // Only process purchase requests for the local player's team
+        string localTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
+        if (team != localTeam) return false;
+
         if (!CanPurchaseUpgrade(team, upgradeType)) return false;
 
         PlayerEconomy economy = playerEconomies[team];
         int currentLevel = economy.upgradeLevels[upgradeType];
         int cost = GetUpgradeCost(upgradeType, currentLevel);
 
+        photonView.RPC("RPCProcessUpgradePurchase", RpcTarget.All, team, (int)upgradeType, cost);
+        return true;
+    }
+
+    [PunRPC]
+    private void RPCProcessUpgradePurchase(string team, int upgradeTypeInt, int cost)
+    {
+        UpgradeType upgradeType = (UpgradeType)upgradeTypeInt;
+        PlayerEconomy economy = playerEconomies[team];
+        
         economy.supplyPoints -= cost;
         economy.upgradeLevels[upgradeType]++;
 
@@ -142,8 +159,6 @@ public class EconomyManager : MonoBehaviour
         
         OnSupplyPointsChanged?.Invoke(team, economy.supplyPoints);
         OnUpgradePurchased?.Invoke(team, upgradeType, economy.upgradeLevels[upgradeType]);
-
-        return true;
     }
 
     private int GetUpgradeCost(UpgradeType upgradeType, int currentLevel)
@@ -194,7 +209,8 @@ public class EconomyManager : MonoBehaviour
         return multiplier;
     }
 
-    private void AddSupplyPoints(string team, int points)
+    [PunRPC]
+    private void RPCAddSupplyPoints(string team, int points)
     {
         if (!playerEconomies.ContainsKey(team)) return;
 
@@ -212,11 +228,48 @@ public class EconomyManager : MonoBehaviour
         if (!playerEconomies.ContainsKey(team)) return 0;
         return playerEconomies[team].upgradeLevels[upgradeType];
     }
+
     private void OnDestroy()
     {
         if (battleRoundManager != null)
         {
             battleRoundManager.OnRoundEnd -= HandleRoundEnd;
+        }
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Write TeamA data
+            stream.SendNext(playerEconomies["TeamA"].supplyPoints);
+            foreach (UpgradeType upgrade in Enum.GetValues(typeof(UpgradeType)))
+            {
+                stream.SendNext(playerEconomies["TeamA"].upgradeLevels[upgrade]);
+            }
+
+            // Write TeamB data
+            stream.SendNext(playerEconomies["TeamB"].supplyPoints);
+            foreach (UpgradeType upgrade in Enum.GetValues(typeof(UpgradeType)))
+            {
+                stream.SendNext(playerEconomies["TeamB"].upgradeLevels[upgrade]);
+            }
+        }
+        else
+        {
+            // Read TeamA data
+            playerEconomies["TeamA"].supplyPoints = (int)stream.ReceiveNext();
+            foreach (UpgradeType upgrade in Enum.GetValues(typeof(UpgradeType)))
+            {
+                playerEconomies["TeamA"].upgradeLevels[upgrade] = (int)stream.ReceiveNext();
+            }
+
+            // Read TeamB data
+            playerEconomies["TeamB"].supplyPoints = (int)stream.ReceiveNext();
+            foreach (UpgradeType upgrade in Enum.GetValues(typeof(UpgradeType)))
+            {
+                playerEconomies["TeamB"].upgradeLevels[upgrade] = (int)stream.ReceiveNext();
+            }
         }
     }
 }

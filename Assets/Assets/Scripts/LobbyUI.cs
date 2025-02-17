@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Realtime;
-using Photon.Pun;
 using System.Collections.Generic;
 
 public class LobbyUI : MonoBehaviour
@@ -11,6 +10,7 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private GameObject usernamePanel;
     [SerializeField] private GameObject lobbyListPanel;
     [SerializeField] private GameObject matchLobbyPanel;
+    [SerializeField] private GameObject connectingPanel;
 
     [Header("Username Panel")]
     [SerializeField] private TMP_InputField usernameInput;
@@ -39,11 +39,11 @@ public class LobbyUI : MonoBehaviour
     {
         SetupUI();
         LoadUsername();
+        ShowConnectingPanel(true);
     }
 
     private void SetupUI()
     {
-        // Setup button listeners
         confirmUsernameButton.onClick.AddListener(OnUsernameConfirmed);
         createLobbyButton.onClick.AddListener(OnCreateRoom);
         refreshButton.onClick.AddListener(OnRefreshClicked);
@@ -51,7 +51,6 @@ public class LobbyUI : MonoBehaviour
         readyButton.onClick.AddListener(OnReadyClicked);
         leaveLobbyButton.onClick.AddListener(OnLeaveRoom);
 
-        // Initially show username panel
         ShowUsernamePanel();
     }
 
@@ -65,6 +64,14 @@ public class LobbyUI : MonoBehaviour
     }
 
     #region Panel Management
+
+    private void ShowConnectingPanel(bool show)
+    {
+        if (connectingPanel != null)
+        {
+            connectingPanel.SetActive(show);
+        }
+    }
 
     private void ShowUsernamePanel()
     {
@@ -109,8 +116,6 @@ public class LobbyUI : MonoBehaviour
 
     private void OnRefreshClicked()
     {
-        // Photon automatically updates room list
-        // We just need to clear the current list visually
         foreach (Transform child in lobbyListContent)
         {
             Destroy(child.gameObject);
@@ -142,7 +147,7 @@ public class LobbyUI : MonoBehaviour
 
     public void OnPhotonConnected()
     {
-        // Called when connected to Photon
+        ShowConnectingPanel(false);
         Debug.Log("Connected to Photon Lobby");
     }
 
@@ -151,7 +156,6 @@ public class LobbyUI : MonoBehaviour
         isInRoom = true;
         ShowMatchLobbyPanel();
         
-        // Update UI based on whether we're host or client
         leaveLobbyButton.gameObject.SetActive(!isMasterClient);
         readyButton.interactable = true;
         
@@ -164,9 +168,7 @@ public class LobbyUI : MonoBehaviour
         }
         else
         {
-            // Update client view
-            var host = PhotonNetwork.MasterClient;
-            hostNameText.text = host.NickName;
+            hostNameText.text = "Host";
             hostStatsText.text = "Wins: 0 Losses: 0";
             clientNameText.text = usernameInput.text;
             clientStatsText.text = "Wins: 0 Losses: 0";
@@ -176,13 +178,11 @@ public class LobbyUI : MonoBehaviour
 
     public void UpdateRoomList(List<RoomInfo> roomList)
     {
-        // Clear existing entries
         foreach (Transform child in lobbyListContent)
         {
             Destroy(child.gameObject);
         }
 
-        // Create new entries for each room
         foreach (RoomInfo room in roomList)
         {
             if (room.IsOpen && room.IsVisible && room.PlayerCount < room.MaxPlayers)
@@ -219,6 +219,7 @@ public class LobbyUI : MonoBehaviour
             clientNameText.text = "Waiting for player...";
             clientStatsText.text = "";
             statusText.text = "Opponent left the room";
+            readyButton.interactable = true;
         }
     }
 
@@ -232,14 +233,7 @@ public class LobbyUI : MonoBehaviour
     {
         isInRoom = false;
         ShowUsernamePanel();
-    }
-
-    #endregion
-
-    private void UpdateHostInfo(string username, int wins, int losses)
-    {
-        hostNameText.text = username;
-        hostStatsText.text = $"Wins: {wins} Losses: {losses}";
+        ShowConnectingPanel(true);
     }
 
     public void UpdatePlayerReadyState(Player player, bool isReady)
@@ -254,5 +248,13 @@ public class LobbyUI : MonoBehaviour
         {
             statusText.text = isReady ? "Opponent is Ready!" : "Waiting for opponent...";
         }
+    }
+
+    #endregion
+
+    private void UpdateHostInfo(string username, int wins, int losses)
+    {
+        hostNameText.text = username;
+        hostStatsText.text = $"Wins: {wins} Losses: {losses}";
     }
 }

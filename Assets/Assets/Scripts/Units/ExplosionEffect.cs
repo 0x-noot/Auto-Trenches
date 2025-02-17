@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class ExplosionEffect : MonoBehaviour, IPooledObject
+public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
 {
     [Header("Visual Settings")]
     [SerializeField] private ParticleSystem explosionParticles;
@@ -14,6 +15,8 @@ public class ExplosionEffect : MonoBehaviour, IPooledObject
     [SerializeField] private Color sparkColor = new Color(1f, 0.8f, 0f, 1f); // Yellow
     
     private ParticleSystem sparks;
+    private bool isExploding = false;
+    private float explosionProgress = 0f;
 
     private void Awake()
     {
@@ -37,6 +40,8 @@ public class ExplosionEffect : MonoBehaviour, IPooledObject
     {
         // Reset scale
         transform.localScale = Vector3.one;
+        explosionProgress = 0f;
+        isExploding = true;
         
         // Reset and setup particles
         if (explosionParticles != null)
@@ -51,7 +56,11 @@ public class ExplosionEffect : MonoBehaviour, IPooledObject
         }
 
         SetupParticles();
-        StartExplosion();
+        
+        if (photonView.IsMine)
+        {
+            photonView.RPC("RPCStartExplosion", RpcTarget.All);
+        }
     }
 
     private void CreateSparksSystem()
@@ -85,8 +94,12 @@ public class ExplosionEffect : MonoBehaviour, IPooledObject
         }
     }
 
-    private void StartExplosion()
+    [PunRPC]
+    private void RPCStartExplosion()
     {
+        isExploding = true;
+        explosionProgress = 0f;
+        
         if (explosionParticles != null)
         {
             explosionParticles.Play();
@@ -107,16 +120,48 @@ public class ExplosionEffect : MonoBehaviour, IPooledObject
         while (elapsedTime < explosionDuration)
         {
             elapsedTime += Time.deltaTime;
-            float normalizedTime = elapsedTime / explosionDuration;
+            explosionProgress = elapsedTime / explosionDuration;
             
             // Scale the explosion using the animation curve
-            float currentScale = explosionScaleCurve.Evaluate(normalizedTime) * maxScale;
+            float currentScale = explosionScaleCurve.Evaluate(explosionProgress) * maxScale;
             transform.localScale = initialScale * currentScale;
             
             yield return null;
         }
+
+        isExploding = false;
+        explosionProgress = 1f;
         
-        // Return to pool instead of destroying
-        ObjectPool.Instance.ReturnToPool("ExplosionEffect", gameObject);
+        // Return to pool
+        if (photonView.IsMine)
+        {
+            ObjectPool.Instance.ReturnToPool("ExplosionEffect", gameObject);
+        }
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(isExploding);
+            stream.SendNext(explosionProgress);
+        }
+        else
+        {
+            isExploding = (bool)stream.ReceiveNext();
+            explosionProgress = (float)stream.ReceiveNext();
+
+            // Update scale based on received progress
+            if (isExploding)
+            {
+                float currentScale = explosionScaleCurve.Evaluate(explosionProgress) * maxScale;
+                transform.localScale = Vector3.one * currentScale;
+            }
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
     }
 }

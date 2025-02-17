@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class ValidPlacementSystem : MonoBehaviour
+public class ValidPlacementSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
     [Header("Placement Tilemaps")]
     [SerializeField] private Tilemap playerAPlacementTilemap;
@@ -13,13 +14,25 @@ public class ValidPlacementSystem : MonoBehaviour
     private List<Vector3Int> playerBValidPositions = new List<Vector3Int>();
     private Camera mainCamera;
     
-    private string currentTeam = "TeamA"; // Changed to TeamA to match other scripts
+    private string currentTeam = "TeamA";
 
     void Start()
     {
         mainCamera = Camera.main;
         StoreValidPositions();
+
+        // Set initial team based on player's actor number
+        SetInitialTeam();
+
         Debug.Log($"ValidPlacementSystem: Initialized with {playerAValidPositions.Count} positions for TeamA and {playerBValidPositions.Count} positions for TeamB");
+    }
+
+    private void SetInitialTeam()
+    {
+        // Get the local player's actor number (1 for master client, 2 for second player)
+        int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        currentTeam = actorNumber == 1 ? "TeamA" : "TeamB";
+        Debug.Log($"ValidPlacementSystem: Setting initial team to {currentTeam} for actor {actorNumber}");
     }
 
     private void StoreValidPositions()
@@ -69,8 +82,12 @@ public class ValidPlacementSystem : MonoBehaviour
 
     public void SetCurrentTeam(string team)
     {
-        Debug.Log($"ValidPlacementSystem: Setting current team to {team}");
-        currentTeam = team;
+        // In networked mode, team is determined by player's actor number
+        // We'll log a warning if this is called unexpectedly
+        if (team != currentTeam)
+        {
+            Debug.LogWarning($"ValidPlacementSystem: Attempted to change team to {team} but team is determined by network actor number");
+        }
     }
 
     public bool IsValidPosition(Vector3 worldPosition)
@@ -121,5 +138,12 @@ public class ValidPlacementSystem : MonoBehaviour
             worldPositions.Add(tilemap.GetCellCenterWorld(cellPos));
         }
         return worldPositions;
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        // We don't actually need to sync any data since valid positions are determined
+        // by the tilemaps and team assignment is based on actor number
+        // But we'll keep the interface implementation in case we need to add synced data later
     }
 }

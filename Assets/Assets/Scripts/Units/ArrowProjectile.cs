@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Photon.Pun;
 
-public class ArrowProjectile : MonoBehaviour, IPooledObject
+public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
 {
     [Header("Visual Components")]
     [SerializeField] private SpriteRenderer arrowSprite;
@@ -26,6 +27,8 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
     private bool isFlying = false;
     private Range sourceUnit;
     private BaseUnit targetUnit;
+    private int sourceViewID = -1;
+    private int targetViewID = -1;
 
     private void Awake()
     {
@@ -46,6 +49,20 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
         sourceUnit = source;
         targetUnit = target;
         
+        if (source != null)
+        {
+            PhotonView sourceView = source.GetComponent<PhotonView>();
+            if (sourceView != null)
+                sourceViewID = sourceView.ViewID;
+        }
+        
+        if (target != null)
+        {
+            PhotonView targetView = target.GetComponent<PhotonView>();
+            if (targetView != null)
+                targetViewID = targetView.ViewID;
+        }
+
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
         {
             SetupExplosiveArrow();
@@ -82,6 +99,8 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
 
         sourceUnit = null;
         targetUnit = null;
+        sourceViewID = -1;
+        targetViewID = -1;
     }
 
     private void SetupExplosiveArrow()
@@ -171,6 +190,8 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
 
     public void OnHit()
     {
+        if (!isFlying) return;
+        
         isFlying = false;
 
         if (arrowTrail != null)
@@ -178,6 +199,22 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
             
         if (arrowParticles != null)
             arrowParticles.Stop();
+
+        // Try to recover the source unit if we lost it
+        if (sourceUnit == null && sourceViewID != -1)
+        {
+            PhotonView sourceView = PhotonView.Find(sourceViewID);
+            if (sourceView != null)
+                sourceUnit = sourceView.GetComponent<Range>();
+        }
+
+        // Try to recover the target unit if we lost it
+        if (targetUnit == null && targetViewID != -1)
+        {
+            PhotonView targetView = PhotonView.Find(targetViewID);
+            if (targetView != null)
+                targetUnit = targetView.GetComponent<BaseUnit>();
+        }
 
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
         {
@@ -191,5 +228,38 @@ public class ArrowProjectile : MonoBehaviour, IPooledObject
     {
         yield return new WaitForSeconds(hitEffectDuration);
         ObjectPool.Instance.ReturnToPool("Arrow", gameObject);
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send flight data
+            stream.SendNext(isFlying);
+            stream.SendNext(sourceViewID);
+            stream.SendNext(targetViewID);
+        }
+        else
+        {
+            // Receive flight data
+            isFlying = (bool)stream.ReceiveNext();
+            sourceViewID = (int)stream.ReceiveNext();
+            targetViewID = (int)stream.ReceiveNext();
+
+            // Try to recover references if needed
+            if (sourceUnit == null && sourceViewID != -1)
+            {
+                PhotonView sourceView = PhotonView.Find(sourceViewID);
+                if (sourceView != null)
+                    sourceUnit = sourceView.GetComponent<Range>();
+            }
+
+            if (targetUnit == null && targetViewID != -1)
+            {
+                PhotonView targetView = PhotonView.Find(targetViewID);
+                if (targetView != null)
+                    targetUnit = targetView.GetComponent<BaseUnit>();
+            }
+        }
     }
 }
