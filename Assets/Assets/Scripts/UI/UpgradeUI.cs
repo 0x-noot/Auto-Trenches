@@ -26,6 +26,7 @@ public class UpgradeUI : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        Debug.Log($"UpgradeUI Start - IsMasterClient: {PhotonNetwork.IsMasterClient}");
         economyManager = EconomyManager.Instance;
         if (economyManager == null)
         {
@@ -102,13 +103,11 @@ public class UpgradeUI : MonoBehaviourPunCallbacks
         {
             case GameState.PlayerAPlacement:
             case GameState.PlayerBPlacement:
-                // Only show panel during your team's placement phase
-                bool isYourTurn = (newState == GameState.PlayerAPlacement && PhotonNetwork.IsMasterClient) ||
-                                (newState == GameState.PlayerBPlacement && !PhotonNetwork.IsMasterClient);
-                upgradePanel.SetActive(isYourTurn);
-                if (isYourTurn) UpdateAllUI();
+                // Always show panel during placement phase
+                upgradePanel.SetActive(true);
+                UpdateAllUI();
                 break;
-                
+                    
             case GameState.BattleStart:
             case GameState.BattleActive:
                 upgradePanel.SetActive(false);

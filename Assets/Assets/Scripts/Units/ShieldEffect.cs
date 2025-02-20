@@ -1,19 +1,101 @@
 using UnityEngine;
 using Photon.Pun;
 
-public class ShieldEffect : MonoBehaviourPunCallbacks, IPunObservable
+public class ShieldEffect : PooledObjectBase
 {
     [SerializeField] private ParticleSystem mainShieldParticles;
     [SerializeField] private ParticleSystem orbitalParticles;
-    private bool isShieldActive = false;
 
-    private void Awake()
+    [Header("Shield Settings")]
+    [SerializeField] private float shieldRadius = 1f;
+    [SerializeField] private Color shieldColor = new Color(0, 0.8f, 1f, 0.5f);
+    [SerializeField] private float orbitalSpeed = 2f;
+
+    protected override void Awake()
     {
-        // Optional validation
+        base.Awake();
+
+        // Validate and get references
         if (mainShieldParticles == null)
-            Debug.LogWarning("Main shield particles reference is missing!");
+        {
+            mainShieldParticles = GetComponent<ParticleSystem>();
+            if (mainShieldParticles == null)
+                Debug.LogWarning("Main shield particles reference is missing!");
+        }
+        
         if (orbitalParticles == null)
-            Debug.LogWarning("Orbital particles reference is missing!");
+        {
+            var orbitalObj = transform.Find("OrbitalParticles");
+            if (orbitalObj != null)
+                orbitalParticles = orbitalObj.GetComponent<ParticleSystem>();
+            else
+                CreateOrbitalParticles();
+        }
+
+        SetupParticleSystems();
+    }
+
+    public override void OnObjectSpawn()
+    {
+        // Reset particles
+        if (mainShieldParticles != null)
+        {
+            mainShieldParticles.Stop();
+            mainShieldParticles.Clear();
+        }
+            
+        if (orbitalParticles != null)
+        {
+            orbitalParticles.Stop();
+            orbitalParticles.Clear();
+        }
+
+        isActive = false;
+    }
+
+    private void CreateOrbitalParticles()
+    {
+        var orbitalObj = new GameObject("OrbitalParticles");
+        orbitalObj.transform.SetParent(transform);
+        orbitalObj.transform.localPosition = Vector3.zero;
+        
+        orbitalParticles = orbitalObj.AddComponent<ParticleSystem>();
+        
+        // Setup orbital particles
+        var main = orbitalParticles.main;
+        main.startColor = shieldColor;
+        main.startLifetime = 1f;
+        main.startSpeed = orbitalSpeed;
+        main.startSize = 0.2f;
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
+        
+        var emission = orbitalParticles.emission;
+        emission.rateOverTime = 20;
+        
+        var shape = orbitalParticles.shape;
+        shape.shapeType = ParticleSystemShapeType.Circle;
+        shape.radius = shieldRadius;
+    }
+
+    private void SetupParticleSystems()
+    {
+        if (mainShieldParticles != null)
+        {
+            var main = mainShieldParticles.main;
+            main.startColor = shieldColor;
+            main.startSize = shieldRadius * 2;
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+        }
+
+        if (orbitalParticles != null)
+        {
+            var main = orbitalParticles.main;
+            main.startColor = shieldColor;
+            main.startSpeed = orbitalSpeed;
+            
+            var shape = orbitalParticles.shape;
+            shape.radius = shieldRadius;
+        }
     }
 
     public void ActivateShield()
@@ -25,7 +107,7 @@ public class ShieldEffect : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void RPCActivateShield()
     {
-        isShieldActive = true;
+        isActive = true;
         
         if (mainShieldParticles != null)
         {
@@ -47,7 +129,7 @@ public class ShieldEffect : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void RPCDeactivateShield()
     {
-        isShieldActive = false;
+        isActive = false;
         
         if (mainShieldParticles != null)
         {
@@ -60,24 +142,28 @@ public class ShieldEffect : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    private void OnDestroy()
+    protected override void OnDisable()
     {
-        if (photonView.IsMine)
-        {
-            DeactivateShield();
-        }
+        base.OnDisable();
+        
+        if (mainShieldParticles != null)
+            mainShieldParticles.Stop();
+        if (orbitalParticles != null)
+            orbitalParticles.Stop();
+            
+        isActive = false;
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            stream.SendNext(isShieldActive);
+            stream.SendNext(isActive);
         }
         else
         {
             bool newShieldState = (bool)stream.ReceiveNext();
-            if (newShieldState != isShieldActive)
+            if (newShieldState != isActive)
             {
                 if (newShieldState)
                 {

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
 
-public class MenuManager : MonoBehaviour
+public class MenuManager : MonoBehaviourPunCallbacks
 {
     public static MenuManager Instance { get; private set; }
 
@@ -13,7 +13,7 @@ public class MenuManager : MonoBehaviour
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject infoPanel;
-    [SerializeField] private GameObject lobbyPanel; // Reference to your new lobby UI parent
+    [SerializeField] private GameObject lobbyPanel;
 
     private bool isInitialized = false;
 
@@ -113,6 +113,12 @@ public class MenuManager : MonoBehaviour
         Debug.Log("MenuManager: ShowLobby called");
         DisableAllPanels();
         lobbyPanel?.SetActive(true);
+
+        // Connect to Photon if not already connected
+        if (!PhotonNetwork.IsConnected)
+        {
+            PhotonManager.Instance.ConnectToPhoton();
+        }
     }
 
     public void QuitGame()
@@ -129,5 +135,19 @@ public class MenuManager : MonoBehaviour
         #else
             Application.Quit();
         #endif
+    }
+
+    public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
+    {
+        Debug.Log($"MenuManager: Disconnected from Photon with cause: {cause}");
+        // Return to main menu if disconnected
+        ShowMainMenu();
+    }
+
+    public override void OnLeftRoom()
+    {
+        Debug.Log("MenuManager: Left room, returning to lobby");
+        // Return to lobby when leaving a room
+        ShowLobby();
     }
 }

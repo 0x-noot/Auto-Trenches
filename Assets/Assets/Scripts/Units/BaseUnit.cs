@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using Photon.Pun;
 
-public abstract class BaseUnit : MonoBehaviourPunCallbacks
+public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
 {
     [Header("Base Stats")]
     protected UnitType unitType;
@@ -39,36 +39,63 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
     protected bool isAbilityActive = false;
     protected float nextAbilityTime = 0f;
 
-    protected UnitState currentState;
+    protected UnitState currentState = UnitState.Idle;
     protected BaseUnit currentTarget;
     protected float lastAttackTime;
     protected HealthSystem healthSystem;
-
-    private MovementSystem movementSystem;
-    private CombatSystem combatSystem;
+    protected MovementSystem movementSystem;
+    protected CombatSystem combatSystem;
+    protected bool isProcessingRPC = false;
+    protected bool isInitialized = false;
 
     public event Action<BaseUnit> OnUnitDeath;
     public event Action<BaseUnit> OnAbilityActivated;
     public event Action<BaseUnit> OnAbilityDeactivated;
 
-    protected virtual void Start()
+    protected virtual void Awake()
     {
-        InitializeBaseStats();
-        ApplyUpgrades();
-        currentHealth = currentMaxHealth;
-        currentState = UnitState.Idle;
-
+        // Get components
         healthSystem = GetComponent<HealthSystem>();
         movementSystem = GetComponent<MovementSystem>();
         combatSystem = GetComponent<CombatSystem>();
+
+        if (healthSystem == null) Debug.LogError($"Missing HealthSystem on {gameObject.name}");
+        if (movementSystem == null) Debug.LogError($"Missing MovementSystem on {gameObject.name}");
+        if (combatSystem == null) Debug.LogError($"Missing CombatSystem on {gameObject.name}");
+    }
+
+    protected virtual void Start()
+    {
+        if (!photonView.IsMine) return;
+
+        InitializeBaseStats();
+        ApplyUpgrades();
+        if (!isInitialized)
+        {
+            InitializeUnit();
+        }
+    }
+
+    private void InitializeUnit()
+    {
+        if (isInitialized) return;
+
+        currentHealth = currentMaxHealth;
+        currentState = UnitState.Idle;
 
         if (healthSystem != null)
         {
             healthSystem.Initialize(currentMaxHealth);
         }
 
+        if (movementSystem != null)
+        {
+            movementSystem.SetMoveSpeed(currentMoveSpeed);
+        }
+
         nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
 
+        // Subscribe to events
         if (EconomyManager.Instance != null)
         {
             EconomyManager.Instance.OnUpgradePurchased += HandleUpgradePurchased;
@@ -79,10 +106,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
         }
 
-        if (movementSystem != null)
-        {
-            movementSystem.SetMoveSpeed(currentMoveSpeed);
-        }
+        isInitialized = true;
     }
 
     protected virtual void InitializeBaseStats()
@@ -95,7 +119,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
 
     protected void ApplyUpgrades()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         
         if (EconomyManager.Instance == null) return;
 
@@ -110,6 +134,8 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
     [PunRPC]
     protected virtual void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
     {
+        if (!gameObject.activeInHierarchy) return;
+
         currentMaxHealth = maxHealth * armorMultiplier;
         currentAttackDamage = attackDamage * damageMultiplier;
         currentMoveSpeed = moveSpeed * speedMultiplier;
@@ -120,13 +146,13 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
             float healthPercentage = currentHealth / maxHealth;
             currentHealth = currentMaxHealth * healthPercentage;
             
-            if (healthSystem != null)
+            if (healthSystem != null && healthSystem.enabled)
             {
                 healthSystem.Initialize(currentMaxHealth);
             }
         }
 
-        if (movementSystem != null)
+        if (movementSystem != null && movementSystem.enabled)
         {
             movementSystem.SetMoveSpeed(currentMoveSpeed);
         }
@@ -134,7 +160,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
 
     private void HandleUpgradePurchased(string team, UpgradeType type, int level)
     {
-        if (team == teamId && photonView.IsMine)
+        if (team == teamId && photonView.IsMine && gameObject.activeInHierarchy)
         {
             ApplyUpgrades();
         }
@@ -142,6 +168,17 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
 
     protected virtual void OnDestroy()
     {
+        CleanupUnit();
+    }
+
+    private void OnDisable()
+    {
+        CleanupUnit();
+    }
+
+    private void CleanupUnit()
+    {
+        // Unsubscribe from events
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
@@ -150,19 +187,38 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
         {
             EconomyManager.Instance.OnUpgradePurchased -= HandleUpgradePurchased;
         }
-    }
 
+        // Clear any ongoing effects or coroutines
+        StopAllCoroutines();
+        isAbilityActive = false;
+        currentTarget = null;
+        
+        // Reset state
+        currentState = UnitState.Idle;
+        isProcessingRPC = false;
+    }
     protected virtual void HandleGameStateChanged(GameState newState)
     {
+        if (!gameObject.activeInHierarchy) return;
+
         if (newState == GameState.BattleActive)
         {
             nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
+        }
+        else if (newState == GameState.BattleEnd || newState == GameState.GameOver)
+        {
+            // Clean up when battle ends
+            if (isAbilityActive)
+            {
+                DeactivateAbility();
+            }
+            StopAllCoroutines();
         }
     }
 
     protected virtual void Update()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !gameObject.activeInHierarchy) return;
 
         if (GameManager.Instance != null && 
             GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
@@ -185,67 +241,87 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
 
     protected virtual void ActivateAbility()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         photonView.RPC("RPCActivateAbility", RpcTarget.All);
     }
 
     [PunRPC]
     protected virtual void RPCActivateAbility()
     {
+        if (!gameObject.activeInHierarchy) return;
         isAbilityActive = true;
         OnAbilityActivated?.Invoke(this);
     }
 
     protected virtual void DeactivateAbility()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         photonView.RPC("RPCDeactivateAbility", RpcTarget.All);
     }
 
     [PunRPC]
     protected virtual void RPCDeactivateAbility()
     {
+        if (!gameObject.activeInHierarchy) return;
         isAbilityActive = false;
         OnAbilityDeactivated?.Invoke(this);
     }
 
+    public virtual void TakeDamage(float damage)
+    {
+        if (!photonView.IsMine || !gameObject.activeInHierarchy || isProcessingRPC) return;
+        
+        // Prevent RPC during scene transitions/cleanup
+        if (!PhotonNetwork.IsMessageQueueRunning)
+            return;
+
+        try
+        {
+            isProcessingRPC = true;
+            photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
+        }
+        finally
+        {
+            isProcessingRPC = false;
+        }
+    }
+
+    [PunRPC]
+    protected virtual void RPCTakeDamage(float damage)
+    {
+        if (!gameObject.activeInHierarchy) return;
+            
+        currentHealth = Mathf.Max(0, currentHealth - damage);
+        
+        if (healthSystem != null && healthSystem.enabled)
+        {
+            healthSystem.TakeDamage(damage);
+        }
+        
+        if (currentHealth <= 0 && currentState != UnitState.Dead)
+        {
+            Die();
+        }   
+    }
+
     public virtual void UpdateState(UnitState newState)
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         photonView.RPC("RPCUpdateState", RpcTarget.All, (int)newState);
     }
 
     [PunRPC]
     protected virtual void RPCUpdateState(int newState)
     {
+        if (!gameObject.activeInHierarchy) return;
         currentState = (UnitState)newState;
-    }
-
-    public virtual void TakeDamage(float damage)
-    {
-        if (!photonView.IsMine) return;
-        photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
-    }
-
-    [PunRPC]
-    protected virtual void RPCTakeDamage(float damage)
-    {
-        if (currentState == UnitState.Dead) return;
-        
-        currentHealth = Mathf.Max(0, currentHealth - damage);
-        healthSystem?.TakeDamage(damage);
-        
-        if (currentHealth <= 0)
-        {
-            Die();
-        }   
     }
 
     protected virtual void Die()
     {
-        if (currentState == UnitState.Dead) return;
+        if (currentState == UnitState.Dead || !gameObject.activeInHierarchy) return;
         
-        if (photonView.IsMine)
+        if (photonView.IsMine && PhotonNetwork.IsMessageQueueRunning)
         {
             photonView.RPC("RPCDie", RpcTarget.All);
         }
@@ -254,15 +330,17 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
     [PunRPC]
     protected virtual void RPCDie()
     {
+        if (!gameObject.activeInHierarchy) return;
+
         currentState = UnitState.Dead;
 
-        if (movementSystem != null)
+        if (movementSystem != null && movementSystem.enabled)
         {
             movementSystem.StopMovement();
         }
 
         var enemyTargeting = GetComponent<EnemyTargeting>();
-        if (enemyTargeting != null)
+        if (enemyTargeting != null && enemyTargeting.enabled)
         {
             enemyTargeting.StopTargeting();
         }
@@ -281,7 +359,10 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
             }
         }
 
-        GameManager.Instance?.HandleUnitDeath(this);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.HandleUnitDeath(this);
+        }
     }
 
     private IEnumerator DeathSequence()
@@ -289,7 +370,8 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
         var colliders = GetComponents<Collider2D>();
         foreach (var collider in colliders)
         {
-            collider.enabled = false;
+            if (collider != null && collider.enabled)
+                collider.enabled = false;
         }
 
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
@@ -299,7 +381,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
             Color startColor = spriteRenderer.color;
             Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
 
-            while (elapsedTime < deathAnimationDuration)
+            while (elapsedTime < deathAnimationDuration && gameObject.activeInHierarchy)
             {
                 elapsedTime += Time.deltaTime;
                 float t = elapsedTime / deathAnimationDuration;
@@ -312,7 +394,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
             yield return new WaitForSeconds(deathAnimationDuration);
         }
 
-        if (PhotonNetwork.IsMasterClient)
+        if (PhotonNetwork.IsMasterClient && gameObject.activeInHierarchy)
         {
             PhotonNetwork.Destroy(gameObject);
         }
@@ -320,13 +402,15 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
 
     public void SetTeam(string newTeamId)
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         photonView.RPC("RPCSetTeam", RpcTarget.All, newTeamId);
     }
 
     [PunRPC]
-    private void RPCSetTeam(string newTeamId)
+    protected void RPCSetTeam(string newTeamId)
     {
+        if (!gameObject.activeInHierarchy) return;
+
         teamId = newTeamId;
         string layerName = newTeamId;
         int layerIndex = LayerMask.NameToLayer(layerName);
@@ -338,6 +422,32 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks
         else
         {
             Debug.LogError($"Failed to find layer: {layerName}");
+        }
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send unit data
+            stream.SendNext(currentHealth);
+            stream.SendNext((int)currentState);
+            stream.SendNext(isAbilityActive);
+            stream.SendNext(teamId);
+        }
+        else
+        {
+            // Receive unit data
+            currentHealth = (float)stream.ReceiveNext();
+            currentState = (UnitState)stream.ReceiveNext();
+            isAbilityActive = (bool)stream.ReceiveNext();
+            teamId = (string)stream.ReceiveNext();
+
+            // Update healthbar if needed
+            if (healthSystem != null && healthSystem.enabled)
+            {
+                healthSystem.TakeDamage(0); // Force healthbar update
+            }
         }
     }
 

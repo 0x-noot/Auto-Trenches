@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
+public class ExplosionEffect : PooledObjectBase
 {
     [Header("Visual Settings")]
     [SerializeField] private ParticleSystem explosionParticles;
@@ -15,11 +15,13 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     [SerializeField] private Color sparkColor = new Color(1f, 0.8f, 0f, 1f); // Yellow
     
     private ParticleSystem sparks;
-    private bool isExploding = false;
     private float explosionProgress = 0f;
+    private Coroutine explosionCoroutine;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (explosionParticles == null)
         {
             explosionParticles = GetComponent<ParticleSystem>();
@@ -36,12 +38,11 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
         }
     }
 
-    public void OnObjectSpawn()
+    public override void OnObjectSpawn()
     {
-        // Reset scale
+        // Reset scale and progress
         transform.localScale = Vector3.one;
         explosionProgress = 0f;
-        isExploding = true;
         
         // Reset and setup particles
         if (explosionParticles != null)
@@ -97,7 +98,7 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     [PunRPC]
     private void RPCStartExplosion()
     {
-        isExploding = true;
+        isActive = true;
         explosionProgress = 0f;
         
         if (explosionParticles != null)
@@ -109,7 +110,11 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
             sparks.Play();
         }
         
-        StartCoroutine(ExplosionSequence());
+        if (explosionCoroutine != null)
+        {
+            StopCoroutine(explosionCoroutine);
+        }
+        explosionCoroutine = StartCoroutine(ExplosionSequence());
     }
 
     private IEnumerator ExplosionSequence()
@@ -129,7 +134,7 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
             yield return null;
         }
 
-        isExploding = false;
+        isActive = false;
         explosionProgress = 1f;
         
         // Return to pool
@@ -143,16 +148,16 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     {
         if (stream.IsWriting)
         {
-            stream.SendNext(isExploding);
+            stream.SendNext(isActive);
             stream.SendNext(explosionProgress);
         }
         else
         {
-            isExploding = (bool)stream.ReceiveNext();
+            isActive = (bool)stream.ReceiveNext();
             explosionProgress = (float)stream.ReceiveNext();
 
             // Update scale based on received progress
-            if (isExploding)
+            if (isActive)
             {
                 float currentScale = explosionScaleCurve.Evaluate(explosionProgress) * maxScale;
                 transform.localScale = Vector3.one * currentScale;
@@ -160,8 +165,13 @@ public class ExplosionEffect : MonoBehaviourPunCallbacks, IPunObservable, IPoole
         }
     }
 
-    private void OnDisable()
+    protected override void OnDisable()
     {
-        StopAllCoroutines();
+        base.OnDisable();
+        if (explosionCoroutine != null)
+        {
+            StopCoroutine(explosionCoroutine);
+            explosionCoroutine = null;
+        }
     }
 }

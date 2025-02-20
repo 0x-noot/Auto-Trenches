@@ -1,7 +1,8 @@
 using UnityEngine;
+using System.Collections;
 using Photon.Pun;
 
-public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
+public class MagicProjectile : PooledObjectBase
 {
     [Header("Visual Settings")]
     [SerializeField] private SpriteRenderer spellSprite;
@@ -17,10 +18,14 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     
     private float initialSize;
     private float time;
-    private bool isActive = false;
+    private Vector3 syncedPosition;
+    private Quaternion syncedRotation;
+    private Vector3 syncedScale;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (spellSprite == null)
             spellSprite = GetComponent<SpriteRenderer>();
             
@@ -31,13 +36,15 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
             particleEffect = GetComponent<ParticleSystem>();
 
         initialSize = transform.localScale.x;
+        syncedPosition = transform.position;
+        syncedRotation = transform.rotation;
+        syncedScale = transform.localScale;
     }
 
-    public void OnObjectSpawn()
+    public override void OnObjectSpawn()
     {
         // Reset components
         time = 0f;
-        isActive = true;
         transform.localScale = Vector3.one * initialSize;
         
         if (spellSprite != null)
@@ -98,26 +105,38 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     {
         if (!isActive) return;
 
-        // Rotate the spell
-        transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
-
-        // Pulsing effect
-        time += Time.deltaTime;
-        float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
-        transform.localScale = Vector3.one * initialSize * pulse;
+        if (photonView.IsMine)
+        {
+            // Update position and rotation on owner
+            transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
+            time += Time.deltaTime;
+            float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
+            transform.localScale = Vector3.one * initialSize * pulse;
+            
+            // Store synced values
+            syncedPosition = transform.position;
+            syncedRotation = transform.rotation;
+            syncedScale = transform.localScale;
+        }
+        else
+        {
+            // Smooth interpolation for non-owners
+            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * 10f);
+            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * 10f);
+            transform.localScale = Vector3.Lerp(transform.localScale, syncedScale, Time.deltaTime * 10f);
+        }
     }
 
     public void OnSpellHit()
     {
-        if (!isActive) return;
-
+        if (!photonView.IsMine) return;
         photonView.RPC("RPCOnSpellHit", RpcTarget.All);
     }
 
     [PunRPC]
     private void RPCOnSpellHit()
     {
-        isActive = false;
+        if (!isActive) return;
 
         // Disable trail and sprite
         if (spellTrail != null)
@@ -145,25 +164,42 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
         }
     }
 
-    private System.Collections.IEnumerator ReturnToPoolAfterDelay()
+    private IEnumerator ReturnToPoolAfterDelay()
     {
         yield return new WaitForSeconds(returnDelay);
-        ObjectPool.Instance.ReturnToPool("MagicProjectile", gameObject);
+        
+        if (photonView.IsMine)
+        {
+            ObjectPool.Instance.ReturnToPool("SpellProjectile", gameObject);
+        }
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Send spell state
+            // Send data
             stream.SendNext(isActive);
             stream.SendNext(time);
+            stream.SendNext(syncedPosition);
+            stream.SendNext(syncedRotation);
+            stream.SendNext(syncedScale);
         }
         else
         {
-            // Receive spell state
-            this.isActive = (bool)stream.ReceiveNext();
-            this.time = (float)stream.ReceiveNext();
+            // Receive data
+            isActive = (bool)stream.ReceiveNext();
+            time = (float)stream.ReceiveNext();
+            syncedPosition = (Vector3)stream.ReceiveNext();
+            syncedRotation = (Quaternion)stream.ReceiveNext();
+            syncedScale = (Vector3)stream.ReceiveNext();
         }
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        StopAllCoroutines();
+        time = 0f;
     }
 }

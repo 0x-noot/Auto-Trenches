@@ -50,6 +50,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainShieldParticles: {fileID: 2360317402648828130}
   orbitalParticles: {fileID: 3939091151720795892}
+  shieldRadius: 1
+  shieldColor: {r: 0, g: 0.8, b: 1, a: 0.5}
+  orbitalSpeed: 2
 --- !u!114 &7609240643612955191
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69,6 +72,7 @@ MonoBehaviour:
   OwnershipTransfer: 0
   observableSearch: 2
   ObservedComponents:
+  - {fileID: 6590774979401181969}
   - {fileID: 7952401060876983722}
   sceneViewId: 0
   InstantiationId: 0

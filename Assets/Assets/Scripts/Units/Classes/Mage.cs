@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 
-public class Mage : BaseUnit, IPunObservable
+public class Mage : BaseUnit
 {
     [Header("Mage-Specific Settings")]
     [SerializeField] private float magicPenetration = 15f;
@@ -31,7 +31,7 @@ public class Mage : BaseUnit, IPunObservable
     }
 
     private List<FrozenUnitData> frozenUnits = new List<FrozenUnitData>();
-    private HashSet<int> frozenUnitViewIDs = new HashSet<int>(); // For network synchronization
+    private HashSet<int> frozenUnitViewIDs = new HashSet<int>();
 
     private void Awake()
     {
@@ -77,13 +77,13 @@ public class Mage : BaseUnit, IPunObservable
         return attackDamage + magicPenetration;
     }
 
-    protected override void ActivateAbility()
+    protected override void RPCActivateAbility()
     {
         if (!isAbilityActive && 
             GameManager.Instance.GetCurrentState() == GameState.BattleActive &&
             photonView.IsMine)
         {
-            base.ActivateAbility();
+            base.RPCActivateAbility();
             StartCoroutine(FreezeAbility());
         }
     }
@@ -149,12 +149,6 @@ public class Mage : BaseUnit, IPunObservable
                 Quaternion.identity,
                 enemy.transform
             );
-            
-            ParticleSystem particles = freezeEffect.GetComponent<ParticleSystem>();
-            if (particles != null)
-            {
-                particles.Play();
-            }
         }
 
         DisableUnitSystems(enemy);
@@ -258,78 +252,10 @@ public class Mage : BaseUnit, IPunObservable
         frozenUnitViewIDs.Clear();
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    [PunRPC]
+    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
     {
-        if (stream.IsWriting)
-        {
-            // Send Mage-specific data
-            stream.SendNext(magicPenetration);
-            stream.SendNext(isAbilityActive);
-            
-            // Send frozen units count and their ViewIDs
-            stream.SendNext(frozenUnitViewIDs.Count);
-            foreach (int viewID in frozenUnitViewIDs)
-            {
-                stream.SendNext(viewID);
-            }
-        }
-        else
-        {
-            // Receive Mage-specific data
-            this.magicPenetration = (float)stream.ReceiveNext();
-            this.isAbilityActive = (bool)stream.ReceiveNext();
-
-            // Receive and update frozen units
-            int frozenCount = (int)stream.ReceiveNext();
-            HashSet<int> newFrozenViewIDs = new HashSet<int>();
-            for (int i = 0; i < frozenCount; i++)
-            {
-                newFrozenViewIDs.Add((int)stream.ReceiveNext());
-            }
-
-            // Update frozen units based on received data
-            if (!photonView.IsMine) // Only update if we're not the owner
-            {
-                UpdateFrozenUnits(newFrozenViewIDs);
-            }
-        }
-    }
-
-    private void UpdateFrozenUnits(HashSet<int> newFrozenViewIDs)
-    {
-        // Unfreeze units that are no longer frozen
-        foreach (int viewID in frozenUnitViewIDs)
-        {
-            if (!newFrozenViewIDs.Contains(viewID))
-            {
-                PhotonView unitView = PhotonView.Find(viewID);
-                if (unitView != null)
-                {
-                    BaseUnit unit = unitView.GetComponent<BaseUnit>();
-                    if (unit != null)
-                    {
-                        UnfreezeUnit(unit);
-                    }
-                }
-            }
-        }
-
-        // Freeze new units
-        foreach (int viewID in newFrozenViewIDs)
-        {
-            if (!frozenUnitViewIDs.Contains(viewID))
-            {
-                PhotonView unitView = PhotonView.Find(viewID);
-                if (unitView != null)
-                {
-                    BaseUnit unit = unitView.GetComponent<BaseUnit>();
-                    if (unit != null)
-                    {
-                        RPCFreezeUnit(viewID);
-                    }
-                }
-            }
-        }
+        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
     }
 
     private void OnDrawGizmosSelected()

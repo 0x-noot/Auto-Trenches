@@ -1,9 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Pun;
+using Photon.Realtime;
 
 public class GameManager : MonoBehaviourPunCallbacks
 {
@@ -21,6 +23,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private List<BaseUnit> playerUnits = new List<BaseUnit>();
     private List<BaseUnit> enemyUnits = new List<BaseUnit>();
     private bool isBattleEnding = false;
+    private bool isInitialized = false;
     private Dictionary<BaseUnit, bool> pendingDeaths = new Dictionary<BaseUnit, bool>();
 
     public event Action<GameState> OnGameStateChanged;
@@ -33,19 +36,44 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
             Debug.Log("GameManager: Instance set");
         }
         else
         {
             Debug.Log("GameManager: Duplicate instance found, destroying");
             Destroy(gameObject);
+            return;
         }
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        
+        // Clear all pending RPCs and network messages
+        if (PhotonNetwork.IsMessageQueueRunning)
+            PhotonNetwork.IsMessageQueueRunning = false;
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log("GameManager: OnDestroy called");
+        CleanupUnits();
     }
 
     private void Start()
     {
         Debug.Log("GameManager: Start called");
-        Initialize();
+        if (!isInitialized)
+        {
+            Initialize();
+        }
     }
 
     private void Initialize()
@@ -58,6 +86,12 @@ public class GameManager : MonoBehaviourPunCallbacks
             return;
         }
 
+        // Make sure message queue is running
+        if (!PhotonNetwork.IsMessageQueueRunning)
+        {
+            PhotonNetwork.IsMessageQueueRunning = true;
+        }
+
         UpdateGameState(GameState.Setup);
         
         if (placementManager == null)
@@ -66,9 +100,75 @@ public class GameManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Game starts with simultaneous placement
+        // Short delay before transitioning to placement
+        StartCoroutine(TransitionToPlacement());
+    }
+    private IEnumerator TransitionToPlacement()
+    {
+        // Wait a short moment to ensure everything is ready
+        yield return new WaitForSeconds(0.5f);
+        
+        // Transition to placement phase
         UpdateGameState(GameState.PlayerAPlacement);
+        isInitialized = true;
         Debug.Log("GameManager: Initialization complete");
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"GameManager: Scene {scene.name} loaded");
+        
+        // Clear existing units and reset state
+        CleanupUnits();
+        
+        // Initialize for battle scene
+        if (scene.name == "BattleScene")
+        {
+            StartCoroutine(InitializeAfterSceneLoad());
+        }
+    }
+    private IEnumerator InitializeAfterSceneLoad()
+    {
+        // Wait a frame for everything to setup
+        yield return null;
+
+        // Enable message queue if it was disabled
+        if (!PhotonNetwork.IsMessageQueueRunning)
+        {
+            PhotonNetwork.IsMessageQueueRunning = true;
+        }
+
+        // Wait until message queue is running
+        while (!PhotonNetwork.IsMessageQueueRunning)
+        {
+            yield return null;
+        }
+
+        // Now initialize
+        Initialize();
+    }
+
+    private void CleanupUnits()
+    {
+        foreach (var unit in playerUnits.ToList())
+        {
+            if (unit != null)
+            {
+                unit.OnUnitDeath -= HandleUnitDeath;
+            }
+        }
+        foreach (var unit in enemyUnits.ToList())
+        {
+            if (unit != null)
+            {
+                unit.OnUnitDeath -= HandleUnitDeath;
+            }
+        }
+
+        playerUnits.Clear();
+        enemyUnits.Clear();
+        pendingDeaths.Clear();
+        isBattleEnding = false;
     }
 
     public void PrepareNextRound()
@@ -84,10 +184,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void RPCPrepareNextRound()
     {
         // Clear all units
-        playerUnits.Clear();
-        enemyUnits.Clear();
-        pendingDeaths.Clear();
-        isBattleEnding = false;
+        CleanupUnits();
 
         // Reset game state for placement
         UpdateGameState(GameState.PlayerAPlacement);
@@ -113,22 +210,9 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void OnDestroy()
-    {
-        Debug.Log("GameManager: OnDestroy called");
-        foreach (var unit in playerUnits)
-        {
-            if (unit != null) unit.OnUnitDeath -= HandleUnitDeath;
-        }
-        foreach (var unit in enemyUnits)
-        {
-            if (unit != null) unit.OnUnitDeath -= HandleUnitDeath;
-        }
-    }
-
     public void HandleUnitDeath(BaseUnit unit)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
         
         Debug.Log($"GameManager: HandleUnitDeath called for unit: {unit.gameObject.name}");
         if (currentGameState != GameState.BattleActive || unit == null) return;
@@ -137,9 +221,9 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void RPCHandleUnitDeath(int unitViewId)
+    private void RPCHandleUnitDeath(int unitViewID)
     {
-        PhotonView unitView = PhotonView.Find(unitViewId);
+        PhotonView unitView = PhotonView.Find(unitViewID);
         if (unitView == null) return;
 
         BaseUnit unit = unitView.GetComponent<BaseUnit>();
@@ -160,7 +244,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         Debug.Log($"GameManager: Starting death animation for unit: {unit.gameObject.name}");
         yield return new WaitForSeconds(unit.GetDeathAnimationDuration());
 
-        if (unit != null)
+        if (unit != null && unit.gameObject != null)
         {
             if (playerUnits.Contains(unit))
             {
@@ -174,16 +258,17 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
 
             pendingDeaths.Remove(unit);
-            Debug.Log($"GameManager: Removed {unit.gameObject.name} from pending deaths");
         }
 
         // Clean up null references
         playerUnits.RemoveAll(u => u == null);
         enemyUnits.RemoveAll(u => u == null);
 
-        if (currentGameState == GameState.BattleActive && !isBattleEnding && PhotonNetwork.IsMasterClient)
+        if (currentGameState == GameState.BattleActive && 
+            !isBattleEnding && 
+            PhotonNetwork.IsMasterClient && 
+            PhotonNetwork.IsMessageQueueRunning)
         {
-            Debug.Log("GameManager: Checking battle end after unit death");
             CheckBattleEnd();
         }
     }
@@ -219,7 +304,10 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void CheckBattleEnd()
     {
-        if (!PhotonNetwork.IsMasterClient || currentGameState != GameState.BattleActive || isBattleEnding)
+        if (!PhotonNetwork.IsMasterClient || 
+            currentGameState != GameState.BattleActive || 
+            isBattleEnding ||
+            !PhotonNetwork.IsMessageQueueRunning)
         {
             return;
         }
@@ -250,7 +338,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void StartBattle()
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
 
         Debug.Log("GameManager: StartBattle called");
         if (currentGameState != GameState.PlayerAPlacement && currentGameState != GameState.PlayerBPlacement)
@@ -280,7 +368,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         foreach (var unit in allUnits)
         {
-            if (unit != null)
+            if (unit != null && unit.gameObject != null && unit.gameObject.activeInHierarchy)
             {
                 EnableUnitCombat(unit);
                 yield return new WaitForSeconds(unitActivationInterval);
@@ -303,7 +391,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void EndBattle(string winner)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
 
         Debug.Log($"GameManager: EndBattle called with winner: {winner}");
         if (isBattleEnding)
@@ -330,7 +418,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         Debug.Log("GameManager: Disabling all units");
         foreach (var unit in playerUnits.Concat(enemyUnits))
         {
-            if (unit != null) DisableUnitCombat(unit);
+            if (unit != null && unit.gameObject != null && unit.gameObject.activeInHierarchy)
+            {
+                DisableUnitCombat(unit);
+            }
         }
     }
 
@@ -346,7 +437,12 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     public void UpdateGameState(GameState newState)
     {
-        if (!PhotonNetwork.IsMasterClient) return;
+        if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) 
+        {
+            Debug.Log($"UpdateGameState rejected - IsMasterClient: {PhotonNetwork.IsMasterClient}, IsMessageQueueRunning: {PhotonNetwork.IsMessageQueueRunning}");
+            return;
+        }
+        Debug.Log($"Attempting to update game state from {currentGameState} to {newState}");
         photonView.RPC("RPCUpdateGameState", RpcTarget.All, (int)newState);
     }
 
@@ -354,9 +450,22 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void RPCUpdateGameState(int newStateInt)
     {
         GameState newState = (GameState)newStateInt;
-        Debug.Log($"GameManager: Changing state from {currentGameState} to {newState}");
+        Debug.Log($"GameManager: RPC received - Changing state from {currentGameState} to {newState}");
         currentGameState = newState;
         OnGameStateChanged?.Invoke(newState);
+    }
+
+    public override void OnDisconnected(DisconnectCause cause)
+    {
+        base.OnDisconnected(cause);
+        Debug.LogWarning($"Disconnected from server: {cause}");
+        
+        // Clean up all pools and units
+        if (ObjectPool.Instance != null)
+        {
+            ObjectPool.Instance.ClearAllPools();
+        }
+        CleanupUnits();
     }
 
     public GameState GetCurrentState()

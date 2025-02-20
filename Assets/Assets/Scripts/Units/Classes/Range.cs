@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using Photon.Pun;
 
-public class Range : BaseUnit, IPunObservable
+public class Range : BaseUnit
 {
     [Header("Range-Specific Settings")]
     [SerializeField] private float longRangeBonus = 15f;
@@ -35,15 +35,10 @@ public class Range : BaseUnit, IPunObservable
         }
     }
 
-    protected override void ActivateAbility()
+    protected override void RPCActivateAbility()
     {
-        if (!isAbilityActive && 
-            GameManager.Instance.GetCurrentState() == GameState.BattleActive &&
-            photonView.IsMine)
-        {
-            base.ActivateAbility();
-            photonView.RPC("RPCSetExplosiveArrow", RpcTarget.All, true);
-        }
+        base.RPCActivateAbility();
+        photonView.RPC("RPCSetExplosiveArrow", RpcTarget.All, true);
     }
 
     protected override void DeactivateAbility()
@@ -68,7 +63,6 @@ public class Range : BaseUnit, IPunObservable
     {
         if (!isExplosiveArrow || !photonView.IsMine) return;
 
-        // Send RPC to create explosion on all clients
         photonView.RPC("RPCCreateExplosion", RpcTarget.All, position, primaryTarget.photonView.ViewID);
     }
 
@@ -79,15 +73,13 @@ public class Range : BaseUnit, IPunObservable
         if (explosionEffectPrefab != null)
         {
             GameObject explosionEffect = Instantiate(explosionEffectPrefab, position, Quaternion.identity);
-            
-            // If explosion effect has network cleanup, handle it here
-            Destroy(explosionEffect, 2f); // Adjust time as needed
+            Destroy(explosionEffect, 2f);
         }
 
         // Only the owner calculates and applies damage
         if (!photonView.IsMine) return;
 
-        // Get primary target from ViewID
+        // Get primary target
         PhotonView primaryTargetView = PhotonView.Find(primaryTargetViewID);
         if (primaryTargetView == null) return;
         BaseUnit primaryTarget = primaryTargetView.GetComponent<BaseUnit>();
@@ -144,25 +136,14 @@ public class Range : BaseUnit, IPunObservable
         return baseDamage;
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    [PunRPC]
+    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
     {
-        if (stream.IsWriting)
-        {
-            // Send Range-specific data
-            stream.SendNext(isExplosiveArrow);
-            stream.SendNext(longRangeBonus);
-        }
-        else
-        {
-            // Receive Range-specific data
-            this.isExplosiveArrow = (bool)stream.ReceiveNext();
-            this.longRangeBonus = (float)stream.ReceiveNext();
-        }
+        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
     }
 
     private void OnDrawGizmosSelected()
     {
-        // Draw the explosion radius in the editor
         if (isExplosiveArrow)
         {
             Gizmos.color = Color.red;

@@ -59,7 +59,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             return;
 
         nextAttackTime = Time.time + (1f / unit.GetAttackSpeed());
-        
         photonView.RPC("RPCExecuteAttack", RpcTarget.All, target.photonView.ViewID);
     }
 
@@ -89,6 +88,19 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    [PunRPC]
+    private void RPCApplyDamage(int targetViewID, float damage)
+    {
+        PhotonView targetView = PhotonView.Find(targetViewID);
+        if (targetView == null) return;
+
+        BaseUnit target = targetView.GetComponent<BaseUnit>();
+        if (target != null && target.GetCurrentState() != UnitState.Dead)
+        {
+            target.TakeDamage(damage);
+        }
+    }
+
     private IEnumerator PerformMeleeAttackSequence(BaseUnit target)
     {
         Vector3 originalPosition = transform.position;
@@ -100,7 +112,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         if (photonView.IsMine)
         {
             photonView.RPC("RPCSpawnMeleeEffect", RpcTarget.All, originalPosition, targetPosition);
-            target.TakeDamage(unit.GetAttackDamage());
+            photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
         }
 
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
@@ -199,7 +211,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             arrow.OnHit();
             if (photonView.IsMine)
             {
-                target.TakeDamage(unit.GetAttackDamage());
+                photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
                 if (isExplosive && unit is Range rangeUnit)
                 {
                     rangeUnit.CreateExplosion(target.transform.position, target);
@@ -268,7 +280,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             spell.OnSpellHit();
             if (photonView.IsMine && target != null && target.GetCurrentState() != UnitState.Dead)
             {
-                target.TakeDamage(unit.GetAttackDamage());
+                photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
             }
         }
     }
@@ -338,12 +350,10 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
-            // We own this player: send the others our data
             stream.SendNext(nextAttackTime);
         }
         else
         {
-            // Network player, receive data
             this.nextAttackTime = (float)stream.ReceiveNext();
         }
     }

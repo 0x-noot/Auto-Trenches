@@ -36,7 +36,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         ConnectToPhoton();
     }
 
-    private void ConnectToPhoton()
+    public void ConnectToPhoton()
     {
         if (!PhotonNetwork.IsConnected && !isConnecting)
         {

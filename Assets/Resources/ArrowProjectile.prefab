@@ -15,8 +15,8 @@ GameObject:
   - component: {fileID: 5535560650544854617}
   - component: {fileID: 3235439060003789812}
   - component: {fileID: 713575300731450991}
-  - component: {fileID: 172712123554781949}
-  - component: {fileID: 3548354746941419469}
+  - component: {fileID: 6503653653682259998}
+  - component: {fileID: 2423067175415674549}
   m_Layer: 0
   m_Name: ArrowProjectile
   m_TagString: Untagged
@@ -850,7 +850,7 @@ ParticleSystem:
   ShapeModule:
     serializedVersion: 6
     enabled: 1
-    type: 4
+    type: 18
     angle: 15
     length: 5
     boxThickness: {x: 0, y: 0, z: 0}
@@ -5078,7 +5078,7 @@ MonoBehaviour:
   rotationSpeed: 360
   scaleDuringFlight: 1.2
   hitEffectDuration: 0.5
---- !u!114 &172712123554781949
+--- !u!114 &6503653653682259998
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5094,14 +5094,15 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 0
+  OwnershipTransfer: 2
   observableSearch: 2
   ObservedComponents:
-  - {fileID: 3548354746941419469}
+  - {fileID: 713575300731450991}
+  - {fileID: 2423067175415674549}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
---- !u!114 &3548354746941419469
+--- !u!114 &2423067175415674549
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5115,11 +5116,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_PositionModel:
     SynchronizeEnabled: 1
-    TeleportEnabled: 0
+    TeleportEnabled: 1
     TeleportIfDistanceGreaterThan: 3
     InterpolateOption: 4
     InterpolateMoveTowardsSpeed: 1
-    InterpolateLerpSpeed: 10
+    InterpolateLerpSpeed: 1
     ExtrapolateOption: 0
     ExtrapolateSpeed: 1
     ExtrapolateIncludingRoundTripTime: 1
@@ -5128,9 +5129,9 @@ MonoBehaviour:
     SynchronizeEnabled: 1
     InterpolateOption: 2
     InterpolateRotateTowardsSpeed: 180
-    InterpolateLerpSpeed: 10
+    InterpolateLerpSpeed: 5
   m_ScaleModel:
-    SynchronizeEnabled: 0
-    InterpolateOption: 0
+    SynchronizeEnabled: 1
+    InterpolateOption: 2
     InterpolateMoveTowardsSpeed: 1
     InterpolateLerpSpeed: 0

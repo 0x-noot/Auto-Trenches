@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPooledObject
+public class ArrowProjectile : PooledObjectBase
 {
     [Header("Visual Components")]
     [SerializeField] private SpriteRenderer arrowSprite;
@@ -24,14 +24,14 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     [SerializeField] private float hitEffectDuration = 0.5f;
     
     private Vector3 originalScale;
-    private bool isFlying = false;
     private Range sourceUnit;
     private BaseUnit targetUnit;
-    private int sourceViewID = -1;
-    private int targetViewID = -1;
+    private float currentFlightProgress = 0f;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (arrowSprite == null)
             arrowSprite = GetComponent<SpriteRenderer>();
             
@@ -44,40 +44,12 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
         originalScale = transform.localScale;
     }
 
-    public void Initialize(Range source, BaseUnit target)
-    {
-        sourceUnit = source;
-        targetUnit = target;
-        
-        if (source != null)
-        {
-            PhotonView sourceView = source.GetComponent<PhotonView>();
-            if (sourceView != null)
-                sourceViewID = sourceView.ViewID;
-        }
-        
-        if (target != null)
-        {
-            PhotonView targetView = target.GetComponent<PhotonView>();
-            if (targetView != null)
-                targetViewID = targetView.ViewID;
-        }
-
-        if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
-        {
-            SetupExplosiveArrow();
-        }
-        else
-        {
-            SetupNormalArrow();
-        }
-    }
-
-    public void OnObjectSpawn()
+    public override void OnObjectSpawn()
     {
         // Reset all components to initial state
         transform.localScale = originalScale;
-        isFlying = false;
+        currentFlightProgress = 0f;
+        isActive = false;
 
         if (arrowSprite != null)
         {
@@ -99,8 +71,34 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
 
         sourceUnit = null;
         targetUnit = null;
-        sourceViewID = -1;
-        targetViewID = -1;
+    }
+
+    public void Initialize(Range source, BaseUnit target)
+    {
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCInitialize", RpcTarget.All, source.photonView.ViewID, target.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPCInitialize(int sourceViewID, int targetViewID)
+    {
+        PhotonView sourceView = PhotonView.Find(sourceViewID);
+        PhotonView targetView = PhotonView.Find(targetViewID);
+
+        if (sourceView != null && targetView != null)
+        {
+            sourceUnit = sourceView.GetComponent<Range>();
+            targetUnit = targetView.GetComponent<BaseUnit>();
+
+            if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
+            {
+                SetupExplosiveArrow();
+            }
+            else
+            {
+                SetupNormalArrow();
+            }
+        }
     }
 
     private void SetupExplosiveArrow()
@@ -166,7 +164,14 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
 
     public void StartFlight()
     {
-        isFlying = true;
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCStartFlight", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCStartFlight()
+    {
+        isActive = true;
         if (arrowTrail != null)
             arrowTrail.emitting = true;
         if (arrowParticles != null)
@@ -175,8 +180,16 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
 
     public void UpdateArrowInFlight(float flightProgress)
     {
-        if (!isFlying) return;
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCUpdateArrowInFlight", RpcTarget.All, flightProgress);
+    }
 
+    [PunRPC]
+    private void RPCUpdateArrowInFlight(float flightProgress)
+    {
+        if (!isActive) return;
+
+        currentFlightProgress = flightProgress;
         transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
         float scaleMultiplier = Mathf.Lerp(1f, scaleDuringFlight, flightProgress);
         transform.localScale = originalScale * scaleMultiplier;
@@ -190,31 +203,22 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
 
     public void OnHit()
     {
-        if (!isFlying) return;
+        if (!photonView.IsMine) return;
+        photonView.RPC("RPCOnHit", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCOnHit()
+    {
+        if (!isActive) return;
         
-        isFlying = false;
+        isActive = false;
 
         if (arrowTrail != null)
             arrowTrail.emitting = false;
             
         if (arrowParticles != null)
             arrowParticles.Stop();
-
-        // Try to recover the source unit if we lost it
-        if (sourceUnit == null && sourceViewID != -1)
-        {
-            PhotonView sourceView = PhotonView.Find(sourceViewID);
-            if (sourceView != null)
-                sourceUnit = sourceView.GetComponent<Range>();
-        }
-
-        // Try to recover the target unit if we lost it
-        if (targetUnit == null && targetViewID != -1)
-        {
-            PhotonView targetView = PhotonView.Find(targetViewID);
-            if (targetView != null)
-                targetUnit = targetView.GetComponent<BaseUnit>();
-        }
 
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
         {
@@ -227,39 +231,32 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable, IPoole
     private IEnumerator ReturnToPoolAfterDelay()
     {
         yield return new WaitForSeconds(hitEffectDuration);
-        ObjectPool.Instance.ReturnToPool("Arrow", gameObject);
+        
+        if (photonView.IsMine)
+        {
+            ObjectPool.Instance.ReturnToPool("ArrowProjectile", gameObject);
+        }
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Send flight data
-            stream.SendNext(isFlying);
-            stream.SendNext(sourceViewID);
-            stream.SendNext(targetViewID);
+            // Send data
+            stream.SendNext(isActive);
+            stream.SendNext(currentFlightProgress);
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+            stream.SendNext(transform.localScale);
         }
         else
         {
-            // Receive flight data
-            isFlying = (bool)stream.ReceiveNext();
-            sourceViewID = (int)stream.ReceiveNext();
-            targetViewID = (int)stream.ReceiveNext();
-
-            // Try to recover references if needed
-            if (sourceUnit == null && sourceViewID != -1)
-            {
-                PhotonView sourceView = PhotonView.Find(sourceViewID);
-                if (sourceView != null)
-                    sourceUnit = sourceView.GetComponent<Range>();
-            }
-
-            if (targetUnit == null && targetViewID != -1)
-            {
-                PhotonView targetView = PhotonView.Find(targetViewID);
-                if (targetView != null)
-                    targetUnit = targetView.GetComponent<BaseUnit>();
-            }
+            // Receive data
+            isActive = (bool)stream.ReceiveNext();
+            currentFlightProgress = (float)stream.ReceiveNext();
+            transform.position = (Vector3)stream.ReceiveNext();
+            transform.rotation = (Quaternion)stream.ReceiveNext();
+            transform.localScale = (Vector3)stream.ReceiveNext();
         }
     }
 }

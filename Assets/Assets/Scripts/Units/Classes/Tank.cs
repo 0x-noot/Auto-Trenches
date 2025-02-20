@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class Tank : BaseUnit, IPunObservable
+public class Tank : BaseUnit
 {
     [Header("Tank-Specific Settings")]
     [SerializeField] private float baseArmorBonus = 25f;
@@ -69,15 +69,10 @@ public class Tank : BaseUnit, IPunObservable
         base.TakeDamage(reducedDamage);
     }
 
-    protected override void ActivateAbility()
+    protected override void RPCActivateAbility()
     {
-        if (!isAbilityActive && 
-            GameManager.Instance.GetCurrentState() == GameState.BattleActive &&
-            photonView.IsMine)
-        {
-            base.ActivateAbility();
-            StartCoroutine(ShieldAbility());
-        }
+        base.RPCActivateAbility();
+        StartCoroutine(ShieldAbility());
     }
 
     private IEnumerator ShieldAbility()
@@ -154,43 +149,10 @@ public class Tank : BaseUnit, IPunObservable
         DeactivateAbility();
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        if (stream.IsWriting)
-        {
-            // Send Tank-specific data
-            stream.SendNext(currentArmorBonus);
-            stream.SendNext(isAbilityActive);
-            stream.SendNext(activeShieldEffect != null);
-        }
-        else
-        {
-            // Receive Tank-specific data
-            this.currentArmorBonus = (float)stream.ReceiveNext();
-            bool wasAbilityActive = isAbilityActive;
-            this.isAbilityActive = (bool)stream.ReceiveNext();
-            bool hasShieldEffect = (bool)stream.ReceiveNext();
-
-            // Handle visual updates if shield state changed
-            if (wasAbilityActive != isAbilityActive)
-            {
-                if (isAbilityActive && !hasShieldEffect)
-                {
-                    RPCActivateShieldEffects();
-                }
-                else if (!isAbilityActive && hasShieldEffect)
-                {
-                    RPCResetShieldEffects();
-                }
-            }
-        }
-    }
-
-    // Override RPCApplyUpgrades to include tank-specific stats
+    [PunRPC]
     protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
     {
         base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
-        
         // Update base armor bonus with upgrades
         baseArmorBonus = 25f * armorMultiplier;
         if (!isAbilityActive)

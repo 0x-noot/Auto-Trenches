@@ -14,8 +14,8 @@ GameObject:
   - component: {fileID: 8973449590051170315}
   - component: {fileID: 2653514891597342823}
   - component: {fileID: 1958189010611658329}
-  - component: {fileID: 50902471951965872}
-  - component: {fileID: 1233067627438774927}
+  - component: {fileID: 4284475423375132244}
+  - component: {fileID: 3644298171980047081}
   m_Layer: 0
   m_Name: SpellProjectile
   m_TagString: Untagged
@@ -5029,7 +5029,7 @@ MonoBehaviour:
   pulseSpeed: 2
   pulseAmount: 0.2
   returnDelay: 0.5
---- !u!114 &50902471951965872
+--- !u!114 &4284475423375132244
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5045,15 +5045,15 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 0
+  OwnershipTransfer: 2
   observableSearch: 2
   ObservedComponents:
   - {fileID: 1958189010611658329}
-  - {fileID: 1233067627438774927}
+  - {fileID: 3644298171980047081}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
---- !u!114 &1233067627438774927
+--- !u!114 &3644298171980047081
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5067,11 +5067,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_PositionModel:
     SynchronizeEnabled: 1
-    TeleportEnabled: 0
+    TeleportEnabled: 1
     TeleportIfDistanceGreaterThan: 3
     InterpolateOption: 4
     InterpolateMoveTowardsSpeed: 1
-    InterpolateLerpSpeed: 10
+    InterpolateLerpSpeed: 1
     ExtrapolateOption: 0
     ExtrapolateSpeed: 1
     ExtrapolateIncludingRoundTripTime: 1
@@ -5080,9 +5080,9 @@ MonoBehaviour:
     SynchronizeEnabled: 1
     InterpolateOption: 2
     InterpolateRotateTowardsSpeed: 180
-    InterpolateLerpSpeed: 10
+    InterpolateLerpSpeed: 5
   m_ScaleModel:
-    SynchronizeEnabled: 0
-    InterpolateOption: 0
+    SynchronizeEnabled: 1
+    InterpolateOption: 2
     InterpolateMoveTowardsSpeed: 1
     InterpolateLerpSpeed: 0

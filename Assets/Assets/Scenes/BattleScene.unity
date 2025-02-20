@@ -1214,15 +1214,14 @@ MonoBehaviour:
     type: 0
   - name: Tank
     type: 3
-  - name: Resources/Mage
+  - name: Mage
     type: 1
-  - name: Resources/Range
+  - name: Range
     type: 2
   maxUnitsPerTeam: 11
   playerAUnitsParent: {fileID: 1910123634}
   playerBUnitsParent: {fileID: 1449161905}
   selectedUnitType: 0
-  currentTeam: TeamA
 --- !u!4 &365522354
 Transform:
   m_ObjectHideFlags: 0
@@ -1290,20 +1289,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pools:
-  - tag: Arrow
-    prefab: {fileID: 7661146755148989948, guid: 99a56206f5be9d5419eabdf4affd5abb, type: 3}
+  - tag: ArrowProjectile
+    prefab: {fileID: 7661146755148989948, guid: 9cc251b041dca264683011fb5979b594, type: 3}
     size: 20
     parent: {fileID: 1910123634}
-  - tag: MagicProjectile
-    prefab: {fileID: 5755857881989349283, guid: a5ea9879854b33c41bc2cd2ce184bf62, type: 3}
+  - tag: SpellProjectile
+    prefab: {fileID: 5755857881989349283, guid: 743a57da3fe99894d98e2d578b368dae, type: 3}
     size: 20
     parent: {fileID: 1910123634}
   - tag: ExplosionEffect
-    prefab: {fileID: 7475421778096362061, guid: 9ffee3269ab3f2846abc6b3b95a38dab, type: 3}
+    prefab: {fileID: 7475421778096362061, guid: f406fb866bbf8104399cae605b2d05ef, type: 3}
     size: 10
     parent: {fileID: 1910123634}
-  - tag: MeleeEffect
-    prefab: {fileID: 7712415899826019650, guid: 523c2691ff71cb54da7bdc85369cbbff, type: 3}
+  - tag: ShieldEffect
+    prefab: {fileID: 2706341720612109025, guid: c13211a02080fc5469047420357d67fd, type: 3}
     size: 10
     parent: {fileID: 1910123634}
 --- !u!4 &431508835
@@ -14939,10 +14938,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   placementManager: {fileID: 365522353}
   unitButtons:
-  - {fileID: 252237897}
-  - {fileID: 1210344188}
-  - {fileID: 3678629}
-  - {fileID: 1190060368}
+  - type: 0
+    button: {fileID: 252237897}
+  - type: 1
+    button: {fileID: 1210344188}
+  - type: 2
+    button: {fileID: 3678629}
+  - type: 3
+    button: {fileID: 1190060368}
   startBattleButton: {fileID: 1433953094}
   unitCountText: {fileID: 230402359}
   currentTurnText: {fileID: 919115792}

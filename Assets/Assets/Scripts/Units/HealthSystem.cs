@@ -1,16 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
+using System;
 
 public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
     [SerializeField] private Slider healthBar;
     private float maxHealth;
     private float currentHealth;
+    private bool isProcessingRPC = false;
+
+    public event Action OnHPChanged;
 
     private void Awake()
     {
-        // Optional: validate the reference
         if (healthBar == null)
         {
             Debug.LogWarning("HealthBar reference is missing in HealthSystem!");
@@ -20,6 +23,8 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
     public void Initialize(float max)
     {
         if (!photonView.IsMine) return;
+        
+        Debug.Log($"Initializing health system with max health: {max}");
         photonView.RPC("RPCInitialize", RpcTarget.All, max);
     }
 
@@ -29,19 +34,29 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
         maxHealth = max;
         currentHealth = max;
         UpdateHealthBar();
+        Debug.Log($"Health system initialized. Max Health: {maxHealth}, Current Health: {currentHealth}");
     }
 
     public void TakeDamage(float damage)
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine || isProcessingRPC) return;
+
+        // Prevent recursive RPC calls
+        isProcessingRPC = true;
         photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
+        isProcessingRPC = false;
     }
 
     [PunRPC]
     private void RPCTakeDamage(float damage)
     {
+        float previousHealth = currentHealth;
         currentHealth = Mathf.Max(0, currentHealth - damage);
+        
+        Debug.Log($"Taking damage: {damage}. Health: {previousHealth} -> {currentHealth}");
+        
         UpdateHealthBar();
+        OnHPChanged?.Invoke();
     }
 
     private void UpdateHealthBar()
@@ -49,6 +64,10 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
         if (healthBar != null)
         {
             healthBar.value = currentHealth / maxHealth;
+            
+            // Ensure the UI is updated immediately
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(healthBar.GetComponent<RectTransform>());
         }
     }
 
@@ -63,9 +82,17 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
         else
         {
             // Network player, receive data
-            this.currentHealth = (float)stream.ReceiveNext();
-            this.maxHealth = (float)stream.ReceiveNext();
-            UpdateHealthBar(); // Update the visual when we receive new data
+            currentHealth = (float)stream.ReceiveNext();
+            maxHealth = (float)stream.ReceiveNext();
+            UpdateHealthBar();
+        }
+    }
+
+    public void TriggerHPChanged()
+    {
+        if (photonView.IsMine)
+        {
+            OnHPChanged?.Invoke();
         }
     }
 
