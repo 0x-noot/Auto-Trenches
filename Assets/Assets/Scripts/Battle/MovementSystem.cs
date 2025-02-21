@@ -21,11 +21,22 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private LayerMask obstacleLayer;
     [SerializeField] private LayerMask unitLayer;
     
+    // Network optimization
+    private Vector3 syncedPosition;
+    private Quaternion syncedRotation;
+    private bool isSyncPositionDirty = false;
+    private float lastSyncTime = 0f;
+    private const float SYNC_INTERVAL = 0.1f; // 10 updates per second max
+    private float syncLerpSpeed = 10f;
+
     private void Awake()
     {
         unit = GetComponent<BaseUnit>();
         grid = Object.FindFirstObjectByType<Grid>();
         pathfinding = new PathfindingSystem(grid, obstacleLayer, unitLayer);
+        
+        syncedPosition = transform.position;
+        syncedRotation = transform.rotation;
     }
 
     private void Start()
@@ -77,15 +88,37 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Update()
     {
-        if (!isEnabled || !photonView.IsMine) return;
-
-        if (isMoving)
+        if (!isEnabled) return;
+        
+        if (photonView.IsMine)
         {
-            pathRecalculationTimer += Time.deltaTime;
-            if (pathRecalculationTimer >= pathRecalculationInterval)
+            // Owner controls movement
+            if (isMoving)
             {
-                pathRecalculationTimer = 0f;
-                RecalculatePath();
+                pathRecalculationTimer += Time.deltaTime;
+                if (pathRecalculationTimer >= pathRecalculationInterval)
+                {
+                    pathRecalculationTimer = 0f;
+                    RecalculatePath();
+                }
+            }
+            
+            // Mark position for sync at intervals
+            if (Time.time - lastSyncTime > SYNC_INTERVAL)
+            {
+                syncedPosition = transform.position;
+                syncedRotation = transform.rotation;
+                isSyncPositionDirty = true;
+                lastSyncTime = Time.time;
+            }
+        }
+        else
+        {
+            // Non-owner smoothly interpolates to synced position
+            if (isMoving && Vector3.Distance(transform.position, syncedPosition) > 0.1f)
+            {
+                transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * syncLerpSpeed);
+                transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * syncLerpSpeed);
             }
         }
     }
@@ -178,6 +211,15 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
                 float step = moveSpeed * Time.deltaTime;
                 transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, step);
                 
+                // Mark position as dirty for sync, but throttle updates
+                if (Time.time - lastSyncTime > SYNC_INTERVAL && photonView.IsMine)
+                {
+                    syncedPosition = transform.position;
+                    syncedRotation = transform.rotation;
+                    isSyncPositionDirty = true;
+                    lastSyncTime = Time.time;
+                }
+                
                 yield return null;
             }
 
@@ -209,6 +251,14 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
             currentPath.Clear();
             isMoving = false;
             unit.UpdateState(UnitState.Idle);
+            
+            // Final position sync when stopping
+            if (photonView.IsMine)
+            {
+                syncedPosition = transform.position;
+                syncedRotation = transform.rotation;
+                isSyncPositionDirty = true;
+            }
         }
     }
 
@@ -216,19 +266,34 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
-            // We own this player: send the others our data
+            // Send basic state always
             stream.SendNext(isMoving);
             stream.SendNext(isEnabled);
-            stream.SendNext(moveSpeed);
-            stream.SendNext(currentTargetPosition);
+            
+            // Only send position when dirty
+            stream.SendNext(isSyncPositionDirty);
+            if (isSyncPositionDirty)
+            {
+                stream.SendNext(syncedPosition);
+                stream.SendNext(syncedRotation);
+                stream.SendNext(currentTargetPosition);
+                isSyncPositionDirty = false;
+            }
         }
         else
         {
-            // Network player, receive data
-            this.isMoving = (bool)stream.ReceiveNext();
-            this.isEnabled = (bool)stream.ReceiveNext();
-            this.moveSpeed = (float)stream.ReceiveNext();
-            this.currentTargetPosition = (Vector3)stream.ReceiveNext();
+            isMoving = (bool)stream.ReceiveNext();
+            isEnabled = (bool)stream.ReceiveNext();
+            
+            bool positionUpdated = (bool)stream.ReceiveNext();
+            if (positionUpdated)
+            {
+                syncedPosition = (Vector3)stream.ReceiveNext();
+                syncedRotation = (Quaternion)stream.ReceiveNext();
+                currentTargetPosition = (Vector3)stream.ReceiveNext();
+                
+                // Non-owners will interpolate to this position in Update()
+            }
         }
     }
 }

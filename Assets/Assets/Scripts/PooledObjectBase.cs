@@ -12,72 +12,23 @@ public abstract class PooledObjectBase : MonoBehaviourPunCallbacks, IPooledObjec
     }
 
     [PunRPC]
-    protected virtual void RPCActivatePoolObject(float posX, float posY, float posZ, 
-                                               float rotX, float rotY, float rotZ, float rotW)
+    protected virtual void RPCSyncTransform(float posX, float posY, float posZ, 
+                                          float rotX, float rotY, float rotZ, float rotW)
     {
-        if (!gameObject.activeInHierarchy) return;
-
+        // This RPC only used for position synchronization by non-owners
         Vector3 position = new Vector3(posX, posY, posZ);
         Quaternion rotation = new Quaternion(rotX, rotY, rotZ, rotW);
 
         transform.position = position;
         transform.rotation = rotation;
-        gameObject.SetActive(true);
-        isActive = true;
-
-        OnObjectSpawn();
     }
 
-    [PunRPC]
-    protected virtual void RPCDeactivatePoolObject()
-    {
-        if (!gameObject.activeInHierarchy) return;
-
-        isActive = false;
-        gameObject.SetActive(false);
-
-        // Return to original parent if it exists
-        if (originalParent != null)
-        {
-            transform.SetParent(originalParent);
-        }
-    }
-
-    [PunRPC]
-    protected virtual void RPCReturnToPool(string tag)
-    {
-        if (!gameObject.activeInHierarchy) return;
-
-        isActive = false;
-        gameObject.SetActive(false);
-
-        // Return to original parent if it exists
-        if (originalParent != null)
-        {
-            transform.SetParent(originalParent);
-        }
-
-        // Notify object pool if needed
-        if (ObjectPool.Instance != null)
-        {
-            ObjectPool.Instance.ReturnToPool(tag, gameObject);
-        }
-    }
-
+    // This must be implemented by derived classes
     public abstract void OnObjectSpawn();
 
     protected virtual void OnDisable()
     {
         isActive = false;
-    }
-
-    public override void OnEnable()
-    {
-        base.OnEnable();
-        if (photonView != null && !photonView.ObservedComponents.Contains(this))
-        {
-            photonView.ObservedComponents.Add(this);
-        }
     }
 
     public bool IsActive()

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2511268088802932272}
   - component: {fileID: 5535560650544854617}
   - component: {fileID: 3235439060003789812}
-  - component: {fileID: 713575300731450991}
+  - component: {fileID: 8410726031217052513}
   - component: {fileID: 6503653653682259998}
   - component: {fileID: 2423067175415674549}
   m_Layer: 0
@@ -5055,7 +5055,7 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.009640336}
   m_Radius: 0.3
---- !u!114 &713575300731450991
+--- !u!114 &8410726031217052513
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5074,7 +5074,7 @@ MonoBehaviour:
   trailStartColor: {r: 1, g: 1, b: 1, a: 1}
   trailEndColor: {r: 1, g: 1, b: 1, a: 0}
   explosiveTrailColor: {r: 1, g: 0, b: 0, a: 1}
-  explosiveParticles: {fileID: 5861093419961748088, guid: 9ffee3269ab3f2846abc6b3b95a38dab, type: 3}
+  explosiveParticles: {fileID: 5861093419961748088, guid: f406fb866bbf8104399cae605b2d05ef, type: 3}
   rotationSpeed: 360
   scaleDuringFlight: 1.2
   hitEffectDuration: 0.5
@@ -5097,7 +5097,7 @@ MonoBehaviour:
   OwnershipTransfer: 2
   observableSearch: 2
   ObservedComponents:
-  - {fileID: 713575300731450991}
+  - {fileID: 8410726031217052513}
   - {fileID: 2423067175415674549}
   sceneViewId: 0
   InstantiationId: 0

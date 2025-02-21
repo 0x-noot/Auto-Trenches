@@ -98,6 +98,11 @@ MonoBehaviour:
   - RPCOnObjectSpawn
   - RPCSetupPooledObject
   - RPCDeactivatePoolObject
+  - RPCInitializePool
+  - RPCRequestPoolObject
+  - RPCSyncTransform
+  - RPCStateDamage
+  - RPC_ActivateAbilityOnAll
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

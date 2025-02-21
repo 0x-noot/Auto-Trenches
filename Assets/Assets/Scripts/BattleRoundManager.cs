@@ -11,13 +11,14 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     [Header("Player References")]
     [SerializeField] private PlayerHP playerAHP;
     [SerializeField] private PlayerHP playerBHP;
+    [SerializeField] private PlacementManager placementManager;
 
     private int currentRound = 1;
     private bool isRoundActive = false;
 
     public event Action<int> OnRoundStart;
-    public event Action<string, int> OnRoundEnd; // winner, surviving units
-    public event Action<string> OnMatchEnd; // winner
+    public event Action<string, int> OnRoundEnd; // resultText, surviving units
+    public event Action<string> OnMatchEnd; // resultText
 
     private void Awake()
     {
@@ -27,7 +28,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Start()
     {
-        // Find PlayerHP components if not assigned in inspector
+        // Find references if not assigned
         if (playerAHP == null)
         {
             GameObject playerAObj = GameObject.Find("PlayerAHP");
@@ -40,12 +41,18 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             if (playerBObj != null)
                 playerBHP = playerBObj.GetComponent<PlayerHP>();
         }
+        if (placementManager == null)
+        {
+            placementManager = FindFirstObjectByType<PlacementManager>();
+        }
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
             GameManager.Instance.OnGameOver += HandleRoundEnd;
         }
+
+        Debug.Log($"BattleRoundManager initialized: PlayerAHP: {playerAHP != null}, PlayerBHP: {playerBHP != null}");
     }
 
     private void OnDestroy()
@@ -59,6 +66,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 
     private void HandleGameStateChanged(GameState newState)
     {
+        Debug.Log($"BattleRoundManager: Game state changed to {newState}");
         if (newState == GameState.BattleActive) isRoundActive = true;
         else if (newState == GameState.PlayerAPlacement) isRoundActive = false;
     }
@@ -66,27 +74,29 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     public void StartNewRound()
     {
         if (!PhotonNetwork.IsMasterClient) return;
+        Debug.Log($"Starting round {currentRound}");
         photonView.RPC("RPCStartNewRound", RpcTarget.All);
     }
 
     [PunRPC]
     private void RPCStartNewRound()
     {
-        // Force HP update when starting a new round
         ForceHPUpdate();
         OnRoundStart?.Invoke(currentRound);
+        Debug.Log($"Round {currentRound} started");
     }
 
     private void ForceHPUpdate()
     {
-        // Manually trigger HP update through BattleRoundManager methods
         if (playerAHP != null)
         {
             playerAHP.TriggerHPChanged();
+            Debug.Log($"Player A HP: {playerAHP.GetCurrentHP()}");
         }
         if (playerBHP != null)
         {
             playerBHP.TriggerHPChanged();
+            Debug.Log($"Player B HP: {playerBHP.GetCurrentHP()}");
         }
     }
 
@@ -95,12 +105,53 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         if (!PhotonNetwork.IsMasterClient) return;
 
         int survivingUnits = CountSurvivingUnits(winner);
+        Debug.Log($"Round ended. Winner: {winner}, Surviving units: {survivingUnits}");
         photonView.RPC("RPCHandleRoundEnd", RpcTarget.All, winner, survivingUnits);
     }
 
     [PunRPC]
     private void RPCHandleRoundEnd(string winner, int survivingUnits)
     {
+        // Convert "player"/"enemy" to local victory/defeat message
+        string localResultText;
+        string localTeam;
+        string winningTeam;
+        bool isLocalPlayerWinner;
+
+        // "player" means host/MasterClient won, "enemy" means client won
+        if (PhotonNetwork.IsMasterClient)
+        {
+            // I'm the host
+            isLocalPlayerWinner = winner == "player";
+            localTeam = "TeamA";
+            winningTeam = winner == "player" ? "TeamA" : "TeamB";
+        }
+        else
+        {
+            // I'm the client
+            isLocalPlayerWinner = winner == "enemy";
+            localTeam = "TeamB";
+            winningTeam = winner == "enemy" ? "TeamB" : "TeamA";
+        }
+
+        localResultText = isLocalPlayerWinner ? "Victory!" : "Defeat!";
+        
+        Debug.Log($"Battle result: {winner} won. Local player ({(PhotonNetwork.IsMasterClient ? "Host" : "Client")}): {localResultText}");
+
+        // Award points to winner only
+        if (EconomyManager.Instance != null && isLocalPlayerWinner)
+        {
+            int basePoints = survivingUnits;
+            int victoryPoints = 3;
+            int streakBonus = isLocalPlayerWinner ? 
+                (PhotonNetwork.IsMasterClient ? playerAHP.winStreak : playerBHP.winStreak) : 0;
+            
+            int totalPoints = basePoints + victoryPoints + streakBonus;
+            Debug.Log($"Awarding {totalPoints} points to {winningTeam}");
+            EconomyManager.Instance.AddSupplyPoints(winningTeam, totalPoints);
+        }
+
+        // Apply damage and win streaks
         if (winner == "player")
         {
             playerAHP.IncrementWinStreak();
@@ -109,7 +160,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             
             if (playerBHP.IsDead())
             {
-                OnMatchEnd?.Invoke("player");
+                OnMatchEnd?.Invoke(localResultText);
                 return;
             }
         }
@@ -121,15 +172,13 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             
             if (playerAHP.IsDead())
             {
-                OnMatchEnd?.Invoke("enemy");
+                OnMatchEnd?.Invoke(localResultText);
                 return;
             }
         }
 
-        // Force HP update after damage calculation
         ForceHPUpdate();
-
-        OnRoundEnd?.Invoke(winner, survivingUnits);
+        OnRoundEnd?.Invoke(localResultText, survivingUnits);
         currentRound++;
         PrepareNextRound();
     }
@@ -138,20 +187,16 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (GameManager.Instance == null) return 0;
 
-        // We want to return the surviving units of the WINNING team
-        // This is used to calculate damage to the losing player
         List<BaseUnit> unitsToCount;
         if (winner == "player")
         {
-            // Player won, count PLAYER surviving units
             unitsToCount = GameManager.Instance.GetPlayerUnits();
-            Debug.Log($"Counting player surviving units after victory");
+            Debug.Log("Counting player surviving units after victory");
         }
         else
         {
-            // Enemy won, count ENEMY surviving units
             unitsToCount = GameManager.Instance.GetEnemyUnits();
-            Debug.Log($"Counting enemy surviving units after victory");
+            Debug.Log("Counting enemy surviving units after victory");
         }
 
         int count = unitsToCount.Count(u => 
@@ -164,31 +209,56 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         return count;
     }
 
-    private void PrepareNextRound()
+    public void PrepareNextRound()
     {
         if (!PhotonNetwork.IsMasterClient) return;
+        Debug.Log("Preparing next round");
 
-        PlacementManager placementManager = FindFirstObjectByType<PlacementManager>();
-        if (placementManager != null) placementManager.ClearUnits();
+        if (placementManager != null)
+        {
+            placementManager.ClearTeamUnits("TeamA");
+            placementManager.ClearTeamUnits("TeamB");
+        }
 
-        if (GameManager.Instance != null) GameManager.Instance.PrepareNextRound();
+        photonView.RPC("RPCPrepareNextRound", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCPrepareNextRound()
+    {
+        Debug.Log("Executing round preparation");
+        isRoundActive = false;
+
+        // Clean up any orphaned health bars
+        var orphanedHealthSystems = FindObjectsOfType<HealthSystem>()
+            .Where(hs => hs.transform.parent == null)
+            .ToArray();
+
+        foreach (var healthSystem in orphanedHealthSystems)
+        {
+            Debug.Log($"Cleaning up orphaned health bar: {healthSystem.gameObject.name}");
+            Destroy(healthSystem.gameObject);
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UpdateGameState(GameState.PlayerAPlacement);
+        }
     }
 
     public int GetCurrentRound() => currentRound;
-    public float GetPlayerAHP() => playerAHP.GetCurrentHP();
-    public float GetPlayerBHP() => playerBHP.GetCurrentHP();
+    public float GetPlayerAHP() => playerAHP != null ? playerAHP.GetCurrentHP() : 0f;
+    public float GetPlayerBHP() => playerBHP != null ? playerBHP.GetCurrentHP() : 0f;
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Sync round info
             stream.SendNext(currentRound);
             stream.SendNext(isRoundActive);
         }
         else
         {
-            // Receive round info
             this.currentRound = (int)stream.ReceiveNext();
             this.isRoundActive = (bool)stream.ReceiveNext();
         }

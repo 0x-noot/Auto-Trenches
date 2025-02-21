@@ -17,7 +17,7 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     private Dictionary<string, PlayerEconomy> playerEconomies = new Dictionary<string, PlayerEconomy>();
-    [SerializeField] private GameManager gameManager;
+    private GameManager gameManager;
     private BattleRoundManager battleRoundManager;
 
     public event Action<string, int> OnSupplyPointsChanged;
@@ -28,6 +28,7 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         if (instance == null)
         {
             instance = this;
+            Debug.Log("EconomyManager: Instance created");
         }
         else
         {
@@ -46,6 +47,7 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         if (battleRoundManager != null)
         {
             battleRoundManager.OnRoundEnd += HandleRoundEnd;
+            Debug.Log("EconomyManager: Subscribed to round end events");
         }
     }
 
@@ -61,54 +63,51 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
                 playerEconomies[team].upgradeLevels[upgrade] = 0;
             }
         }
+
+        Debug.Log("EconomyManager: Economies initialized");
     }
 
     private void HandleRoundEnd(string winner, int survivingUnits)
     {
         if (!PhotonNetwork.IsMasterClient) return;
-        
-        string winningTeam = winner == "player" ? "TeamA" : "TeamB";
-        
-        // Log upgrade levels at round end
-        foreach (var team in playerEconomies.Keys)
-        {
-            Debug.Log($"[{team}] Round end upgrade levels:");
-            foreach (UpgradeType upgrade in System.Enum.GetValues(typeof(UpgradeType)))
-            {
-                Debug.Log($"  {upgrade}: {playerEconomies[team].upgradeLevels[upgrade]}");
-            }
-        }
 
+        // Determine if local player won
+        bool isLocalPlayerWinner = (PhotonNetwork.IsMasterClient && winner == "player") ||
+                                 (!PhotonNetwork.IsMasterClient && winner == "enemy");
+
+        string winningTeam = isLocalPlayerWinner ? 
+            (PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB") : 
+            (PhotonNetwork.IsMasterClient ? "TeamB" : "TeamA");
+
+        Debug.Log($"Round ended - Winner: {winner}, Winning Team: {winningTeam}, Local Player Won: {isLocalPlayerWinner}");
+
+        // Calculate points for winning team only
         int basePoints = survivingUnits;
         int killPoints = CalculateKillPoints(winningTeam);
         int victoryPoints = 3;
         int streakBonus = GetWinStreakBonus(winningTeam);
 
         int totalPoints = basePoints + killPoints + victoryPoints + streakBonus;
-        
-        Debug.Log($"Point Breakdown:" +
-                $"\nBase Points (Surviving Units): {basePoints}" +
-                $"\nKill Points: {killPoints}" +
-                $"\nVictory Points: {victoryPoints}" +
-                $"\nStreak Bonus: {streakBonus}" +
-                $"\nTotal Points: {totalPoints}");
+
+        Debug.Log($"Point Breakdown for {winningTeam}:" +
+                 $"\nBase Points (Surviving Units): {basePoints}" +
+                 $"\nKill Points: {killPoints}" +
+                 $"\nVictory Points: {victoryPoints}" +
+                 $"\nStreak Bonus: {streakBonus}" +
+                 $"\nTotal Points: {totalPoints}");
 
         photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, winningTeam, totalPoints);
     }
 
-    private int CalculateKillPoints(string winner)
+    private int CalculateKillPoints(string winningTeam)
     {
-        List<BaseUnit> enemyUnits = winner == "TeamA" ? 
+        List<BaseUnit> enemyUnits = winningTeam == "TeamA" ? 
             gameManager.GetEnemyUnits() : gameManager.GetPlayerUnits();
 
-        int deadCount = 0;
-        foreach (BaseUnit unit in enemyUnits)
-        {
-            if (unit != null && unit.GetCurrentState() == UnitState.Dead)
-            {
-                deadCount++;
-            }
-        }
+        int deadCount = enemyUnits.Count(unit => 
+            unit != null && unit.GetCurrentState() == UnitState.Dead);
+
+        Debug.Log($"Kill points calculated for {winningTeam}: {deadCount}");
         return deadCount;
     }
 
@@ -116,7 +115,24 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         PlayerHP playerHP = GameObject.Find($"{team}HP")?.GetComponent<PlayerHP>();
         if (playerHP == null) return 0;
-        return playerHP.winStreak;
+        
+        int streak = playerHP.winStreak;
+        Debug.Log($"Win streak bonus for {team}: {streak}");
+        return streak;
+    }
+    public void AddSupplyPoints(string team, int points)
+    {
+        if (!photonView.IsMine) return;
+        
+        Debug.Log($"EconomyManager: Adding {points} points to {team}");
+        photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, team, points);
+    }
+    public void HandlePointsAwarded(string team, int points)
+    {
+        if (!photonView.IsMine) return;
+        
+        Debug.Log($"Awarding {points} points to {team}");
+        photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, team, points);
     }
 
     public bool CanPurchaseUpgrade(string team, UpgradeType upgradeType)
@@ -132,11 +148,18 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
 
     public bool PurchaseUpgrade(string team, UpgradeType upgradeType)
     {
-        // Only process purchase requests for the local player's team
         string localTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
-        if (team != localTeam) return false;
+        if (team != localTeam)
+        {
+            Debug.LogWarning($"Cannot purchase upgrades for other team. Local: {localTeam}, Requested: {team}");
+            return false;
+        }
 
-        if (!CanPurchaseUpgrade(team, upgradeType)) return false;
+        if (!CanPurchaseUpgrade(team, upgradeType))
+        {
+            Debug.LogWarning($"Cannot purchase upgrade {upgradeType} for {team}");
+            return false;
+        }
 
         PlayerEconomy economy = playerEconomies[team];
         int currentLevel = economy.upgradeLevels[upgradeType];
@@ -155,7 +178,7 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         economy.supplyPoints -= cost;
         economy.upgradeLevels[upgradeType]++;
 
-        Debug.Log($"[{team}] Purchased {upgradeType} upgrade. New level: {economy.upgradeLevels[upgradeType]}");
+        Debug.Log($"{team} purchased {upgradeType} upgrade. New level: {economy.upgradeLevels[upgradeType]}");
         
         OnSupplyPointsChanged?.Invoke(team, economy.supplyPoints);
         OnUpgradePurchased?.Invoke(team, upgradeType, economy.upgradeLevels[upgradeType]);
@@ -181,40 +204,37 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         switch (upgradeType)
         {
             case UpgradeType.Armor:
-                // 25% more HP per level (1.0, 1.25, 1.5)
-                multiplier = 1f + (level * 0.25f);
+                multiplier = 1f + (level * 0.25f); // 25% per level
                 break;
-
             case UpgradeType.Training:
-                // 30% more damage per level (1.0, 1.3, 1.6)
-                multiplier = 1f + (level * 0.3f);
+                multiplier = 1f + (level * 0.3f);  // 30% per level
                 break;
-
             case UpgradeType.Speed:
-                // 20% more speed per level (1.0, 1.2, 1.4)
-                multiplier = 1f + (level * 0.2f);
+                multiplier = 1f + (level * 0.2f);  // 20% per level
                 break;
-
             case UpgradeType.AttackSpeed:
-                // 25% faster attacks per level (1.0, 1.25, 1.5)
-                multiplier = 1f + (level * 0.25f);
+                multiplier = 1f + (level * 0.25f); // 25% per level
                 break;
-
             default:
                 multiplier = 1f;
                 break;
         }
 
-        Debug.Log($"[{team}] {upgradeType} upgrade level: {level}, multiplier: {multiplier}");
+        Debug.Log($"{team} {upgradeType} upgrade level: {level}, multiplier: {multiplier}");
         return multiplier;
     }
 
     [PunRPC]
     private void RPCAddSupplyPoints(string team, int points)
     {
-        if (!playerEconomies.ContainsKey(team)) return;
+        if (!playerEconomies.ContainsKey(team))
+        {
+            Debug.LogError($"Cannot add points to nonexistent team: {team}");
+            return;
+        }
 
         playerEconomies[team].supplyPoints += points;
+        Debug.Log($"Added {points} supply points to {team}. New total: {playerEconomies[team].supplyPoints}");
         OnSupplyPointsChanged?.Invoke(team, playerEconomies[team].supplyPoints);
     }
 

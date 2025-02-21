@@ -1,20 +1,25 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
 
 public class ObjectPool : MonoBehaviourPunCallbacks
 {
+    public static ObjectPool Instance;
+
     [System.Serializable]
     public class Pool
     {
-        public string tag;           // Must match prefab name in Resources folder
-        public int size;            // Initial pool size
-        public Transform parent;    // Optional parent transform
+        public string tag;
+        public GameObject prefab;
+        public int size;
     }
 
-    #region Singleton
-    public static ObjectPool Instance;
+    [SerializeField] private List<Pool> pools;
+    private Dictionary<string, Queue<GameObject>> poolDictionary;
+    private Dictionary<string, Transform> poolParents;
+    private bool isInitialized = false;
 
     private void Awake()
     {
@@ -29,13 +34,6 @@ public class ObjectPool : MonoBehaviourPunCallbacks
             return;
         }
     }
-    #endregion
-
-    [SerializeField] private List<Pool> pools;
-    private Dictionary<string, Queue<GameObject>> poolDictionary;
-    private Dictionary<string, Transform> poolParents;
-    private Dictionary<int, string> viewIdToPoolTag;
-    private bool isInitialized = false;
 
     private void OnEnable()
     {
@@ -55,77 +53,70 @@ public class ObjectPool : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        if (!PhotonNetwork.IsMasterClient) return;
         InitializePools();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"ObjectPool: Scene {scene.name} loaded");
-        if (scene.name == "BattleScene") // Replace with your battle scene name
+        if (scene.name == "BattleScene")
         {
-            InitializePools();
+            StartCoroutine(InitializePoolsDelayed());
         }
+    }
+
+    private System.Collections.IEnumerator InitializePoolsDelayed()
+    {
+        yield return null;
+        InitializePools();
     }
 
     private void InitializePools()
     {
         if (isInitialized) return;
 
-        Debug.Log("ObjectPool: Initializing pools");
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
         poolParents = new Dictionary<string, Transform>();
-        viewIdToPoolTag = new Dictionary<int, string>();
 
         foreach (Pool pool in pools)
         {
-            // Create parent object for this pool
+            if (string.IsNullOrEmpty(pool.tag) || pool.prefab == null)
+            {
+                Debug.LogError($"ObjectPool: Invalid pool configuration for {pool.tag}");
+                continue;
+            }
+
             GameObject parentObj = new GameObject($"{pool.tag}Pool");
             parentObj.transform.SetParent(transform);
             poolParents[pool.tag] = parentObj.transform;
 
             Queue<GameObject> objectPool = new Queue<GameObject>();
+            poolDictionary.Add(pool.tag, objectPool);
 
+            // Only master client creates pool objects
             if (PhotonNetwork.IsMasterClient)
             {
                 for (int i = 0; i < pool.size; i++)
                 {
-                    CreatePoolObject(pool.tag, objectPool);
+                    CreatePoolObject(pool.tag, pool.prefab, objectPool);
                 }
             }
-
-            poolDictionary.Add(pool.tag, objectPool);
         }
 
         isInitialized = true;
-        Debug.Log("ObjectPool: Initialization complete");
     }
 
-    private void CreatePoolObject(string tag, Queue<GameObject> pool)
+    private void CreatePoolObject(string tag, GameObject prefab, Queue<GameObject> pool)
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // Load prefab from Resources folder
-        GameObject prefab = Resources.Load<GameObject>(tag);
-        if (prefab == null)
-        {
-            Debug.LogError($"Failed to load prefab from Resources/{tag}");
-            return;
-        }
-
-        // Instantiate through PhotonNetwork
-        GameObject obj = PhotonNetwork.Instantiate(tag, Vector3.zero, Quaternion.identity);
+        // LOCAL INSTANTIATION INSTEAD OF NETWORK
+        GameObject obj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
         if (obj != null)
         {
+            obj.name = $"{tag}_{pool.Count}";
             obj.transform.SetParent(poolParents[tag]);
+            obj.SetActive(false);
             pool.Enqueue(obj);
-            
-            PhotonView photonView = obj.GetComponent<PhotonView>();
-            if (photonView != null)
-            {
-                viewIdToPoolTag[photonView.ViewID] = tag;
-                photonView.RPC("RPCDeactivatePoolObject", RpcTarget.All);
-            }
         }
     }
 
@@ -133,22 +124,30 @@ public class ObjectPool : MonoBehaviourPunCallbacks
     {
         if (!poolDictionary.ContainsKey(tag))
         {
-            Debug.LogError($"Pool with tag {tag} doesn't exist!");
+            Debug.LogError($"ObjectPool: Pool with tag {tag} doesn't exist!");
             return null;
         }
 
         Queue<GameObject> pool = poolDictionary[tag];
 
-        // Expand pool if needed
+        // If pool is empty, create a new object
         if (pool.Count == 0)
         {
-            if (PhotonNetwork.IsMasterClient)
+            Pool poolConfig = pools.Find(p => p.tag == tag);
+            if (poolConfig != null && poolConfig.prefab != null)
             {
-                CreatePoolObject(tag, pool);
+                CreatePoolObject(tag, poolConfig.prefab, pool);
             }
-            else
+            
+            // If still empty, try direct instantiation
+            if (pool.Count == 0)
             {
-                Debug.LogWarning($"Pool {tag} is empty and client cannot create new objects!");
+                Pool poolConfig2 = pools.Find(p => p.tag == tag);
+                if (poolConfig2 != null && poolConfig2.prefab != null)
+                {
+                    GameObject newObj = Instantiate(poolConfig2.prefab, position, rotation);
+                    return newObj;
+                }
                 return null;
             }
         }
@@ -156,115 +155,65 @@ public class ObjectPool : MonoBehaviourPunCallbacks
         GameObject obj = pool.Dequeue();
         if (obj == null)
         {
-            Debug.LogError($"Dequeued null object from pool {tag}");
+            Debug.LogError($"ObjectPool: Null object in pool {tag}!");
             return null;
         }
 
-        // Use RPC to activate object across network
-        PhotonView photonView = obj.GetComponent<PhotonView>();
-        if (photonView != null)
+        // Reset transform and parent
+        obj.transform.position = position;
+        obj.transform.rotation = rotation;
+        // IMPORTANT: Detach from pool parent while in use
+        obj.transform.SetParent(null);
+
+        // Standard activation
+        obj.SetActive(true);
+
+        IPooledObject pooledObj = obj.GetComponent<IPooledObject>();
+        if (pooledObj != null)
         {
-            photonView.RPC("RPCActivatePoolObject", RpcTarget.All, 
-                position.x, position.y, position.z,
-                rotation.x, rotation.y, rotation.z, rotation.w);
+            pooledObj.OnObjectSpawn();
         }
 
         return obj;
     }
 
-    [PunRPC]
-    private void RPCDeactivatePoolObject()
-    {
-        if (!gameObject.activeInHierarchy) return;
-        
-        gameObject.SetActive(false);
-
-        if (poolParents.ContainsKey(tag))
-        {
-            transform.SetParent(poolParents[tag]);
-        }
-
-        IPooledObject[] pooledObjects = GetComponents<IPooledObject>();
-        foreach (var pooledObj in pooledObjects)
-        {
-            pooledObj.OnObjectSpawn();
-        }
-    }
-
-    [PunRPC]
-    private void RPCActivatePoolObject(float posX, float posY, float posZ, 
-                                     float rotX, float rotY, float rotZ, float rotW)
-    {
-        if (!gameObject.activeInHierarchy) return;
-
-        Vector3 position = new Vector3(posX, posY, posZ);
-        Quaternion rotation = new Quaternion(rotX, rotY, rotZ, rotW);
-
-        transform.position = position;
-        transform.rotation = rotation;
-        gameObject.SetActive(true);
-
-        // Initialize pooled objects
-        IPooledObject[] pooledObjects = GetComponents<IPooledObject>();
-        foreach (var pooledObj in pooledObjects)
-        {
-            pooledObj.OnObjectSpawn();
-        }
-    }
-
     public void ReturnToPool(string tag, GameObject obj)
     {
-        if (!poolDictionary.ContainsKey(tag))
+        if (!poolDictionary.ContainsKey(tag) || obj == null)
         {
-            Debug.LogError($"Pool with tag {tag} doesn't exist!");
+            if (obj == null)
+                Debug.LogError($"ObjectPool: Attempting to return null object to pool {tag}!");
+            else
+                Debug.LogError($"ObjectPool: Pool {tag} doesn't exist!");
             return;
         }
 
-        PhotonView photonView = obj.GetComponent<PhotonView>();
-        if (photonView != null)
-        {
-            photonView.RPC("RPCReturnToPool", RpcTarget.All, tag);
-        }
-    }
-
-    [PunRPC]
-    private void RPCReturnToPool(string tag)
-    {
-        if (!gameObject.activeInHierarchy) return;
-
-        gameObject.SetActive(false);
+        // Deactivate object first
+        obj.SetActive(false);
         
-        if (poolParents.ContainsKey(tag))
+        // IMPORTANT: Re-parent to pool parent when returned
+        if (poolParents.TryGetValue(tag, out Transform poolParent))
         {
-            transform.SetParent(poolParents[tag]);
+            obj.transform.SetParent(poolParent);
         }
-
-        if (poolDictionary.ContainsKey(tag))
-        {
-            poolDictionary[tag].Enqueue(gameObject);
-        }
+        
+        poolDictionary[tag].Enqueue(obj);
     }
 
     public void ClearAllPools()
     {
         if (!isInitialized) return;
 
-        Debug.Log("ObjectPool: Clearing all pools");
-
         if (poolDictionary != null)
         {
             foreach (var pool in poolDictionary)
             {
-                Queue<GameObject> objectPool = pool.Value;
-                while (objectPool.Count > 0)
+                while (pool.Value.Count > 0)
                 {
-                    GameObject obj = objectPool.Dequeue();
+                    GameObject obj = pool.Value.Dequeue();
                     if (obj != null)
                     {
-                        if (PhotonNetwork.IsMasterClient)
-                            PhotonNetwork.Destroy(obj);
-                        else
-                            Destroy(obj);
+                        Destroy(obj);
                     }
                 }
             }
@@ -283,13 +232,16 @@ public class ObjectPool : MonoBehaviourPunCallbacks
             poolParents.Clear();
         }
 
-        viewIdToPoolTag.Clear();
         isInitialized = false;
     }
 
     public void ResetPool(string tag)
     {
-        if (!poolDictionary.ContainsKey(tag)) return;
+        if (!poolDictionary.ContainsKey(tag))
+        {
+            Debug.LogError($"ObjectPool: Cannot reset nonexistent pool {tag}!");
+            return;
+        }
 
         Queue<GameObject> pool = poolDictionary[tag];
         while (pool.Count > 0)
@@ -297,17 +249,27 @@ public class ObjectPool : MonoBehaviourPunCallbacks
             GameObject obj = pool.Dequeue();
             if (obj != null)
             {
-                if (PhotonNetwork.IsMasterClient)
-                    PhotonNetwork.Destroy(obj);
-                else
-                    Destroy(obj);
+                Destroy(obj);
             }
         }
 
         if (poolParents.ContainsKey(tag) && poolParents[tag] != null)
         {
             Destroy(poolParents[tag].gameObject);
-            poolParents.Remove(tag);
+            
+            // Recreate parent
+            GameObject parentObj = new GameObject($"{tag}Pool");
+            parentObj.transform.SetParent(transform);
+            poolParents[tag] = parentObj.transform;
+        }
+    }
+    
+    // Helper method to ensure pools are initialized
+    public void EnsurePoolsInitialized()
+    {
+        if (!isInitialized)
+        {
+            InitializePools();
         }
     }
 }

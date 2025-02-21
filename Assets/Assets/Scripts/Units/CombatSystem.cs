@@ -25,13 +25,18 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private GameObject spellPrefab;
     [SerializeField] private float spellSpeed = 10f;
     [SerializeField] private float spellCastDelay = 0.2f;
+
+    // Constants for pool tags
+    private const string ARROW_POOL_TAG = "ArrowProjectile";
+    private const string SPELL_POOL_TAG = "SpellProjectile";
+    private const string MELEE_EFFECT_POOL_TAG = "MeleeEffect";
     
     private void Awake()
     {
         unit = GetComponent<BaseUnit>();
         if (!TryGetComponent<EnemyTargeting>(out var targeting))
         {
-            Debug.LogError($"CombatSystem requires EnemyTargeting component!");
+            Debug.LogError($"CombatSystem requires EnemyTargeting component on {gameObject.name}!");
         }
 
         ValidateReferences();
@@ -39,13 +44,28 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 
     private void ValidateReferences()
     {
-        if (unit.GetUnitType() == UnitType.Range && arrowPrefab == null)
-            Debug.LogError("Arrow prefab is missing for Range unit!");
-        if (unit.GetUnitType() == UnitType.Mage && spellPrefab == null)
-            Debug.LogError("Spell prefab is missing for Mage unit!");
-        if ((unit.GetUnitType() == UnitType.Fighter || unit.GetUnitType() == UnitType.Tank) 
-            && meleeAttackEffectPrefab == null)
-            Debug.LogError("Melee attack effect prefab is missing for melee unit!");
+        if (unit == null)
+        {
+            Debug.LogError($"No BaseUnit component found on {gameObject.name}!");
+            return;
+        }
+
+        switch (unit.GetUnitType())
+        {
+            case UnitType.Range:
+                if (arrowPrefab == null)
+                    Debug.LogError($"Arrow prefab is missing for Range unit {gameObject.name}!");
+                break;
+            case UnitType.Mage:
+                if (spellPrefab == null)
+                    Debug.LogError($"Spell prefab is missing for Mage unit {gameObject.name}!");
+                break;
+            case UnitType.Fighter:
+            case UnitType.Tank:
+                if (meleeAttackEffectPrefab == null)
+                    Debug.LogError($"Melee attack effect prefab is missing for {unit.GetUnitType()} unit {gameObject.name}!");
+                break;
+        }
     }
 
     public bool CanAttack()
@@ -56,20 +76,32 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     public void ExecuteAttack(BaseUnit target)
     {
         if (!CanAttack() || target == null || target.GetCurrentState() == UnitState.Dead || !photonView.IsMine)
+        {
             return;
+        }
 
         nextAttackTime = Time.time + (1f / unit.GetAttackSpeed());
-        photonView.RPC("RPCExecuteAttack", RpcTarget.All, target.photonView.ViewID);
+        
+        // Store target view ID before RPC
+        int targetViewID = target.photonView.ViewID;
+        photonView.RPC("RPCExecuteAttack", RpcTarget.All, targetViewID);
     }
 
     [PunRPC]
     private void RPCExecuteAttack(int targetViewID)
     {
         PhotonView targetView = PhotonView.Find(targetViewID);
-        if (targetView == null) return;
+        if (targetView == null)
+        {
+            Debug.LogError($"Cannot find target with ViewID {targetViewID}");
+            return;
+        }
 
         BaseUnit target = targetView.GetComponent<BaseUnit>();
-        if (target == null || target.GetCurrentState() == UnitState.Dead) return;
+        if (target == null || target.GetCurrentState() == UnitState.Dead)
+        {
+            return;
+        }
         
         switch (unit.GetUnitType())
         {
@@ -97,10 +129,11 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         BaseUnit target = targetView.GetComponent<BaseUnit>();
         if (target != null && target.GetCurrentState() != UnitState.Dead)
         {
+            // Directly call TakeDamage
             target.TakeDamage(damage);
         }
     }
-
+    
     private IEnumerator PerformMeleeAttackSequence(BaseUnit target)
     {
         Vector3 originalPosition = transform.position;
@@ -111,8 +144,24 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 
         if (photonView.IsMine)
         {
-            photonView.RPC("RPCSpawnMeleeEffect", RpcTarget.All, originalPosition, targetPosition);
-            photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
+            // For melee effects, use direct instantiation
+            GameObject meleeEffect = null;
+            if (meleeAttackEffectPrefab != null)
+            {
+                meleeEffect = Instantiate(meleeAttackEffectPrefab, transform.position, Quaternion.identity);
+                if (meleeEffect != null)
+                {
+                    MeleeAttackEffect effect = meleeEffect.GetComponent<MeleeAttackEffect>();
+                    if (effect != null)
+                    {
+                        effect.SetupEffect(originalPosition, targetPosition);
+                    }
+                    Destroy(meleeEffect, 1f);
+                }
+            }
+            
+            // Apply damage with buffered RPC
+            photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, unit.GetAttackDamage());
         }
 
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
@@ -125,135 +174,73 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             yield break;
         }
 
+        // Apply damage immediately
+        if (photonView.IsMine && target != null && target.GetCurrentState() != UnitState.Dead)
+        {
+            float damage = unit.GetAttackDamage();
+            photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, damage);
+        }
+
         Vector3 spawnOffset = transform.up * 0.5f;
-        if (photonView.IsMine)
+        Vector3 spawnPosition = transform.position + spawnOffset;
+        
+        // Direct instantiation for visual effects only
+        GameObject arrowObj = Instantiate(arrowPrefab, spawnPosition, Quaternion.identity);
+        
+        if (arrowObj != null)
         {
-            photonView.RPC("RPCSpawnArrow", RpcTarget.All, 
-                transform.position + spawnOffset, 
-                target.photonView.ViewID,
-                unit is Range ? (unit as Range).IsExplosiveArrow() : false);
-        }
-
-        yield return null;
-    }
-
-    [PunRPC]
-    private void RPCSpawnArrow(Vector3 spawnPosition, int targetViewID, bool isExplosive)
-    {
-        PhotonView targetView = PhotonView.Find(targetViewID);
-        if (targetView == null) return;
-
-        BaseUnit target = targetView.GetComponent<BaseUnit>();
-        if (target == null) return;
-
-        GameObject arrowObj = ObjectPool.Instance.SpawnFromPool("Arrow", spawnPosition, Quaternion.identity);
-        if (arrowObj == null) return;
-
-        ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
-        if (arrow == null)
-        {
-            ObjectPool.Instance.ReturnToPool("Arrow", arrowObj);
-            return;
-        }
-
-        StartCoroutine(AnimateArrow(arrow, target, isExplosive));
-    }
-
-    private IEnumerator AnimateArrow(ArrowProjectile arrow, BaseUnit target, bool isExplosive)
-    {
-        Vector3 startPos = arrow.transform.position;
-        float initialDistance = Vector3.Distance(startPos, target.transform.position);
-        float duration = initialDistance / arrowSpeed;
-        float elapsedTime = 0f;
-
-        arrow.StartFlight();
-
-        Vector3 previousPosition = startPos;
-        while (elapsedTime < duration && target != null && target.GetCurrentState() != UnitState.Dead)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = elapsedTime / duration;
-
-            Vector3 currentTargetPos = target.transform.position;
-            Vector3 midPoint = Vector3.Lerp(startPos, currentTargetPos, 0.5f);
-            midPoint.y += arrowArcHeight * Mathf.Sin(t * Mathf.PI);
-
-            Vector3 idealPosition = Vector3.Lerp(
-                Vector3.Lerp(startPos, midPoint, t),
-                Vector3.Lerp(midPoint, currentTargetPos, t),
-                t
-            );
-
-            Vector3 directPosition = Vector3.Lerp(arrow.transform.position, currentTargetPos, arrowHomingStrength * Time.deltaTime * arrowSpeed);
-            arrow.transform.position = Vector3.Lerp(idealPosition, directPosition, t);
-
-            if (arrow.transform.position != previousPosition)
+            // Set a direct destroy to ensure it doesn't stay in the scene
+            Destroy(arrowObj, 3f);
+            
+            ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
+            if (arrow != null)
             {
-                Vector3 direction = (arrow.transform.position - previousPosition).normalized;
-                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-                arrow.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-            }
-
-            previousPosition = arrow.transform.position;
-            arrow.UpdateArrowInFlight(t);
-
-            if (Vector3.Distance(arrow.transform.position, currentTargetPos) < 0.5f)
-            {
-                break;
-            }
-
-            yield return null;
-        }
-
-        if (arrow != null && target != null && target.GetCurrentState() != UnitState.Dead)
-        {
-            arrow.transform.position = target.transform.position;
-            arrow.OnHit();
-            if (photonView.IsMine)
-            {
-                photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
-                if (isExplosive && unit is Range rangeUnit)
+                Range rangeUnit = unit as Range;
+                arrow.Initialize(rangeUnit, target);
+                arrow.StartFlight();
+                arrow.MoveToTarget(target.transform.position, arrowSpeed);
+                
+                // Handle explosion effects
+                if (photonView.IsMine && rangeUnit != null && rangeUnit.IsExplosiveArrow())
                 {
+                    yield return new WaitForSeconds(0.5f);
                     rangeUnit.CreateExplosion(target.transform.position, target);
                 }
             }
-        }
-        else if (arrow != null)
-        {
-            ObjectPool.Instance.ReturnToPool("Arrow", arrow.gameObject);
         }
     }
 
     private IEnumerator PerformMageAttackSequence(BaseUnit target)
     {
+        if (target == null || target.GetCurrentState() == UnitState.Dead)
+        {
+            yield break;
+        }
+        
         yield return new WaitForSeconds(spellCastDelay);
 
-        if (photonView.IsMine)
+        // Apply damage immediately
+        if (photonView.IsMine && target != null && target.GetCurrentState() != UnitState.Dead)
         {
-            photonView.RPC("RPCSpawnSpell", RpcTarget.All, transform.position, target.photonView.ViewID);
-        }
-    }
-
-    [PunRPC]
-    private void RPCSpawnSpell(Vector3 spawnPosition, int targetViewID)
-    {
-        PhotonView targetView = PhotonView.Find(targetViewID);
-        if (targetView == null) return;
-
-        BaseUnit target = targetView.GetComponent<BaseUnit>();
-        if (target == null) return;
-
-        GameObject spellObj = ObjectPool.Instance.SpawnFromPool("MagicProjectile", spawnPosition, Quaternion.identity);
-        if (spellObj == null) return;
-
-        MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
-        if (spell == null)
-        {
-            ObjectPool.Instance.ReturnToPool("MagicProjectile", spellObj);
-            return;
+            float damage = unit.GetAttackDamage();
+            photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, damage);
         }
 
-        StartCoroutine(AnimateSpell(spell, target));
+        // Direct instantiation for visual effects only
+        GameObject spellObj = Instantiate(spellPrefab, transform.position, Quaternion.identity);
+        
+        if (spellObj != null)
+        {
+            // Set a direct destroy to ensure it doesn't stay in the scene
+            Destroy(spellObj, 3f);
+            
+            MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
+            if (spell != null)
+            {
+                spell.OnObjectSpawn(); // Initialize
+                spell.MoveToTarget(target.transform.position, spellSpeed);
+            }
+        }
     }
 
     private IEnumerator AnimateSpell(MagicProjectile spell, BaseUnit target)
@@ -264,9 +251,13 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         float duration = distance / spellSpeed;
 
         float elapsedTime = 0f;
+        
         while (elapsedTime < duration)
         {
-            if (spell == null) break;
+            if (spell == null)
+            {
+                break;
+            }
 
             elapsedTime += Time.deltaTime;
             float t = elapsedTime / duration;
@@ -280,25 +271,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             spell.OnSpellHit();
             if (photonView.IsMine && target != null && target.GetCurrentState() != UnitState.Dead)
             {
-                photonView.RPC("RPCApplyDamage", RpcTarget.All, target.photonView.ViewID, unit.GetAttackDamage());
-            }
-        }
-    }
-
-    [PunRPC]
-    private void RPCSpawnMeleeEffect(Vector3 attackerPos, Vector3 targetPos)
-    {
-        GameObject effectObj = ObjectPool.Instance.SpawnFromPool("MeleeEffect", attackerPos, Quaternion.identity);
-        if (effectObj != null)
-        {
-            MeleeAttackEffect effect = effectObj.GetComponent<MeleeAttackEffect>();
-            if (effect != null)
-            {
-                effect.SetupEffect(attackerPos, targetPos);
-            }
-            else
-            {
-                ObjectPool.Instance.ReturnToPool("MeleeEffect", effectObj);
+                photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, unit.GetAttackDamage());
             }
         }
     }
@@ -350,6 +323,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
+            // Just send the attack timer
             stream.SendNext(nextAttackTime);
         }
         else

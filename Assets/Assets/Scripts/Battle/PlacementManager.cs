@@ -9,7 +9,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     [System.Serializable]
     public class UnitPrefab
     {
-        public string name;  // This should match the exact prefab filename
+        public string name;
         public UnitType type;
     }
 
@@ -26,35 +26,22 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     private GameManager gameManager;
     private ValidPlacementSystem validPlacement;
     private HashSet<string> readyTeams = new HashSet<string>();
-    
-    // Set team based on network role
     private string currentTeam;
-    
+    private int currentUnitCount = 0;
+
     public event Action OnUnitsChanged;
 
     private void Start()
     {
         gameManager = GameManager.Instance;
-        if (gameManager == null)
-        {
-            Debug.LogError("GameManager not found in scene!");
-        }
-
         validPlacement = FindFirstObjectByType<ValidPlacementSystem>();
-        if (validPlacement == null)
-        {
-            Debug.LogError("ValidPlacementSystem not found in scene!");
-        }
 
-        // If parent transforms aren't assigned, use this transform as default
         if (playerAUnitsParent == null) playerAUnitsParent = transform;
         if (playerBUnitsParent == null) playerBUnitsParent = transform;
 
-        // Set initial team based on player's actor number
         currentTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
         Debug.Log($"PlacementManager initialized for {currentTeam}");
 
-        // Subscribe to game state changes
         if (gameManager != null)
         {
             gameManager.OnGameStateChanged += HandleGameStateChanged;
@@ -72,13 +59,11 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     private void HandleGameStateChanged(GameState newState)
     {
         Debug.Log($"PlacementManager: Handling state change to {newState}");
-        // No need to change teams since they're determined by network role
     }
 
     public bool CanPlaceUnit()
     {
-        int teamUnitCount = placedUnits.Count(u => u.GetTeamId() == currentTeam);
-        return teamUnitCount < maxUnitsPerTeam;
+        return currentUnitCount < maxUnitsPerTeam;
     }
 
     public void SelectUnitType(UnitType type)
@@ -89,7 +74,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks
 
     public void PlaceUnit(Vector3 position)
     {
-        Debug.Log($"PlaceUnit called. IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}");
+        Debug.Log($"PlaceUnit called. IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}, CurrentCount: {currentUnitCount}");
     
         if (!CanPlaceUnit())
         {
@@ -97,26 +82,23 @@ public class PlacementManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        GameObject prefab = GetPrefabForType(selectedUnitType);
-        if (prefab == null)
+        bool canPlace = (PhotonNetwork.IsMasterClient && currentTeam == "TeamA") ||
+                      (!PhotonNetwork.IsMasterClient && currentTeam == "TeamB");
+
+        if (!canPlace)
         {
-            Debug.LogError($"No prefab found for unit type: {selectedUnitType}");
+            Debug.LogWarning($"Cannot place units for other team. Local: {currentTeam}");
             return;
         }
 
-        // Add network instantiation ownership check
-        if (!PhotonNetwork.IsMasterClient && currentTeam == "TeamA" ||
-            PhotonNetwork.IsMasterClient && currentTeam == "TeamB")
-        {
-            Debug.LogWarning($"Cannot place units for the other team! IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}");
-            return;
-        }
-
-        Transform parentTransform = currentTeam == "TeamA" ? playerAUnitsParent : playerBUnitsParent;
+        string prefabPath = $"UnitPrefabs/{selectedUnitType}";
+        GameObject unitObject = PhotonNetwork.Instantiate(prefabPath, position, Quaternion.identity);
         
-        // Instantiate using PhotonNetwork with path relative to Resources folder
-        Debug.Log($"Attempting to instantiate: UnitPrefabs/{selectedUnitType}");
-        GameObject unitObject = PhotonNetwork.Instantiate($"UnitPrefabs/{selectedUnitType}", position, Quaternion.identity);
+        if (unitObject == null)
+        {
+            Debug.LogError($"Failed to instantiate unit prefab: {prefabPath}");
+            return;
+        }
 
         BaseUnit unit = unitObject.GetComponent<BaseUnit>();
         if (unit == null)
@@ -127,19 +109,8 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         }
 
         unit.SetTeam(currentTeam);
+        currentUnitCount++;
         
-        // Log upgrade levels when placing unit
-        if (EconomyManager.Instance != null)
-        {
-            Debug.Log($"[{currentTeam}] Current upgrade levels when placing {selectedUnitType}:");
-            foreach (UpgradeType upgrade in System.Enum.GetValues(typeof(UpgradeType)))
-            {
-                float multiplier = EconomyManager.Instance.GetUpgradeMultiplier(currentTeam, upgrade);
-                Debug.Log($"  {upgrade}: multiplier {multiplier}");
-            }
-        }
-
-        // Notify all clients about the placement
         photonView.RPC("RPCUnitPlaced", RpcTarget.All, unit.photonView.ViewID);
     }
 
@@ -152,7 +123,6 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         BaseUnit unit = unitView.GetComponent<BaseUnit>();
         if (unit == null) return;
 
-        // Add to placed units list
         if (!placedUnits.Contains(unit))
         {
             placedUnits.Add(unit);
@@ -172,7 +142,6 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         var teamUnits = GetTeamUnits(unit.GetTeamId());
         Debug.Log($"After placement - {unit.GetTeamId()} units: {teamUnits.Count}/{maxUnitsPerTeam}");
 
-        // Check if team has placed all units
         if (teamUnits.Count >= maxUnitsPerTeam)
         {
             if (PhotonNetwork.IsMasterClient)
@@ -180,23 +149,6 @@ public class PlacementManager : MonoBehaviourPunCallbacks
                 photonView.RPC("RPCTeamReadyForBattle", RpcTarget.All, unit.GetTeamId());
             }
         }
-    }
-
-    private GameObject GetPrefabForType(UnitType type)
-    {
-        UnitPrefab unitPrefab = unitPrefabs.Find(u => u.type == type);
-        if (unitPrefab == null) 
-        {
-            Debug.LogError($"No UnitPrefab configuration found for type: {type}");
-            return null;
-        }
-        
-        GameObject prefab = Resources.Load<GameObject>($"UnitPrefabs/{type}");
-        if (prefab == null)
-        {
-            Debug.LogError($"Could not load prefab from Resources/UnitPrefabs/{type}");
-        }
-        return prefab;
     }
 
     public void ClearUnits()
@@ -214,6 +166,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         }
         placedUnits.Clear();
         readyTeams.Clear();
+        currentUnitCount = 0;
         photonView.RPC("RPCUnitsCleared", RpcTarget.All);
     }
 
@@ -244,6 +197,16 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     private void RPCTeamUnitsCleared(string team)
     {
         readyTeams.Remove(team);
+        
+        // Reset unit count for the appropriate team
+        if ((PhotonNetwork.IsMasterClient && team == "TeamA") ||
+            (!PhotonNetwork.IsMasterClient && team == "TeamB"))
+        {
+            currentUnitCount = 0;
+            Debug.Log($"Reset unit count for {team}");
+        }
+
+        placedUnits.RemoveAll(unit => unit == null || unit.GetTeamId() == team);
         OnUnitsChanged?.Invoke();
     }
 
@@ -252,7 +215,6 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     {
         readyTeams.Add(team);
         
-        // If both teams are ready, the master client starts the battle
         if (readyTeams.Count == 2 && PhotonNetwork.IsMasterClient)
         {
             gameManager?.StartBattle();
@@ -261,7 +223,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks
 
     public int GetPlacedUnitsCount()
     {
-        return placedUnits.Count(u => u.GetTeamId() == currentTeam);
+        return currentUnitCount;
     }
 
     public int GetMaxUnits()
@@ -276,19 +238,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks
 
     public List<BaseUnit> GetTeamUnits(string team)
     {
-        return placedUnits.Where(u => u.GetTeamId() == team).ToList();
-    }
-
-    public bool IsPositionOccupied(Vector3 position, float threshold = 0.5f)
-    {
-        foreach (BaseUnit unit in placedUnits)
-        {
-            if (unit != null && Vector3.Distance(unit.transform.position, position) < threshold)
-            {
-                return true;
-            }
-        }
-        return false;
+        return placedUnits.Where(u => u != null && u.GetTeamId() == team).ToList();
     }
 
     public string GetCurrentTeam()

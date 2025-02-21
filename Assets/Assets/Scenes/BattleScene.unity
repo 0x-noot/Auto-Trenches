@@ -1292,19 +1292,15 @@ MonoBehaviour:
   - tag: ArrowProjectile
     prefab: {fileID: 7661146755148989948, guid: 9cc251b041dca264683011fb5979b594, type: 3}
     size: 20
-    parent: {fileID: 1910123634}
   - tag: SpellProjectile
     prefab: {fileID: 5755857881989349283, guid: 743a57da3fe99894d98e2d578b368dae, type: 3}
     size: 20
-    parent: {fileID: 1910123634}
   - tag: ExplosionEffect
     prefab: {fileID: 7475421778096362061, guid: f406fb866bbf8104399cae605b2d05ef, type: 3}
     size: 10
-    parent: {fileID: 1910123634}
   - tag: ShieldEffect
     prefab: {fileID: 2706341720612109025, guid: c13211a02080fc5469047420357d67fd, type: 3}
     size: 10
-    parent: {fileID: 1910123634}
 --- !u!4 &431508835
 Transform:
   m_ObjectHideFlags: 0
@@ -4259,6 +4255,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerAHP: {fileID: 163010614}
   playerBHP: {fileID: 325649871}
+  placementManager: {fileID: 365522353}
 --- !u!4 &1053526295
 Transform:
   m_ObjectHideFlags: 0
@@ -4893,7 +4890,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 239439227896f524f8981fbd6851d358, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameManager: {fileID: 1777834796}
 --- !u!4 &1228665218
 Transform:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
 using System;
+using System.Collections;
 
 public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -9,6 +10,7 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
     private float maxHealth;
     private float currentHealth;
     private bool isProcessingRPC = false;
+    private bool isUpdatingUI = false;
 
     public event Action OnHPChanged;
 
@@ -33,7 +35,7 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         maxHealth = max;
         currentHealth = max;
-        UpdateHealthBar();
+        UpdateHealthBarSafely();
         Debug.Log($"Health system initialized. Max Health: {maxHealth}, Current Health: {currentHealth}");
     }
 
@@ -55,20 +57,52 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
         
         Debug.Log($"Taking damage: {damage}. Health: {previousHealth} -> {currentHealth}");
         
-        UpdateHealthBar();
-        OnHPChanged?.Invoke();
+        UpdateHealthBarSafely();
+        
+        // Use a coroutine to trigger the event on the next frame
+        // This helps avoid event callbacks during RPC processing
+        StartCoroutine(TriggerHPChangedNextFrame());
     }
 
-    private void UpdateHealthBar()
+    // Safe update that prevents UI rebuild errors
+    private void UpdateHealthBarSafely()
     {
-        if (healthBar != null)
-        {
-            healthBar.value = currentHealth / maxHealth;
+        if (isUpdatingUI) return;
+        
+        try {
+            isUpdatingUI = true;
             
-            // Ensure the UI is updated immediately
-            Canvas.ForceUpdateCanvases();
+            if (healthBar != null && healthBar.gameObject.activeInHierarchy)
+            {
+                // Update slider value directly
+                float healthPercentage = maxHealth > 0 ? currentHealth / maxHealth : 0;
+                healthBar.value = healthPercentage;
+                
+                // Delay the force update to avoid nested canvas rebuilds
+                StartCoroutine(DelayedCanvasUpdate());
+            }
+        }
+        finally {
+            isUpdatingUI = false;
+        }
+    }
+    
+    private IEnumerator DelayedCanvasUpdate()
+    {
+        // Wait for end of frame to update canvas
+        yield return new WaitForEndOfFrame();
+        
+        if (healthBar != null && healthBar.gameObject.activeInHierarchy)
+        {
+            // Update layout if needed
             LayoutRebuilder.ForceRebuildLayoutImmediate(healthBar.GetComponent<RectTransform>());
         }
+    }
+
+    private IEnumerator TriggerHPChangedNextFrame()
+    {
+        yield return null;
+        OnHPChanged?.Invoke();
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -84,15 +118,31 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
             // Network player, receive data
             currentHealth = (float)stream.ReceiveNext();
             maxHealth = (float)stream.ReceiveNext();
-            UpdateHealthBar();
+            
+            // Update UI safely
+            UpdateHealthBarSafely();
         }
     }
-
+    public void SetHealth(float current, float max)
+    {
+        currentHealth = current;
+        maxHealth = max;
+        
+        // Safe update that prevents UI rebuild errors
+        if (healthBar != null && healthBar.gameObject.activeInHierarchy)
+        {
+            // Update slider value directly without using Canvas.ForceUpdateCanvases()
+            healthBar.value = maxHealth > 0 ? currentHealth / maxHealth : 0;
+        }
+        
+        // Notify listeners next frame to avoid callback recursion
+        StartCoroutine(TriggerHPChangedNextFrame());
+    }
     public void TriggerHPChanged()
     {
         if (photonView.IsMine)
         {
-            OnHPChanged?.Invoke();
+            StartCoroutine(TriggerHPChangedNextFrame());
         }
     }
 
