@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Photon.Pun;
+using Photon.Realtime;
 
 public class Range : BaseUnit
 {
@@ -12,7 +13,7 @@ public class Range : BaseUnit
     [SerializeField] private float explosionRadius = 3.5f;
     [SerializeField] private float explosionDamageMultiplier = 0.3f;
     [SerializeField] private GameObject explosionEffectPrefab;
-    [SerializeField] private bool isExplosiveArrow = false;
+    private bool isExplosiveArrow = false;
 
     private void Awake()
     {
@@ -22,36 +23,35 @@ public class Range : BaseUnit
         attackRange = 12f;
         moveSpeed = 3f;
         attackSpeed = 0.9f;
+
+        base.Awake();
+        Debug.Log($"Range unit initialized: {gameObject.name}");
     }
 
     protected override void TryActivateAbility()
     {
         if (!photonView.IsMine) return;
         
+        Debug.Log($"TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
+        
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
-            ActivateAbility();
-            nextAbilityTime = Time.time + baseAbilityCooldown;
+            Debug.Log("Activating explosive arrow ability!");
+            photonView.RPC("RPCActivateAbility", RpcTarget.All);
         }
     }
-
+    [PunRPC]
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
-        photonView.RPC("RPCSetExplosiveArrow", RpcTarget.All, true);
+        isExplosiveArrow = true;
     }
 
     protected override void DeactivateAbility()
     {
         if (!photonView.IsMine) return;
-        photonView.RPC("RPCSetExplosiveArrow", RpcTarget.All, false);
+        isExplosiveArrow = false;
         base.DeactivateAbility();
-    }
-
-    [PunRPC]
-    private void RPCSetExplosiveArrow(bool explosive)
-    {
-        isExplosiveArrow = explosive;
     }
 
     public bool IsExplosiveArrow()
@@ -61,31 +61,32 @@ public class Range : BaseUnit
 
     public void CreateExplosion(Vector3 position, BaseUnit primaryTarget)
     {
-        if (!isExplosiveArrow || !photonView.IsMine) return;
+        Debug.Log($"CreateExplosion called on {gameObject.name}");
+        Debug.Log($"isExplosiveArrow: {isExplosiveArrow}, IsMine: {photonView.IsMine}");
 
-        photonView.RPC("RPCCreateExplosion", RpcTarget.All, position, primaryTarget.photonView.ViewID);
-    }
 
-    [PunRPC]
-    private void RPCCreateExplosion(Vector3 position, int primaryTargetViewID)
-    {
-        // Spawn explosion effect
-        if (explosionEffectPrefab != null)
+        if (!isExplosiveArrow || !photonView.IsMine)
         {
-            GameObject explosionEffect = Instantiate(explosionEffectPrefab, position, Quaternion.identity);
-            Destroy(explosionEffect, 2f);
+            Debug.Log("CreateExplosion early return - conditions not met");
+            return;
         }
 
-        // Only the owner calculates and applies damage
-        if (!photonView.IsMine) return;
+        if (explosionEffectPrefab != null)
+        {
+            Debug.Log($"Attempting to instantiate explosion at position: {position}");
+            GameObject explosion = PhotonNetwork.Instantiate(
+                explosionEffectPrefab.name, 
+                position, 
+                Quaternion.identity
+            );
+            Debug.Log($"Explosion instantiated: {explosion != null}");
+        }
+        else
+        {
+            Debug.LogError("ExplosionEffectPrefab is null!");
+        }
 
-        // Get primary target
-        PhotonView primaryTargetView = PhotonView.Find(primaryTargetViewID);
-        if (primaryTargetView == null) return;
-        BaseUnit primaryTarget = primaryTargetView.GetComponent<BaseUnit>();
-        if (primaryTarget == null) return;
-
-        // Get all units in explosion radius
+        // Apply explosion damage
         string enemyLayer = teamId == "TeamA" ? "TeamB" : "TeamA";
         Collider2D[] hitColliders = Physics2D.OverlapCircleAll(
             position,
@@ -93,7 +94,7 @@ public class Range : BaseUnit
             LayerMask.GetMask(enemyLayer)
         );
 
-        HashSet<BaseUnit> affectedUnits = new HashSet<BaseUnit>();
+        float explosionDamage = GetAttackDamage() * explosionDamageMultiplier;
         
         foreach (Collider2D col in hitColliders)
         {
@@ -102,19 +103,12 @@ public class Range : BaseUnit
                 enemy != primaryTarget && 
                 enemy.GetCurrentState() != UnitState.Dead)
             {
-                affectedUnits.Add(enemy);
+                enemy.TakeDamage(explosionDamage);
             }
         }
 
-        // Calculate and apply explosion damage
-        float explosionDamage = GetAttackDamage() * explosionDamageMultiplier;
-        foreach (BaseUnit unit in affectedUnits)
-        {
-            unit.TakeDamage(explosionDamage);
-        }
-
-        // Small chance to deactivate ability after explosion
-        if (Random.value < 0.3f) // 30% chance to end
+        // 30% chance to end ability after explosion
+        if (UnityEngine.Random.value < 0.3f)
         {
             DeactivateAbility();
         }
@@ -134,12 +128,6 @@ public class Range : BaseUnit
         }
 
         return baseDamage;
-    }
-
-    [PunRPC]
-    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
-    {
-        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
     }
 
     private void OnDrawGizmosSelected()

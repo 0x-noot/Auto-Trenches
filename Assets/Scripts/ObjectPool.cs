@@ -79,6 +79,13 @@ public class ObjectPool : MonoBehaviourPunCallbacks
 
         foreach (Pool pool in pools)
         {
+            // Skip arrow and spell projectile pools since we're using direct instantiation
+            if (pool.tag == GameConstants.ARROW_PREFAB_TAG || 
+                pool.tag == GameConstants.SPELL_PREFAB_TAG) 
+            {
+                continue;
+            }
+
             if (string.IsNullOrEmpty(pool.tag) || pool.prefab == null)
             {
                 Debug.LogError($"ObjectPool: Invalid pool configuration for {pool.tag}");
@@ -122,6 +129,13 @@ public class ObjectPool : MonoBehaviourPunCallbacks
 
     public GameObject SpawnFromPool(string tag, Vector3 position, Quaternion rotation)
     {
+        // If it's a projectile tag, return null or throw an error as we're using direct instantiation
+        if (tag == GameConstants.ARROW_PREFAB_TAG || tag == GameConstants.SPELL_PREFAB_TAG)
+        {
+            Debug.LogWarning($"ObjectPool: Projectiles should use direct instantiation, not pooling. Tag: {tag}");
+            return null;
+        }
+
         if (!poolDictionary.ContainsKey(tag))
         {
             Debug.LogError($"ObjectPool: Pool with tag {tag} doesn't exist!");
@@ -179,6 +193,13 @@ public class ObjectPool : MonoBehaviourPunCallbacks
 
     public void ReturnToPool(string tag, GameObject obj)
     {
+        // If it's a projectile tag, just destroy the object
+        if (tag == GameConstants.ARROW_PREFAB_TAG || tag == GameConstants.SPELL_PREFAB_TAG)
+        {
+            Destroy(obj);
+            return;
+        }
+
         if (!poolDictionary.ContainsKey(tag) || obj == null)
         {
             if (obj == null)
@@ -237,6 +258,12 @@ public class ObjectPool : MonoBehaviourPunCallbacks
 
     public void ResetPool(string tag)
     {
+        // If it's a projectile tag, just return as we're using direct instantiation
+        if (tag == GameConstants.ARROW_PREFAB_TAG || tag == GameConstants.SPELL_PREFAB_TAG)
+        {
+            return;
+        }
+
         if (!poolDictionary.ContainsKey(tag))
         {
             Debug.LogError($"ObjectPool: Cannot reset nonexistent pool {tag}!");

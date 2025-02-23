@@ -5077,7 +5077,6 @@ MonoBehaviour:
   explosiveParticles: {fileID: 5861093419961748088, guid: f406fb866bbf8104399cae605b2d05ef, type: 3}
   rotationSpeed: 360
   scaleDuringFlight: 1.2
-  hitEffectDuration: 0.5
 --- !u!114 &6503653653682259998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5094,7 +5093,7 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 2
+  OwnershipTransfer: 1
   observableSearch: 2
   ObservedComponents:
   - {fileID: 8410726031217052513}

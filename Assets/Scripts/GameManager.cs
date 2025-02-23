@@ -65,12 +65,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        // Ensure object pools are initialized 
-        if (ObjectPool.Instance != null)
-        {
-            ObjectPool.Instance.EnsurePoolsInitialized();
-        }
-        
         if (!isInitialized)
         {
             Initialize();
@@ -102,6 +96,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         // Short delay before transitioning to placement
         StartCoroutine(TransitionToPlacement());
     }
+    
     private IEnumerator TransitionToPlacement()
     {
         // Wait a short moment to ensure everything is ready
@@ -123,6 +118,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             StartCoroutine(InitializeAfterSceneLoad());
         }
     }
+    
     private IEnumerator InitializeAfterSceneLoad()
     {
         // Wait a frame for everything to setup
@@ -167,10 +163,38 @@ public class GameManager : MonoBehaviourPunCallbacks
         isBattleEnding = false;
     }
 
+    private void CleanupProjectiles()
+    {
+        // Find all active projectiles
+        ArrowProjectile[] arrows = FindObjectsOfType<ArrowProjectile>();
+        MagicProjectile[] spells = FindObjectsOfType<MagicProjectile>();
+        
+        // Clean up arrows
+        foreach (var arrow in arrows)
+        {
+            if (arrow != null && arrow.gameObject.activeInHierarchy)
+            {
+                Destroy(arrow.gameObject);
+            }
+        }
+        
+        // Clean up spells
+        foreach (var spell in spells)
+        {
+            if (spell != null && spell.gameObject.activeInHierarchy)
+            {
+                Destroy(spell.gameObject);
+            }
+        }
+    }
+
     public void PrepareNextRound()
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
+        // Clean up any leftover projectiles
+        CleanupProjectiles();
+        
         photonView.RPC("RPCPrepareNextRound", RpcTarget.All);
     }
 
@@ -367,6 +391,9 @@ public class GameManager : MonoBehaviourPunCallbacks
             return;
         }
 
+        // Clean up any projectiles before ending
+        CleanupProjectiles();
+        
         // Use AllBuffered to ensure all clients get the end battle message
         photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
     }
@@ -399,6 +426,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             targeting.StopTargeting();
         }
     }
+    
     protected virtual void Update()
     {
         if (!PhotonNetwork.IsMasterClient || 
@@ -412,6 +440,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             
         CheckBattleEnd();
     }
+    
     public void UpdateGameState(GameState newState)
     {
         if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) 
@@ -433,12 +462,11 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         base.OnDisconnected(cause);
         
-        // Clean up all pools and units
-        if (ObjectPool.Instance != null)
-        {
-            ObjectPool.Instance.ClearAllPools();
-        }
+        // Clean up all units
         CleanupUnits();
+        
+        // Clean up projectiles when disconnecting
+        CleanupProjectiles();
     }
 
     public GameState GetCurrentState()

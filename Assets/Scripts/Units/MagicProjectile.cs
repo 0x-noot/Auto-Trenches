@@ -14,16 +14,20 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     [SerializeField] private float rotationSpeed = 360f;
     [SerializeField] private float pulseSpeed = 2f;
     [SerializeField] private float pulseAmount = 0.2f;
-    [SerializeField] private float returnDelay = 0.5f;
     
     private float initialSize;
     private float time;
     private bool isActive = false;
     private bool isDestroyed = false;
+    private bool isMoving = false;
+
+    // Network sync variables
     private Vector3 syncedPosition;
     private Quaternion syncedRotation;
     private Vector3 syncedScale;
-    private bool isMoving = false;
+    private float interpolationSpeed = 15f;
+    private float syncInterval = 0.1f;
+    private float lastSyncTime = 0f;
 
     private void Awake()
     {
@@ -42,9 +46,27 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         syncedScale = transform.localScale;
     }
 
+    private void Update()
+    {
+        if (!photonView.IsMine && isActive && !isDestroyed)
+        {
+            // Smooth interpolation for non-owners
+            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * interpolationSpeed);
+            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * interpolationSpeed);
+            transform.localScale = Vector3.Lerp(transform.localScale, syncedScale, Time.deltaTime * interpolationSpeed);
+            
+            // Update visual effects
+            if (isActive && !isDestroyed)
+            {
+                time += Time.deltaTime;
+                float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
+                transform.localScale = Vector3.one * initialSize * pulse;
+            }
+        }
+    }
+
     public void OnObjectSpawn()
     {
-        // Reset components
         isDestroyed = false;
         isActive = true;
         time = 0f;
@@ -69,56 +91,6 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         }
 
         SetupVisuals();
-    }
-
-    public void MoveToTarget(Vector3 targetPosition, float speed)
-    {
-        if (isMoving) return;
-        isMoving = true;
-        StartCoroutine(MoveCoroutine(targetPosition, speed));
-    }
-
-    private IEnumerator MoveCoroutine(Vector3 targetPosition, float speed)
-    {
-        Vector3 startPos = transform.position;
-        float distance = Vector3.Distance(startPos, targetPosition);
-        float journeyLength = distance;
-        float startTime = Time.time;
-        float maxTravelTime = 3f; // Max 3 seconds of travel
-        
-        while (Vector3.Distance(transform.position, targetPosition) > 0.2f && !isDestroyed)
-        {
-            float distCovered = (Time.time - startTime) * speed;
-            float fractionOfJourney = distCovered / journeyLength;
-            transform.position = Vector3.Lerp(startPos, targetPosition, fractionOfJourney);
-            
-            // Continue rotating and pulsing during movement
-            transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
-            time += Time.deltaTime;
-            float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
-            transform.localScale = Vector3.one * initialSize * pulse;
-            
-            // Store synced values
-            syncedPosition = transform.position;
-            syncedRotation = transform.rotation;
-            syncedScale = transform.localScale;
-            
-            // Safety mechanism - if we've been traveling too long, force destroy
-            if (Time.time - startTime > maxTravelTime)
-            {
-                Debug.Log("Spell exceeded max travel time - destroying");
-                Destroy(gameObject);
-                yield break;
-            }
-            
-            yield return null;
-        }
-        
-        // When we reach the target, hit and destroy immediately
-        if (photonView.IsMine)
-        {
-            OnSpellHit();
-        }
     }
 
     private void SetupVisuals()
@@ -151,19 +123,60 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         {
             var main = particleEffect.main;
             main.startColor = spellColor;
+            particleEffect.Play();
         }
     }
 
-    private void Update()
+    public void MoveToTarget(Vector3 targetPosition, float speed)
     {
-        if (!isActive || isDestroyed) return;
+        if (isMoving) return;
+        isMoving = true;
+        StartCoroutine(MoveCoroutine(targetPosition, speed));
+    }
 
-        if (!photonView.IsMine)
+    private IEnumerator MoveCoroutine(Vector3 targetPosition, float speed)
+    {
+        Vector3 startPos = transform.position;
+        Vector3 finalTargetPosition = targetPosition; // Store initial target position
+        Vector3 direction = (finalTargetPosition - startPos).normalized;
+        float distance = Vector3.Distance(startPos, finalTargetPosition);
+        float journeyLength = distance;
+        float startTime = Time.time;
+        float maxTravelTime = 3f;
+        
+        while (Vector3.Distance(transform.position, finalTargetPosition) > 0.2f && !isDestroyed)
         {
-            // Smooth interpolation for non-owners
-            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * 10f);
-            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * 10f);
-            transform.localScale = Vector3.Lerp(transform.localScale, syncedScale, Time.deltaTime * 10f);
+            // Even if target dies, keep moving to the stored position
+            float distCovered = (Time.time - startTime) * speed;
+            float fractionOfJourney = distCovered / journeyLength;
+            transform.position = Vector3.Lerp(startPos, finalTargetPosition, fractionOfJourney);
+            
+            // Rotate to face movement direction
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+            
+            // Update synced values if enough time has passed
+            if (Time.time - lastSyncTime >= syncInterval)
+            {
+                syncedPosition = transform.position;
+                syncedRotation = transform.rotation;
+                lastSyncTime = Time.time;
+            }
+            
+            // Safety check with warning
+            if (Time.time - startTime > maxTravelTime)
+            {
+                Debug.LogWarning($"Projectile exceeded max travel time. Distance to target: {Vector3.Distance(transform.position, finalTargetPosition)}");
+                OnSpellHit();
+                yield break;
+            }
+            
+            yield return null;
+        }
+        
+        if (photonView.IsMine)
+        {
+            OnSpellHit();
         }
     }
 
@@ -173,30 +186,28 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         
         isDestroyed = true;
         
-        // Disable effects
-        if (spellTrail != null)
-            spellTrail.emitting = false;
+        // Disable visuals immediately
         if (spellSprite != null)
             spellSprite.enabled = false;
+        if (spellTrail != null)
+        {
+            spellTrail.emitting = false;
+            spellTrail.Clear();
+        }
+        if (particleEffect != null)
+        {
+            particleEffect.Stop();
+            particleEffect.Clear();
+        }
         
-        // Create hit effect if needed
+        // Create hit effect
         CreateHitEffect();
         
         // Notify other clients
         photonView.RPC("RPCOnSpellHit", RpcTarget.All);
         
-        // DESTROY IMMEDIATELY - No delay
-        Destroy(gameObject);
-    }
-
-    private IEnumerator DestroyAfterDelay()
-    {
-        yield return new WaitForSeconds(returnDelay);
-        
-        if (gameObject != null)
-        {
-            Destroy(gameObject);
-        }
+        // Immediate destruction
+        PhotonNetwork.Destroy(gameObject);
     }
 
     [PunRPC]
@@ -205,25 +216,28 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         if (isDestroyed) return;
         isDestroyed = true;
 
-        // Disable trail and sprite
-        if (spellTrail != null)
-            spellTrail.emitting = false;
+        // Disable visuals immediately
         if (spellSprite != null)
             spellSprite.enabled = false;
+        if (spellTrail != null)
+        {
+            spellTrail.emitting = false;
+            spellTrail.Clear();
+        }
+        if (particleEffect != null)
+        {
+            particleEffect.Stop();
+            particleEffect.Clear();
+        }
 
-        // Create hit effect
         CreateHitEffect();
-        
-        // Destroy after delay
-        Destroy(gameObject, returnDelay);
     }
 
     private void CreateHitEffect()
     {
-        // Spawn a particle burst
         if (particleEffect != null && !isDestroyed)
         {
-            particleEffect.Stop();
+            // Create a burst effect
             var burstParams = new ParticleSystem.Burst(0f, 20);
             var emission = particleEffect.emission;
             emission.SetBurst(0, burstParams);
@@ -235,23 +249,21 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     {
         if (stream.IsWriting)
         {
-            // Send data
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+            stream.SendNext(transform.localScale);
             stream.SendNext(isActive);
             stream.SendNext(isDestroyed);
             stream.SendNext(time);
-            stream.SendNext(syncedPosition);
-            stream.SendNext(syncedRotation);
-            stream.SendNext(syncedScale);
         }
         else
         {
-            // Receive data
-            isActive = (bool)stream.ReceiveNext();
-            isDestroyed = (bool)stream.ReceiveNext();
-            time = (float)stream.ReceiveNext();
             syncedPosition = (Vector3)stream.ReceiveNext();
             syncedRotation = (Quaternion)stream.ReceiveNext();
             syncedScale = (Vector3)stream.ReceiveNext();
+            isActive = (bool)stream.ReceiveNext();
+            isDestroyed = (bool)stream.ReceiveNext();
+            time = (float)stream.ReceiveNext();
         }
     }
 
@@ -260,6 +272,7 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         StopAllCoroutines();
         isActive = false;
         isDestroyed = false;
+        isMoving = false;
         time = 0f;
     }
 }

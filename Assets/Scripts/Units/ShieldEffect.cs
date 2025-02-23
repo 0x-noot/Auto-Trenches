@@ -1,7 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 
-public class ShieldEffect : PooledObjectBase
+public class ShieldEffect : MonoBehaviourPunCallbacks, IPunObservable
 {
     [SerializeField] private ParticleSystem mainShieldParticles;
     [SerializeField] private ParticleSystem orbitalParticles;
@@ -11,10 +11,10 @@ public class ShieldEffect : PooledObjectBase
     [SerializeField] private Color shieldColor = new Color(0, 0.8f, 1f, 0.5f);
     [SerializeField] private float orbitalSpeed = 2f;
 
-    protected override void Awake()
-    {
-        base.Awake();
+    private bool isActive = false;
 
+    private void Awake()
+    {
         // Validate and get references
         if (mainShieldParticles == null)
         {
@@ -35,7 +35,7 @@ public class ShieldEffect : PooledObjectBase
         SetupParticleSystems();
     }
 
-    public override void OnObjectSpawn()
+    private void OnEnable()
     {
         // Reset particles
         if (mainShieldParticles != null)
@@ -142,10 +142,8 @@ public class ShieldEffect : PooledObjectBase
         }
     }
 
-    protected override void OnDisable()
+    private void OnDisable()
     {
-        base.OnDisable();
-        
         if (mainShieldParticles != null)
             mainShieldParticles.Stop();
         if (orbitalParticles != null)

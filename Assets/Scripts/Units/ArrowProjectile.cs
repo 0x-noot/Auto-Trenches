@@ -21,7 +21,6 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     [Header("Flight Settings")]
     [SerializeField] private float rotationSpeed = 360f;
     [SerializeField] private float scaleDuringFlight = 1.2f;
-    [SerializeField] private float hitEffectDuration = 0.5f;
     
     private Vector3 originalScale;
     private bool isFlying = false;
@@ -29,9 +28,14 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     private Range sourceUnit;
     private BaseUnit targetUnit;
     private float currentFlightProgress = 0f;
+    private bool isMoving = false;
+
+    // Network sync variables
     private Vector3 syncedPosition;
     private Quaternion syncedRotation;
-    private bool isMoving = false;
+    private float interpolationSpeed = 15f;
+    private float syncInterval = 0.1f;
+    private float lastSyncTime = 0f;
 
     private void Awake()
     {
@@ -47,6 +51,16 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         originalScale = transform.localScale;
         syncedPosition = transform.position;
         syncedRotation = transform.rotation;
+    }
+
+    private void Update()
+    {
+        if (!photonView.IsMine && isFlying && !isDestroyed)
+        {
+            // Smooth interpolation for non-owners
+            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * interpolationSpeed);
+            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * interpolationSpeed);
+        }
     }
 
     public void OnObjectSpawn()
@@ -78,10 +92,8 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         sourceUnit = null;
         targetUnit = null;
         
-        // Ensure we're actually active (important for pooling)
         gameObject.SetActive(true);
     }
-
     public void Initialize(Range source, BaseUnit target)
     {
         if (!photonView.IsMine) return;
@@ -89,12 +101,17 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         sourceUnit = source;
         targetUnit = target;
         
-        // Send important info to other clients
+        // Only proceed if target is valid and alive
+        if (target == null || target.GetCurrentState() == UnitState.Dead)
+        {
+            OnHit(); // Destroy projectile if target is invalid
+            return;
+        }
+        
         photonView.RPC("RPCInitialize", RpcTarget.Others, 
             (source != null) ? source.photonView.ViewID : -1, 
             (target != null) ? target.photonView.ViewID : -1);
-            
-        // Set up locally immediately
+                
         if (source != null && source.IsExplosiveArrow())
             SetupExplosiveArrow();
         else
@@ -104,7 +121,6 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     [PunRPC]
     private void RPCInitialize(int sourceViewID, int targetViewID)
     {
-        // Find objects from view IDs
         if (sourceViewID != -1)
         {
             PhotonView sourceView = PhotonView.Find(sourceViewID);
@@ -119,7 +135,6 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
                 targetUnit = targetView.GetComponent<BaseUnit>();
         }
 
-        // Setup visuals
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
             SetupExplosiveArrow();
         else
@@ -190,18 +205,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     public void StartFlight()
     {
         if (!photonView.IsMine) return;
-        
-        // Set local state
-        isFlying = true;
-        
-        // Enable trail and particles
-        if (arrowTrail != null)
-            arrowTrail.emitting = true;
-        if (arrowParticles != null)
-            arrowParticles.Play();
-            
-        // Notify other clients
-        photonView.RPC("RPCStartFlight", RpcTarget.Others);
+        photonView.RPC("RPCStartFlight", RpcTarget.All);
     }
 
     [PunRPC]
@@ -218,60 +222,65 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     {
         if (!photonView.IsMine) return;
         
-        // Update local state
         currentFlightProgress = flightProgress;
         
-        // Update visual properties
         transform.Rotate(Vector3.forward * rotationSpeed * Time.deltaTime);
         float scaleMultiplier = Mathf.Lerp(1f, scaleDuringFlight, flightProgress);
         transform.localScale = originalScale * scaleMultiplier;
         
-        // Update particles if needed
         if (arrowParticles != null)
         {
             var emission = arrowParticles.emission;
             emission.rateOverTime = Mathf.Lerp(20f, 10f, flightProgress);
         }
-        
-        // Save for network sync
-        syncedPosition = transform.position;
-        syncedRotation = transform.rotation;
+
+        // Update synced values if enough time has passed
+        if (Time.time - lastSyncTime >= syncInterval)
+        {
+            syncedPosition = transform.position;
+            syncedRotation = transform.rotation;
+            lastSyncTime = Time.time;
+        }
     }
 
     public void OnHit()
     {
         if (!photonView.IsMine) return;
         
-        // Set local state
         isFlying = false;
         isDestroyed = true;
         
-        // Disable effects
+        // Disable effects immediately
+        if (arrowSprite != null)
+            arrowSprite.enabled = false;
         if (arrowTrail != null)
+        {
             arrowTrail.emitting = false;
+            arrowTrail.Clear();
+        }
         if (arrowParticles != null)
+        {
             arrowParticles.Stop();
-            
+            arrowParticles.Clear();
+        }
+                
         // Handle explosion if needed
         if (sourceUnit != null && sourceUnit.IsExplosiveArrow() && targetUnit != null)
         {
+             Debug.Log($"Calling CreateExplosion on sourceUnit: {sourceUnit.gameObject.name}");
             sourceUnit.CreateExplosion(transform.position, targetUnit);
+        }
+        else
+        {
+            Debug.Log($"Explosion conditions not met: sourceUnit={sourceUnit != null}, " +
+                    $"isExplosive={sourceUnit?.IsExplosiveArrow()}, targetUnit={targetUnit != null}");
         }
         
         // Notify other clients
         photonView.RPC("RPCOnHit", RpcTarget.All);
         
-        // DESTROY IMMEDIATELY - No delay
-        Destroy(gameObject);
-    }
-    private IEnumerator DestroyAfterDelay()
-    {
-        yield return new WaitForSeconds(hitEffectDuration);
-        
-        if (gameObject != null)
-        {
-            Destroy(gameObject);
-        }
+        // Immediate destruction
+        PhotonNetwork.Destroy(gameObject);
     }
 
     [PunRPC]
@@ -280,70 +289,20 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         isFlying = false;
         isDestroyed = true;
         
+        if (arrowSprite != null)
+            arrowSprite.enabled = false;
         if (arrowTrail != null)
+        {
             arrowTrail.emitting = false;
+            arrowTrail.Clear();
+        }
         if (arrowParticles != null)
+        {
             arrowParticles.Stop();
-    }
-
-    private IEnumerator ReturnToPoolAfterDelay()
-    {
-        yield return new WaitForSeconds(hitEffectDuration);
-        
-        if (photonView.IsMine && gameObject.activeInHierarchy)
-        {
-            // Make sure we use the correct pool tag
-            ObjectPool.Instance.ReturnToPool("ArrowProjectile", gameObject);
+            arrowParticles.Clear();
         }
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        if (stream.IsWriting)
-        {
-            // Basic state data
-            stream.SendNext(isFlying);
-            stream.SendNext(isDestroyed);
-            stream.SendNext(currentFlightProgress);
-            
-            // Position data only if flying
-            if (isFlying && !isDestroyed)
-            {
-                stream.SendNext(syncedPosition);
-                stream.SendNext(syncedRotation);
-            }
-        }
-        else
-        {
-            // Receive data
-            isFlying = (bool)stream.ReceiveNext();
-            isDestroyed = (bool)stream.ReceiveNext();
-            currentFlightProgress = (float)stream.ReceiveNext();
-            
-            // Only update position if flying
-            if (isFlying && !isDestroyed)
-            {
-                syncedPosition = (Vector3)stream.ReceiveNext();
-                syncedRotation = (Quaternion)stream.ReceiveNext();
-                
-                // Smooth lerping for better visual
-                transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * 10f);
-                transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * 10f);
-            }
-            
-            // Update visual state based on received state
-            if (arrowTrail != null)
-                arrowTrail.emitting = isFlying && !isDestroyed;
-                
-            if (arrowParticles != null)
-            {
-                if (isFlying && !isDestroyed && !arrowParticles.isPlaying)
-                    arrowParticles.Play();
-                else if ((!isFlying || isDestroyed) && arrowParticles.isPlaying)
-                    arrowParticles.Stop();
-            }
-        }
-    }
     public void MoveToTarget(Vector3 targetPosition, float speed)
     {
         if (isMoving) return;
@@ -354,37 +313,66 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
     private IEnumerator MoveCoroutine(Vector3 targetPosition, float speed)
     {
         Vector3 startPos = transform.position;
-        Vector3 direction = (targetPosition - startPos).normalized;
-        float distance = Vector3.Distance(startPos, targetPosition);
+        Vector3 finalTargetPosition = targetPosition; // Store initial target position
+        Vector3 direction = (finalTargetPosition - startPos).normalized;
+        float distance = Vector3.Distance(startPos, finalTargetPosition);
         float journeyLength = distance;
         float startTime = Time.time;
-        float maxTravelTime = 3f; // Max 3 seconds of travel
+        float maxTravelTime = 3f;
         
-        while (Vector3.Distance(transform.position, targetPosition) > 0.2f && !isDestroyed)
+        while (Vector3.Distance(transform.position, finalTargetPosition) > 0.2f && !isDestroyed)
         {
+            // Even if target dies, keep moving to the stored position
             float distCovered = (Time.time - startTime) * speed;
             float fractionOfJourney = distCovered / journeyLength;
-            transform.position = Vector3.Lerp(startPos, targetPosition, fractionOfJourney);
+            transform.position = Vector3.Lerp(startPos, finalTargetPosition, fractionOfJourney);
             
-            // Rotate arrow to face movement direction
+            // Rotate to face movement direction
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
             
-            // Safety mechanism - if we've been traveling too long, force destroy
+            // Update synced values if enough time has passed
+            if (Time.time - lastSyncTime >= syncInterval)
+            {
+                syncedPosition = transform.position;
+                syncedRotation = transform.rotation;
+                lastSyncTime = Time.time;
+            }
+            
+            // Safety check with warning
             if (Time.time - startTime > maxTravelTime)
             {
-                Debug.Log("Arrow exceeded max travel time - destroying");
-                Destroy(gameObject);
+                Debug.LogWarning($"Projectile exceeded max travel time. Distance to target: {Vector3.Distance(transform.position, finalTargetPosition)}");
+                OnHit();
                 yield break;
             }
             
             yield return null;
         }
         
-        // When we reach the target, trigger hit and destroy immediately
         if (photonView.IsMine)
         {
             OnHit();
+        }
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            stream.SendNext(transform.position);
+            stream.SendNext(transform.rotation);
+            stream.SendNext(isFlying);
+            stream.SendNext(isDestroyed);
+            stream.SendNext(currentFlightProgress);
+        }
+        else
+        {
+            syncedPosition = (Vector3)stream.ReceiveNext();
+            syncedRotation = (Quaternion)stream.ReceiveNext();
+            isFlying = (bool)stream.ReceiveNext();
+            isDestroyed = (bool)stream.ReceiveNext();
+            currentFlightProgress = (float)stream.ReceiveNext();
         }
     }
 
@@ -394,5 +382,6 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         isFlying = false;
         isDestroyed = false;
         currentFlightProgress = 0f;
+        isMoving = false;
     }
 }

@@ -25,11 +25,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private GameObject spellPrefab;
     [SerializeField] private float spellSpeed = 10f;
     [SerializeField] private float spellCastDelay = 0.2f;
-
-    // Constants for pool tags
-    private const string ARROW_POOL_TAG = "ArrowProjectile";
-    private const string SPELL_POOL_TAG = "SpellProjectile";
-    private const string MELEE_EFFECT_POOL_TAG = "MeleeEffect";
     
     private void Awake()
     {
@@ -179,32 +174,26 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         {
             float damage = unit.GetAttackDamage();
             photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, damage);
-        }
-
-        Vector3 spawnOffset = transform.up * 0.5f;
-        Vector3 spawnPosition = transform.position + spawnOffset;
         
-        // Direct instantiation for visual effects only
-        GameObject arrowObj = Instantiate(arrowPrefab, spawnPosition, Quaternion.identity);
-        
-        if (arrowObj != null)
-        {
-            // Set a direct destroy to ensure it doesn't stay in the scene
-            Destroy(arrowObj, 3f);
+            // Only spawn arrow if we're the owner
+            Vector3 spawnOffset = transform.up * 0.5f;
+            Vector3 spawnPosition = transform.position + spawnOffset;
             
-            ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
-            if (arrow != null)
+            GameObject arrowObj = PhotonNetwork.Instantiate(
+                arrowPrefab.name,
+                spawnPosition,
+                Quaternion.identity
+            );
+            
+            if (arrowObj != null)
             {
-                Range rangeUnit = unit as Range;
-                arrow.Initialize(rangeUnit, target);
-                arrow.StartFlight();
-                arrow.MoveToTarget(target.transform.position, arrowSpeed);
-                
-                // Handle explosion effects
-                if (photonView.IsMine && rangeUnit != null && rangeUnit.IsExplosiveArrow())
+                ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
+                if (arrow != null)
                 {
-                    yield return new WaitForSeconds(0.5f);
-                    rangeUnit.CreateExplosion(target.transform.position, target);
+                    Range rangeUnit = unit as Range;
+                    arrow.Initialize(rangeUnit, target);
+                    arrow.StartFlight();
+                    arrow.MoveToTarget(target.transform.position, arrowSpeed);
                 }
             }
         }
@@ -224,21 +213,22 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         {
             float damage = unit.GetAttackDamage();
             photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, damage);
-        }
-
-        // Direct instantiation for visual effects only
-        GameObject spellObj = Instantiate(spellPrefab, transform.position, Quaternion.identity);
-        
-        if (spellObj != null)
-        {
-            // Set a direct destroy to ensure it doesn't stay in the scene
-            Destroy(spellObj, 3f);
             
-            MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
-            if (spell != null)
+            // Only spawn spell if we're the owner
+            GameObject spellObj = PhotonNetwork.Instantiate(
+                spellPrefab.name,
+                transform.position,
+                Quaternion.identity
+            );
+            
+            if (spellObj != null)
             {
-                spell.OnObjectSpawn(); // Initialize
-                spell.MoveToTarget(target.transform.position, spellSpeed);
+                MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
+                if (spell != null)
+                {
+                    spell.OnObjectSpawn();
+                    spell.MoveToTarget(target.transform.position, spellSpeed);
+                }
             }
         }
     }

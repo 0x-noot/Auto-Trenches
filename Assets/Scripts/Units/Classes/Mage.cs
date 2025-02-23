@@ -77,6 +77,7 @@ public class Mage : BaseUnit
         return attackDamage + magicPenetration;
     }
 
+    [PunRPC]
     protected override void RPCActivateAbility()
     {
         if (!isAbilityActive && 

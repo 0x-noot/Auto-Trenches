@@ -5028,7 +5028,6 @@ MonoBehaviour:
   rotationSpeed: 360
   pulseSpeed: 2
   pulseAmount: 0.2
-  returnDelay: 0.5
 --- !u!114 &4284475423375132244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5045,7 +5044,7 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 2
+  OwnershipTransfer: 1
   observableSearch: 2
   ObservedComponents:
   - {fileID: 1958189010611658329}
