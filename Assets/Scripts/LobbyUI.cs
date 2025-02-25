@@ -156,7 +156,7 @@ public class LobbyUI : MonoBehaviour
         isInRoom = true;
         ShowMatchLobbyPanel();
         
-        leaveLobbyButton.gameObject.SetActive(!isMasterClient);
+        leaveLobbyButton.gameObject.SetActive(true);
         readyButton.interactable = true;
         
         if (isMasterClient)

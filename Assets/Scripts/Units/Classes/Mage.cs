@@ -121,28 +121,34 @@ public class Mage : BaseUnit
 
     private IEnumerator FreezeAbility()
     {
-        // Find all BaseUnit components in the scene
-        BaseUnit[] allUnits = FindObjectsOfType<BaseUnit>();
+        // Get target from the EnemyTargeting component
+        EnemyTargeting targeting = GetComponent<EnemyTargeting>();
+        BaseUnit targetUnit = null;
         
-        foreach (BaseUnit unit in allUnits)
+        if (targeting != null)
         {
-            // Check if it's an enemy unit in range
-            if (unit != null && 
-                unit != this && 
-                unit.GetTeamId() != teamId && 
-                unit.GetCurrentState() != UnitState.Dead)
+            // Access the current target from EnemyTargeting
+            Transform targetTransform = targeting.GetCurrentTarget();
+            if (targetTransform != null)
             {
-                float distance = Vector3.Distance(transform.position, unit.transform.position);
-                
-                if (distance <= freezeRadius)
-                {
-                    PhotonView enemyView = unit.GetComponent<PhotonView>();
-                    if (enemyView != null)
-                    {
-                        photonView.RPC("RPCFreezeUnit", RpcTarget.All, enemyView.ViewID);
-                    }
-                }
+                targetUnit = targetTransform.GetComponent<BaseUnit>();
             }
+        }
+        
+        if (targetUnit != null && 
+            targetUnit.GetTeamId() != teamId && 
+            targetUnit.GetCurrentState() != UnitState.Dead)
+        {
+            Debug.Log($"Mage freezing target from targeting component: {targetUnit.gameObject.name}");
+            PhotonView enemyView = targetUnit.GetComponent<PhotonView>();
+            if (enemyView != null)
+            {
+                photonView.RPC("RPCFreezeUnit", RpcTarget.All, enemyView.ViewID);
+            }
+        }
+        else
+        {
+            Debug.Log("Mage has no valid target to freeze from targeting component");
         }
 
         // Safety timer to ensure units are unfrozen

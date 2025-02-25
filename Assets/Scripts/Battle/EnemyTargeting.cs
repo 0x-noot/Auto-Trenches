@@ -310,6 +310,11 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    public Transform GetCurrentTarget()
+    {
+        return currentTarget;
+    }
+
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
