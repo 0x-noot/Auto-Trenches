@@ -213,12 +213,12 @@ MonoBehaviour:
   deathAnimationDuration: 1
   useDeathAnimation: 1
   baseAbilityCooldown: 15
-  abilityChance: 0.2
+  abilityChance: 0.05
   magicPenetration: 10
   freezeDuration: 3
-  freezeRadius: 5
+  freezeRadius: 15
   freezeEffectPrefab: {fileID: 8194950356070885071, guid: 7c397df4eb426ec4aac8dedfada7bd3b, type: 3}
-  flashInterval: 0.2
+  freezeEffectStarted: 0
 --- !u!114 &5021277451700102207
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -259,7 +259,7 @@ MonoBehaviour:
   prefixField: -1
   Synchronization: 3
   OwnershipTransfer: 0
-  observableSearch: 0
+  observableSearch: 2
   ObservedComponents:
   - {fileID: 4093855614760905040}
   - {fileID: 8158063898966457997}

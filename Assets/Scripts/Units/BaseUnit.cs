@@ -36,7 +36,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
 
     [Header("Ability Settings")]
     [SerializeField] protected float baseAbilityCooldown = 15f;
-    [SerializeField] protected float abilityChance = 0.2f;
+    [SerializeField] protected float abilityChance = 0.05f;
     protected bool isAbilityActive = false;
     protected float nextAbilityTime = 0f;
 

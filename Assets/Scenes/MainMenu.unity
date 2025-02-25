@@ -5138,7 +5138,7 @@ MonoBehaviour:
   usernameInput: {fileID: 814970006}
   confirmUsernameButton: {fileID: 1921616927}
   lobbyListContent: {fileID: 913412834}
-  lobbyEntryPrefab: {fileID: 4639247926935031048, guid: b4af608e27a12ed4a81d23be77ab53f5, type: 3}
+  lobbyEntryPrefab: {fileID: 4639247926935031048, guid: 12755ca3518124349bf79349ebe85ce2, type: 3}
   createLobbyButton: {fileID: 2069115159}
   refreshButton: {fileID: 1639074511}
   backButton: {fileID: 109283065}
