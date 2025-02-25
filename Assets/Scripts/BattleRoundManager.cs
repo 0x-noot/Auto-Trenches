@@ -138,18 +138,8 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         
         Debug.Log($"Battle result: {winner} won. Local player ({(PhotonNetwork.IsMasterClient ? "Host" : "Client")}): {localResultText}");
 
-        // Award points to winner only
-        if (EconomyManager.Instance != null && isLocalPlayerWinner)
-        {
-            int basePoints = survivingUnits;
-            int victoryPoints = 3;
-            int streakBonus = isLocalPlayerWinner ? 
-                (PhotonNetwork.IsMasterClient ? playerAHP.winStreak : playerBHP.winStreak) : 0;
-            
-            int totalPoints = basePoints + victoryPoints + streakBonus;
-            Debug.Log($"Awarding {totalPoints} points to {winningTeam}");
-            EconomyManager.Instance.AddSupplyPoints(winningTeam, totalPoints);
-        }
+        // Remove direct point awarding here, EconomyManager.HandleRoundEnd will handle this
+        // EconomyManager should be the only code that awards points
 
         // Apply damage and win streaks
         if (winner == "player")

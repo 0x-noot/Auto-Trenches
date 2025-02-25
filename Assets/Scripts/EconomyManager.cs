@@ -69,11 +69,12 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
 
     private void HandleRoundEnd(string winner, int survivingUnits)
     {
+        // Only the MasterClient should award points to avoid duplication
         if (!PhotonNetwork.IsMasterClient) return;
 
         // Determine if local player won
         bool isLocalPlayerWinner = (PhotonNetwork.IsMasterClient && winner == "player") ||
-                                 (!PhotonNetwork.IsMasterClient && winner == "enemy");
+                                (!PhotonNetwork.IsMasterClient && winner == "enemy");
 
         string winningTeam = isLocalPlayerWinner ? 
             (PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB") : 
@@ -90,11 +91,11 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         int totalPoints = basePoints + killPoints + victoryPoints + streakBonus;
 
         Debug.Log($"Point Breakdown for {winningTeam}:" +
-                 $"\nBase Points (Surviving Units): {basePoints}" +
-                 $"\nKill Points: {killPoints}" +
-                 $"\nVictory Points: {victoryPoints}" +
-                 $"\nStreak Bonus: {streakBonus}" +
-                 $"\nTotal Points: {totalPoints}");
+                $"\nBase Points (Surviving Units): {basePoints}" +
+                $"\nKill Points: {killPoints}" +
+                $"\nVictory Points: {victoryPoints}" +
+                $"\nStreak Bonus: {streakBonus}" +
+                $"\nTotal Points: {totalPoints}");
 
         photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, winningTeam, totalPoints);
     }

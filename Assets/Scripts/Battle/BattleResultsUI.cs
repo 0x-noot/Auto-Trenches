@@ -5,6 +5,7 @@ using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using Photon.Pun;
 
 public class BattleResultsUI : MonoBehaviour
 {
@@ -71,11 +72,15 @@ public class BattleResultsUI : MonoBehaviour
         }
     }
 
-    private void HandleRoundEnd(string winner, int originalSurvivingUnits)
+    private void HandleRoundEnd(string resultText, int originalSurvivingUnits)
     {
         if (BattleRoundManager.Instance == null || GameManager.Instance == null) return;
 
-        List<BaseUnit> losingTeamUnits = winner == "player" 
+        // Since resultText is now directly "Victory!" or "Defeat!" from BattleRoundManager
+        // we can use it directly to determine if the local player won
+        bool isVictory = resultText == "Victory!";
+        
+        List<BaseUnit> losingTeamUnits = isVictory 
             ? GameManager.Instance.GetEnemyUnits() 
             : GameManager.Instance.GetPlayerUnits();
 
@@ -86,22 +91,22 @@ public class BattleResultsUI : MonoBehaviour
         // Use the current losing team unit count or fall back to original surviving units
         int unitsToDisplay = losingTeamUnitCount > 0 ? losingTeamUnitCount : originalSurvivingUnits;
 
-        StartCoroutine(ShowRoundResults(winner, unitsToDisplay));
+        StartCoroutine(ShowRoundResults(resultText, unitsToDisplay));
     }
 
-    private void HandleMatchEnd(string winner)
+    private void HandleMatchEnd(string resultText)
     {
-        StartCoroutine(ShowMatchResults(winner));
+        StartCoroutine(ShowMatchResults(resultText));
     }
 
-    private IEnumerator ShowRoundResults(string winner, int survivingUnits)
+    private IEnumerator ShowRoundResults(string resultText, int survivingUnits)
     {
         resultsPanel.SetActive(true);
         
-        winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {(winner == "player" ? "Victory!" : "Defeat!")}";
-        winnerText.color = winner == "player" ? Color.green : Color.red;
+        winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {resultText}";
+        winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         
-        battleStatsText.text = GenerateRoundStats(winner, survivingUnits);
+        battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
         
         yield return StartCoroutine(FadeInPanel());
         yield return new WaitForSeconds(transitionDelay);
@@ -111,12 +116,12 @@ public class BattleResultsUI : MonoBehaviour
         BattleRoundManager.Instance.StartNewRound();
     }
 
-    private IEnumerator ShowMatchResults(string winner)
+    private IEnumerator ShowMatchResults(string resultText)
     {
         resultsPanel.SetActive(true);
         
-        winnerText.text = $"Match {(winner == "player" ? "Victory!" : "Defeat!")}";
-        winnerText.color = winner == "player" ? Color.green : Color.red;
+        winnerText.text = $"Match {resultText}";
+        winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         
         battleStatsText.text = GenerateMatchStats();
         
@@ -161,10 +166,11 @@ public class BattleResultsUI : MonoBehaviour
         isTransitioning = false;
     }
 
-    private string GenerateRoundStats(string winner, int survivingUnits)
+    private string GenerateRoundStats(string resultText, int survivingUnits)
     {
+        bool isVictory = resultText == "Victory!";
         float damage = 8f + (1.5f * survivingUnits);  // Match the new formula
-        string enemyUnits = winner == "player" ? 
+        string enemyUnits = isVictory ? 
             "Enemy Units Remaining: 0" : 
             $"Enemy Units Remaining: {survivingUnits}";
                 
