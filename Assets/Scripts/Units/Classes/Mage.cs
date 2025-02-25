@@ -28,7 +28,7 @@ public class Mage : BaseUnit
         baseAttackSpeed = 0.7f;
         
         // Explicitly set ability chance from BaseUnit
-        abilityChance = 0.05f;
+        abilityChance = 0.03f;
         
         // Set current stats equal to base stats initially
         maxHealth = baseHealth;

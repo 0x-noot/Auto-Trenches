@@ -26,6 +26,8 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     protected float currentAttackDamage;
     protected float currentAttackSpeed;
     protected float currentMoveSpeed;
+    private float abilityCheckTimer = 0f;
+    private const float ABILITY_CHECK_INTERVAL = 1.5f;
 
     [Header("Team Settings")]
     [SerializeField] protected string teamId;
@@ -232,12 +234,14 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!photonView.IsMine || !gameObject.activeInHierarchy) return;
 
+        abilityCheckTimer += Time.deltaTime;
         if (GameManager.Instance != null && 
             GameManager.Instance.GetCurrentState() == GameState.BattleActive && 
             currentState == UnitState.Attacking &&
             currentState != UnitState.Dead && 
-            Time.time >= nextAbilityTime)
+            abilityCheckTimer >= ABILITY_CHECK_INTERVAL)
         {
+            abilityCheckTimer = 0f;
             TryActivateAbility();
         }
     }

@@ -67,22 +67,45 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
         Debug.Log("EconomyManager: Economies initialized");
     }
 
-    private void HandleRoundEnd(string winner, int survivingUnits)
+    private void HandleRoundEnd(string resultText, int survivingUnits)
+    {
+        // This method now receives "Victory!" or "Defeat!" from BattleRoundManager
+        // We should NOT use this for point calculation anymore
+        
+        // The point calculation is now handled by HandleRoundPoints
+        // which is directly called from BattleRoundManager with the original winner value
+        
+        Debug.Log($"EconomyManager: HandleRoundEnd received result: {resultText} - Ignoring for point calculation");
+        
+        // No point calculation here
+    }
+
+    private int CalculateKillPoints(string winningTeam)
+    {
+        List<BaseUnit> enemyUnits = winningTeam == "TeamA" ? 
+            gameManager.GetEnemyUnits() : gameManager.GetPlayerUnits();
+
+        int deadCount = enemyUnits.Count(unit => 
+            unit != null && unit.GetCurrentState() == UnitState.Dead);
+
+        Debug.Log($"Kill points calculated for {winningTeam}: {deadCount}");
+        return deadCount;
+    }
+
+    public void HandleRoundPoints(string winner, int survivingUnits)
     {
         // Only the MasterClient should award points to avoid duplication
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // Determine if local player won
-        bool isLocalPlayerWinner = (PhotonNetwork.IsMasterClient && winner == "player") ||
-                                (!PhotonNetwork.IsMasterClient && winner == "enemy");
+        Debug.Log($"EconomyManager: Handling points for winner: {winner}, surviving units: {survivingUnits}");
 
-        string winningTeam = isLocalPlayerWinner ? 
-            (PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB") : 
-            (PhotonNetwork.IsMasterClient ? "TeamB" : "TeamA");
+        // Determine winning team based on raw "player"/"enemy" value
+        // "player" means TeamA (MasterClient) won, "enemy" means TeamB won
+        string winningTeam = winner == "player" ? "TeamA" : "TeamB";
 
-        Debug.Log($"Round ended - Winner: {winner}, Winning Team: {winningTeam}, Local Player Won: {isLocalPlayerWinner}");
+        Debug.Log($"EconomyManager: Points will be awarded to: {winningTeam}");
 
-        // Calculate points for winning team only
+        // Calculate points for winning team
         int basePoints = survivingUnits;
         int killPoints = CalculateKillPoints(winningTeam);
         int victoryPoints = 3;
@@ -98,18 +121,6 @@ public class EconomyManager : MonoBehaviourPunCallbacks, IPunObservable
                 $"\nTotal Points: {totalPoints}");
 
         photonView.RPC("RPCAddSupplyPoints", RpcTarget.All, winningTeam, totalPoints);
-    }
-
-    private int CalculateKillPoints(string winningTeam)
-    {
-        List<BaseUnit> enemyUnits = winningTeam == "TeamA" ? 
-            gameManager.GetEnemyUnits() : gameManager.GetPlayerUnits();
-
-        int deadCount = enemyUnits.Count(unit => 
-            unit != null && unit.GetCurrentState() == UnitState.Dead);
-
-        Debug.Log($"Kill points calculated for {winningTeam}: {deadCount}");
-        return deadCount;
     }
 
     private int GetWinStreakBonus(string team)

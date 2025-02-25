@@ -18,6 +18,7 @@ public class Fighter : BaseUnit
     
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
+    private bool abilityStarted = false;
 
     private void Awake()
     {
@@ -27,6 +28,7 @@ public class Fighter : BaseUnit
         baseAttackSpeed = 1.3f;
         baseMoveSpeed = 3.5f;
         attackRange = 3.5f;
+        abilityChance = 0.08f;
         
         // Set current stats equal to base stats initially
         maxHealth = baseHealth;
@@ -84,14 +86,61 @@ public class Fighter : BaseUnit
         return attackDamage;
     }
 
+    protected override void TryActivateAbility()
+    {
+        if (!photonView.IsMine) return;
+        
+        Debug.Log($"Fighter TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
+        
+        if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
+        {
+            Debug.Log("Activating apeshit ability!");
+            photonView.RPC("RPCActivateAbility", RpcTarget.All);
+        }
+    }
+
+    [PunRPC]
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
+        Debug.Log("Fighter RPCActivateAbility called");
+        // Directly start the ability coroutine
+        abilityStarted = true;
         StartCoroutine(ApeShitAbility());
+    }
+
+    protected override void PerformAbilityActivation()
+    {
+        Debug.Log("Fighter PerformAbilityActivation called");
+        if (!abilityStarted)
+        {
+            abilityStarted = true;
+            StartCoroutine(ApeShitAbility());
+        }
     }
 
     private IEnumerator ApeShitAbility()
     {
+        Debug.Log("Fighter ApeShitAbility coroutine started");
+        photonView.RPC("RPCApplyAbilityBuffs", RpcTarget.All);
+
+        float elapsedTime = 0f;
+        while (elapsedTime < apeShitDuration && currentState == UnitState.Attacking)
+        {
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        if (photonView.IsMine)
+        {
+            ResetAbilityEffects();
+        }
+    }
+
+    [PunRPC]
+    private void RPCApplyAbilityBuffs()
+    {
+        Debug.Log("Fighter RPCApplyAbilityBuffs called");
         // Apply buffs
         attackSpeed = baseAttackSpeed * apeShitAttackSpeedMultiplier;
         currentCriticalStrikeChance += apeShitCritChanceBonus;
@@ -107,18 +156,6 @@ public class Fighter : BaseUnit
         {
             rageParticles.Play();
         }
-
-        float elapsedTime = 0f;
-        while (elapsedTime < apeShitDuration && currentState == UnitState.Attacking)
-        {
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        if (photonView.IsMine)
-        {
-            ResetAbilityEffects();
-        }
     }
 
     private void ResetAbilityEffects()
@@ -130,6 +167,7 @@ public class Fighter : BaseUnit
     [PunRPC]
     private void RPCResetAbilityEffects()
     {
+        Debug.Log("Fighter RPCResetAbilityEffects called");
         // Reset stats
         attackSpeed = baseAttackSpeed;
         currentCriticalStrikeChance = baseCriticalStrikeChance;
@@ -146,6 +184,7 @@ public class Fighter : BaseUnit
             rageParticles.Stop();
         }
 
+        abilityStarted = false;
         DeactivateAbility();
     }
 

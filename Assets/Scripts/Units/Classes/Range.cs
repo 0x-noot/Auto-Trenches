@@ -23,7 +23,7 @@ public class Range : BaseUnit
         attackRange = 12f;
         moveSpeed = 3f;
         attackSpeed = 0.9f;
-
+        abilityChance = 0.06f;
         base.Awake();
         Debug.Log($"Range unit initialized: {gameObject.name}");
     }

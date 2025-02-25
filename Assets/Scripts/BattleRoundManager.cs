@@ -138,8 +138,12 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         
         Debug.Log($"Battle result: {winner} won. Local player ({(PhotonNetwork.IsMasterClient ? "Host" : "Client")}): {localResultText}");
 
-        // Remove direct point awarding here, EconomyManager.HandleRoundEnd will handle this
-        // EconomyManager should be the only code that awards points
+        // We call the economy manager with the original winner string
+        // This ensures it can correctly determine which team won
+        if (EconomyManager.Instance != null && PhotonNetwork.IsMasterClient)
+        {
+            EconomyManager.Instance.HandleRoundPoints(winner, survivingUnits);
+        }
 
         // Apply damage and win streaks
         if (winner == "player")
@@ -172,7 +176,6 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         currentRound++;
         PrepareNextRound();
     }
-
     private int CountSurvivingUnits(string winner)
     {
         if (GameManager.Instance == null) return 0;
