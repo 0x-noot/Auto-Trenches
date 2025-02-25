@@ -226,7 +226,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                 MagicProjectile spell = spellObj.GetComponent<MagicProjectile>();
                 if (spell != null)
                 {
-                    spell.OnObjectSpawn();
                     spell.MoveToTarget(target.transform.position, spellSpeed);
                 }
             }

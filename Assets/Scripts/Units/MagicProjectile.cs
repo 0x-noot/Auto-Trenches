@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObservable
+public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
 {
     [Header("Visual Settings")]
     [SerializeField] private SpriteRenderer spellSprite;
@@ -63,34 +63,6 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
                 transform.localScale = Vector3.one * initialSize * pulse;
             }
         }
-    }
-
-    public void OnObjectSpawn()
-    {
-        isDestroyed = false;
-        isActive = true;
-        time = 0f;
-        transform.localScale = Vector3.one * initialSize;
-        
-        if (spellSprite != null)
-        {
-            spellSprite.enabled = true;
-            spellSprite.color = spellColor;
-        }
-
-        if (spellTrail != null)
-        {
-            spellTrail.Clear();
-            spellTrail.emitting = true;
-        }
-
-        if (particleEffect != null)
-        {
-            particleEffect.Stop();
-            particleEffect.Clear();
-        }
-
-        SetupVisuals();
     }
 
     private void SetupVisuals()

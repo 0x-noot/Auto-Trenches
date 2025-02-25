@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObservable
+public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
 {
     [Header("Visual Components")]
     [SerializeField] private SpriteRenderer arrowSprite;
@@ -63,37 +63,6 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPooledObject, IPunObs
         }
     }
 
-    public void OnObjectSpawn()
-    {
-        // Reset all components to initial state
-        transform.localScale = originalScale;
-        isFlying = false;
-        isDestroyed = false;
-        currentFlightProgress = 0f;
-
-        if (arrowSprite != null)
-        {
-            arrowSprite.enabled = true;
-            arrowSprite.color = Color.white;
-        }
-
-        if (arrowTrail != null)
-        {
-            arrowTrail.Clear();
-            arrowTrail.emitting = true;
-        }
-
-        if (arrowParticles != null)
-        {
-            arrowParticles.Stop();
-            arrowParticles.Clear();
-        }
-
-        sourceUnit = null;
-        targetUnit = null;
-        
-        gameObject.SetActive(true);
-    }
     public void Initialize(Range source, BaseUnit target)
     {
         if (!photonView.IsMine) return;
