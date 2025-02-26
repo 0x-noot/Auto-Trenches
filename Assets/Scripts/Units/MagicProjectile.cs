@@ -28,6 +28,13 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
     private float interpolationSpeed = 15f;
     private float syncInterval = 0.1f;
     private float lastSyncTime = 0f;
+    
+    // Improved sync variables
+    private Vector3 velocityRef = Vector3.zero;
+    private Vector3 scaleVelocityRef = Vector3.zero;
+    private Vector3 lastSyncedPosition;
+    private float timeSinceLastPositionUpdate = 0f;
+    private bool hasReceivedFirstUpdate = false;
 
     private void Awake()
     {
@@ -44,25 +51,103 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
         syncedPosition = transform.position;
         syncedRotation = transform.rotation;
         syncedScale = transform.localScale;
+        lastSyncedPosition = transform.position;
     }
 
     private void Update()
     {
         if (!photonView.IsMine && isActive && !isDestroyed)
         {
-            // Smooth interpolation for non-owners
-            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * interpolationSpeed);
-            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * interpolationSpeed);
-            transform.localScale = Vector3.Lerp(transform.localScale, syncedScale, Time.deltaTime * interpolationSpeed);
+            // Track time since last position update
+            timeSinceLastPositionUpdate += Time.deltaTime;
             
-            // Update visual effects
-            if (isActive && !isDestroyed)
+            // If this is our first update, snap to the position
+            if (!hasReceivedFirstUpdate)
             {
-                time += Time.deltaTime;
-                float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
-                transform.localScale = Vector3.one * initialSize * pulse;
+                if (syncedPosition != Vector3.zero)
+                {
+                    transform.position = syncedPosition;
+                    lastSyncedPosition = syncedPosition;
+                    hasReceivedFirstUpdate = true;
+                }
+                return;
             }
+            
+            // Calculate estimated velocity based on position changes
+            Vector3 estimatedVelocity = (syncedPosition - lastSyncedPosition) / syncInterval;
+            
+            // If the estimated velocity is very high, something might be wrong - limit it
+            if (estimatedVelocity.magnitude > 30f)
+            {
+                estimatedVelocity = estimatedVelocity.normalized * 30f;
+            }
+            
+            // Calculate a more realistic target position based on time passed
+            Vector3 projectedPosition = lastSyncedPosition + (estimatedVelocity * timeSinceLastPositionUpdate);
+            
+            // Gradually blend between current position and projected position
+            transform.position = Vector3.SmoothDamp(
+                transform.position,
+                projectedPosition,
+                ref velocityRef,
+                0.08f, // Faster smoothing time
+                40f    // Higher max speed
+            );
+            
+            // Rotation with Slerp
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                syncedRotation,
+                Time.deltaTime * 15f // Higher rotation speed
+            );
+            
+        // Keep a consistent base scale
+        Vector3 baseScale = Vector3.one * initialSize;
+
+        // Apply pulse effect to the base scale
+        if (pulseAmount > 0)
+        {
+            float pulse = 1f + (Mathf.Sin(time * pulseSpeed) * pulseAmount);
+            transform.localScale = baseScale * pulse;
         }
+        else
+        {
+            // If no pulse is desired, just set the scale directly
+            transform.localScale = baseScale;
+        }
+            
+            // Update time
+            time += Time.deltaTime;
+        }
+    }
+
+    // This method is called automatically when the object is instantiated
+    private void Start()
+    {
+        isDestroyed = false;
+        isActive = true;
+        time = 0f;
+        transform.localScale = Vector3.one * initialSize;
+        
+        if (spellSprite != null)
+        {
+            spellSprite.enabled = true;
+            spellSprite.color = spellColor;
+        }
+
+        if (spellTrail != null)
+        {
+            spellTrail.Clear();
+            spellTrail.emitting = true;
+        }
+
+        if (particleEffect != null)
+        {
+            particleEffect.Stop();
+            particleEffect.Clear();
+        }
+
+        SetupVisuals();
     }
 
     private void SetupVisuals()
@@ -109,25 +194,34 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
     private IEnumerator MoveCoroutine(Vector3 targetPosition, float speed)
     {
         Vector3 startPos = transform.position;
-        Vector3 finalTargetPosition = targetPosition; // Store initial target position
-        Vector3 direction = (finalTargetPosition - startPos).normalized;
+        Vector3 finalTargetPosition = targetPosition;
         float distance = Vector3.Distance(startPos, finalTargetPosition);
         float journeyLength = distance;
         float startTime = Time.time;
-        float maxTravelTime = 3f;
         
-        while (Vector3.Distance(transform.position, finalTargetPosition) > 0.2f && !isDestroyed)
+        // Use fixed timestep for more consistent movement
+        float timeStep = 0.02f; // 50 updates per second
+        float elapsedTime = 0f;
+        
+        while (elapsedTime < journeyLength/speed && !isDestroyed)
         {
-            // Even if target dies, keep moving to the stored position
-            float distCovered = (Time.time - startTime) * speed;
-            float fractionOfJourney = distCovered / journeyLength;
-            transform.position = Vector3.Lerp(startPos, finalTargetPosition, fractionOfJourney);
+            elapsedTime += timeStep;
+            float fractionOfJourney = elapsedTime / (journeyLength/speed);
+            fractionOfJourney = Mathf.Clamp01(fractionOfJourney);
             
-            // Rotate to face movement direction
-            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+            // Use smooth step for more natural acceleration/deceleration
+            float t = Mathf.SmoothStep(0, 1, fractionOfJourney);
+            transform.position = Vector3.Lerp(startPos, finalTargetPosition, t);
             
-            // Update synced values if enough time has passed
+            // Make direction face movement
+            if (finalTargetPosition != startPos)
+            {
+                Vector3 direction = (finalTargetPosition - startPos).normalized;
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+            }
+            
+            // Update synced values at regular intervals
             if (Time.time - lastSyncTime >= syncInterval)
             {
                 syncedPosition = transform.position;
@@ -135,16 +229,11 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
                 lastSyncTime = Time.time;
             }
             
-            // Safety check with warning
-            if (Time.time - startTime > maxTravelTime)
-            {
-                Debug.LogWarning($"Projectile exceeded max travel time. Distance to target: {Vector3.Distance(transform.position, finalTargetPosition)}");
-                OnSpellHit();
-                yield break;
-            }
-            
-            yield return null;
+            yield return new WaitForSeconds(timeStep);
         }
+        
+        // Ensure arrival at exact destination
+        transform.position = finalTargetPosition;
         
         if (photonView.IsMine)
         {
@@ -221,21 +310,28 @@ public class MagicProjectile : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
+            // Writing data
             stream.SendNext(transform.position);
             stream.SendNext(transform.rotation);
-            stream.SendNext(transform.localScale);
             stream.SendNext(isActive);
             stream.SendNext(isDestroyed);
             stream.SendNext(time);
         }
         else
         {
+            // Store the last position before updating
+            lastSyncedPosition = syncedPosition;
+            
+            // Receive data
             syncedPosition = (Vector3)stream.ReceiveNext();
             syncedRotation = (Quaternion)stream.ReceiveNext();
-            syncedScale = (Vector3)stream.ReceiveNext();
             isActive = (bool)stream.ReceiveNext();
             isDestroyed = (bool)stream.ReceiveNext();
             time = (float)stream.ReceiveNext();
+            
+            // Reset time counter since last update
+            timeSinceLastPositionUpdate = 0f;
+            hasReceivedFirstUpdate = true;
         }
     }
 

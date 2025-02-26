@@ -22,6 +22,8 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private float rotationSpeed = 360f;
     [SerializeField] private float scaleDuringFlight = 1.2f;
     
+    private Vector3 velocityRef = Vector3.zero;
+
     private Vector3 originalScale;
     private bool isFlying = false;
     private bool isDestroyed = false;
@@ -57,9 +59,31 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!photonView.IsMine && isFlying && !isDestroyed)
         {
-            // Smooth interpolation for non-owners
-            transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * interpolationSpeed);
-            transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * interpolationSpeed);
+            // Use SmoothDamp for position - much smoother than Lerp
+            transform.position = Vector3.SmoothDamp(
+                transform.position, 
+                syncedPosition, 
+                ref velocityRef, 
+                0.1f,  // Smoothing time
+                interpolationSpeed * 2f  // Max speed
+            );
+            
+            // Use Slerp for rotation - better for rotations than Lerp
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, 
+                syncedRotation, 
+                Time.deltaTime * interpolationSpeed * 2f
+            );
+            
+            // Add leading adjustment - predict a bit ahead based on network delay
+            if (Time.frameCount % 30 == 0)  // Only recalculate occasionally to save performance
+            {
+                float ping = PhotonNetwork.GetPing() / 1000f;  // Convert to seconds
+                Vector3 projectedPosition = syncedPosition + (velocityRef * ping);
+                
+                // Apply a slight pull toward the projected position
+                transform.position = Vector3.Lerp(transform.position, projectedPosition, 0.2f);
+            }
         }
     }
 
@@ -334,6 +358,10 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
             stream.SendNext(isFlying);
             stream.SendNext(isDestroyed);
             stream.SendNext(currentFlightProgress);
+            
+            // Add velocity calculation based on last position
+            Vector3 velocity = (transform.position - syncedPosition) / syncInterval;
+            stream.SendNext(velocity);
         }
         else
         {
@@ -342,6 +370,10 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
             isFlying = (bool)stream.ReceiveNext();
             isDestroyed = (bool)stream.ReceiveNext();
             currentFlightProgress = (float)stream.ReceiveNext();
+            
+            // Receive velocity
+            Vector3 incomingVelocity = (Vector3)stream.ReceiveNext();
+            velocityRef = incomingVelocity;
         }
     }
 
