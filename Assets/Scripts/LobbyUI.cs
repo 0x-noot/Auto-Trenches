@@ -34,6 +34,9 @@ public class LobbyUI : MonoBehaviour
 
     private const string USERNAME_PREF = "PlayerUsername";
     private bool isInRoom = false;
+    
+    // Add a dictionary to keep track of cached rooms
+    private Dictionary<string, RoomInfo> cachedRoomList = new Dictionary<string, RoomInfo>();
 
     private void Start()
     {
@@ -116,9 +119,18 @@ public class LobbyUI : MonoBehaviour
 
     private void OnRefreshClicked()
     {
-        foreach (Transform child in lobbyListContent)
+        // Simply request a room list update from the PhotonManager
+        // The actual UI update will happen in UpdateRoomList when Photon sends the callback
+        if (PhotonManager.Instance != null)
         {
-            Destroy(child.gameObject);
+            // Clear the UI first to give immediate feedback that refresh was clicked
+            foreach (Transform child in lobbyListContent)
+            {
+                Destroy(child.gameObject);
+            }
+            
+            // Request a fresh room list - this will trigger OnRoomListUpdate in PhotonManager
+            PhotonManager.Instance.RefreshRoomList();
         }
     }
 
@@ -178,12 +190,34 @@ public class LobbyUI : MonoBehaviour
 
     public void UpdateRoomList(List<RoomInfo> roomList)
     {
+        Debug.Log($"Updating room list with {roomList.Count} rooms");
+        
+        // Update cached room list first
+        foreach (RoomInfo info in roomList)
+        {
+            // Remove room from cached list if it's no longer available
+            if (info.RemovedFromList)
+            {
+                cachedRoomList.Remove(info.Name);
+                Debug.Log($"Room removed: {info.Name}");
+            }
+            // Add or update room in cached list
+            else
+            {
+                cachedRoomList[info.Name] = info;
+                Debug.Log($"Room added/updated: {info.Name} - Players: {info.PlayerCount}/{info.MaxPlayers}");
+            }
+        }
+
+        // Clear the UI
         foreach (Transform child in lobbyListContent)
         {
             Destroy(child.gameObject);
         }
 
-        foreach (RoomInfo room in roomList)
+        // Populate UI with current cached rooms
+        Debug.Log($"Displaying {cachedRoomList.Count} rooms in UI");
+        foreach (RoomInfo room in cachedRoomList.Values)
         {
             if (room.IsOpen && room.IsVisible && room.PlayerCount < room.MaxPlayers)
             {
@@ -194,6 +228,13 @@ public class LobbyUI : MonoBehaviour
                     entryUI.Initialize(room.Name, () => OnJoinRoomClicked(room.Name));
                 }
             }
+        }
+        
+        // Force the layout to update
+        if (lobbyListContent.TryGetComponent<VerticalLayoutGroup>(out var layout))
+        {
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(lobbyListContent as RectTransform);
         }
     }
 

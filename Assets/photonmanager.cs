@@ -93,6 +93,25 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void RefreshRoomList()
+    {
+        if (PhotonNetwork.IsConnected && PhotonNetwork.InLobby)
+        {
+            Debug.Log("Refreshing room list");
+            // When in a lobby, OnRoomListUpdate is automatically called periodically
+            // We don't need to explicitly request updates
+        }
+        else if (PhotonNetwork.IsConnected && !PhotonNetwork.InLobby)
+        {
+            Debug.Log("Joining lobby to get room list");
+            PhotonNetwork.JoinLobby();
+        }
+        else
+        {
+            Debug.LogWarning("Cannot refresh room list: Not connected to Photon");
+        }
+    }
+
     private bool CheckAllPlayersReady()
     {
         if (PhotonNetwork.CurrentRoom.PlayerCount != 2) return false;
@@ -126,6 +145,14 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         lobbyUI?.OnPhotonConnected();
     }
 
+    public override void OnJoinedLobby()
+    {
+        Debug.Log("Joined Photon lobby");
+        lobbyUI?.OnPhotonConnected();
+        
+        // This will automatically trigger OnRoomListUpdate with the current list of rooms
+    }
+
     public override void OnDisconnected(DisconnectCause cause)
     {
         Debug.LogWarning($"Disconnected from server: {cause}");
@@ -141,6 +168,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
+        Debug.Log($"Room list updated with {roomList.Count} rooms");
         lobbyUI?.UpdateRoomList(roomList);
     }
 
