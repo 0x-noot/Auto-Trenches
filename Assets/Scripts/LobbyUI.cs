@@ -38,6 +38,28 @@ public class LobbyUI : MonoBehaviour
     // Add a dictionary to keep track of cached rooms
     private Dictionary<string, RoomInfo> cachedRoomList = new Dictionary<string, RoomInfo>();
 
+    private void Awake()
+    {
+        // Make sure only username panel is visible initially if there's no saved username
+        string savedUsername = PlayerPrefs.GetString(USERNAME_PREF, "");
+        if (string.IsNullOrEmpty(savedUsername))
+        {
+            usernamePanel.SetActive(true);
+            lobbyListPanel.SetActive(false);
+            matchLobbyPanel.SetActive(false);
+        }
+        else
+        {
+            usernamePanel.SetActive(false);
+        }
+        
+        // Make sure connecting panel is behind other panels in hierarchy
+        if (connectingPanel != null)
+        {
+            connectingPanel.transform.SetAsFirstSibling();
+        }
+    }
+
     private void Start()
     {
         SetupUI();
@@ -54,6 +76,7 @@ public class LobbyUI : MonoBehaviour
         readyButton.onClick.AddListener(OnReadyClicked);
         leaveLobbyButton.onClick.AddListener(OnLeaveRoom);
 
+        // Initialize with appropriate panel visibility
         ShowUsernamePanel();
     }
 
@@ -76,26 +99,34 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
-    private void ShowUsernamePanel()
+    public void ShowUsernamePanel()
     {
         usernamePanel.SetActive(true);
         lobbyListPanel.SetActive(false);
         matchLobbyPanel.SetActive(false);
     }
 
-    private void ShowLobbyListPanel()
+    public void ShowLobbyListPanel()
     {
         usernamePanel.SetActive(false);
         lobbyListPanel.SetActive(true);
         matchLobbyPanel.SetActive(false);
     }
 
-    private void ShowMatchLobbyPanel()
+    public void ShowMatchLobbyPanel()
     {
         usernamePanel.SetActive(false);
         lobbyListPanel.SetActive(false);
         matchLobbyPanel.SetActive(true);
         readyButton.interactable = true;
+    }
+
+    private void HideAllPanels()
+    {
+        usernamePanel.SetActive(false);
+        lobbyListPanel.SetActive(false);
+        matchLobbyPanel.SetActive(false);
+        connectingPanel.SetActive(false);
     }
 
     #endregion
@@ -109,7 +140,20 @@ public class LobbyUI : MonoBehaviour
 
         PlayerPrefs.SetString(USERNAME_PREF, username);
         PlayerPrefs.Save();
-        ShowLobbyListPanel();
+        
+        // Change this line to go back to the main menu instead of showing the lobby
+        HideAllPanels();
+        
+        // Find MenuManager and show the main menu
+        MenuManager menuManager = FindFirstObjectByType<MenuManager>();
+        if (menuManager != null)
+        {
+            menuManager.ShowMainMenu();
+        }
+        else
+        {
+            Debug.LogError("MenuManager not found!");
+        }
     }
 
     private void OnCreateRoom()
@@ -136,7 +180,16 @@ public class LobbyUI : MonoBehaviour
 
     private void OnBackClicked()
     {
-        ShowUsernamePanel();
+        // Instead of showing username panel, go back to main menu
+        MenuManager menuManager = FindFirstObjectByType<MenuManager>();
+        if (menuManager != null)
+        {
+            menuManager.ShowMainMenu();
+        }
+        else
+        {
+            Debug.LogError("MenuManager not found!");
+        }
     }
 
     private void OnReadyClicked()

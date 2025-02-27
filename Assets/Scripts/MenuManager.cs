@@ -55,7 +55,20 @@ public class MenuManager : MonoBehaviourPunCallbacks
         {
             InitializePanels();
         }
-        ShowMainMenu();
+        
+        // Check if username exists
+        string savedUsername = PlayerPrefs.GetString("PlayerUsername", "");
+        
+        if (string.IsNullOrEmpty(savedUsername))
+        {
+            // If no username, hide main menu and let LobbyUI handle showing username panel
+            DisableAllPanels();
+        }
+        else
+        {
+            // Otherwise show main menu
+            ShowMainMenu();
+        }
     }
 
     private void InitializePanels()
@@ -65,14 +78,11 @@ public class MenuManager : MonoBehaviourPunCallbacks
         Debug.Log("MenuManager: Initializing panels");
         ValidatePanelReferences();
 
-        // First ensure all panels exist and are initialized
-        mainMenuPanel.SetActive(true);
-        settingsPanel.SetActive(true);
-        infoPanel.SetActive(true);
-        lobbyPanel.SetActive(true);
-
-        // Then disable all
-        DisableAllPanels();
+        // Make sure all panels are initially hidden
+        mainMenuPanel?.SetActive(false);
+        settingsPanel?.SetActive(false);
+        infoPanel?.SetActive(false);
+        lobbyPanel?.SetActive(false);
         
         isInitialized = true;
         Debug.Log("MenuManager: Panels initialized");
@@ -117,7 +127,22 @@ public class MenuManager : MonoBehaviourPunCallbacks
         // Connect to Photon if not already connected
         if (!PhotonNetwork.IsConnected)
         {
-            PhotonManager.Instance.ConnectToPhoton();
+            PhotonManager photonManager = FindFirstObjectByType<PhotonManager>();
+            if (photonManager != null)
+            {
+                photonManager.ConnectToPhoton();
+            }
+            else
+            {
+                Debug.LogError("PhotonManager not found!");
+            }
+        }
+        
+        // Find LobbyUI and tell it to show lobby list panel
+        LobbyUI lobbyUI = FindFirstObjectByType<LobbyUI>();
+        if (lobbyUI != null)
+        {
+            lobbyUI.ShowLobbyListPanel();
         }
     }
 
@@ -135,6 +160,21 @@ public class MenuManager : MonoBehaviourPunCallbacks
         #else
             Application.Quit();
         #endif
+    }
+    
+    public void ResetUsername()
+    {
+        PlayerPrefs.DeleteKey("PlayerUsername");
+        
+        // Find LobbyUI and show username panel
+        LobbyUI lobbyUI = FindFirstObjectByType<LobbyUI>();
+        if (lobbyUI != null)
+        {
+            lobbyUI.ShowUsernamePanel();
+        }
+        
+        // Hide main menu
+        DisableAllPanels();
     }
 
     public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
