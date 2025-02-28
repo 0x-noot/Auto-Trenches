@@ -25,6 +25,11 @@ public class GameManager : MonoBehaviourPunCallbacks
     private bool isBattleEnding = false;
     private bool isInitialized = false;
     private Dictionary<BaseUnit, bool> pendingDeaths = new Dictionary<BaseUnit, bool>();
+    private Dictionary<string, float> lastDeathTime = new Dictionary<string, float>()
+    {
+        { "player", 0f },
+        { "enemy", 0f }
+    };
 
     public event Action<GameState> OnGameStateChanged;
     public event Action<BaseUnit> OnUnitDied;
@@ -161,6 +166,10 @@ public class GameManager : MonoBehaviourPunCallbacks
         enemyUnits.Clear();
         pendingDeaths.Clear();
         isBattleEnding = false;
+        
+        // Reset death times
+        lastDeathTime["player"] = 0f;
+        lastDeathTime["enemy"] = 0f;
     }
 
     private void CleanupProjectiles()
@@ -195,17 +204,37 @@ public class GameManager : MonoBehaviourPunCallbacks
         // Clean up any leftover projectiles
         CleanupProjectiles();
         
+        // Reset death times for the next round
+        lastDeathTime["player"] = 0f;
+        lastDeathTime["enemy"] = 0f;
+        
         photonView.RPC("RPCPrepareNextRound", RpcTarget.All);
     }
 
     [PunRPC]
     private void RPCPrepareNextRound()
     {
-        // Clear all units
-        CleanupUnits();
+        Debug.Log("Executing round preparation");
+        
+        // Reset death times on all clients
+        lastDeathTime["player"] = 0f;
+        lastDeathTime["enemy"] = 0f;
+        
+        // Clean up any orphaned health bars
+        var orphanedHealthSystems = FindObjectsOfType<HealthSystem>()
+            .Where(hs => hs.transform.parent == null)
+            .ToArray();
 
-        // Reset game state for placement
-        UpdateGameState(GameState.PlayerAPlacement);
+        foreach (var healthSystem in orphanedHealthSystems)
+        {
+            Debug.Log($"Cleaning up orphaned health bar: {healthSystem.gameObject.name}");
+            Destroy(healthSystem.gameObject);
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UpdateGameState(GameState.PlayerAPlacement);
+        }
     }
 
     public void RegisterPlayerUnit(BaseUnit unit)
@@ -249,6 +278,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (!pendingDeaths.ContainsKey(unit))
         {
             pendingDeaths[unit] = true;
+            
+            // Track the time of death for this team
+            string team = playerUnits.Contains(unit) ? "player" : "enemy";
+            lastDeathTime[team] = Time.time;
+            Debug.Log($"Unit death recorded for team {team} at time {lastDeathTime[team]}");
+            
             StartCoroutine(HandleDeathAfterAnimation(unit));
         }
     }
@@ -325,7 +360,38 @@ public class GameManager : MonoBehaviourPunCallbacks
         int alivePlayers = CountAliveUnits(playerUnits);
         int aliveEnemies = CountAliveUnits(enemyUnits);
 
-        if (alivePlayers == 0 && aliveEnemies > 0)
+        Debug.Log($"CheckBattleEnd: Alive players: {alivePlayers}, Alive enemies: {aliveEnemies}");
+
+        if (alivePlayers == 0 && aliveEnemies == 0)
+        {
+            // Both teams were eliminated - use time of death to determine winner
+            // Team whose last unit died later loses (other team wins)
+            float playerLastDeath = lastDeathTime["player"];
+            float enemyLastDeath = lastDeathTime["enemy"];
+            
+            Debug.Log($"All units eliminated. Player last death: {playerLastDeath}, Enemy last death: {enemyLastDeath}");
+            
+            if (Mathf.Approximately(playerLastDeath, enemyLastDeath))
+            {
+                // If deaths occurred at exactly the same time (very unlikely)
+                // Default to player (host) winning
+                Debug.Log("Death times identical - player wins by default");
+                EndBattle("player");
+            }
+            else if (playerLastDeath > enemyLastDeath)
+            {
+                // Player's last unit died after enemy's last unit - enemy wins
+                Debug.Log("Player's units died last - enemy wins");
+                EndBattle("enemy");
+            }
+            else
+            {
+                // Enemy's last unit died after player's last unit - player wins
+                Debug.Log("Enemy's units died last - player wins");
+                EndBattle("player");
+            }
+        }
+        else if (alivePlayers == 0 && aliveEnemies > 0)
         {
             EndBattle("enemy");
         }
