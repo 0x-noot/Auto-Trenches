@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using Photon.Pun;
+using System.Collections;
 
 public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
 {
@@ -38,6 +39,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     private HashSet<string> readyTeams = new HashSet<string>();
     private string currentTeam;
     private bool isLocalPlayerReady = false;
+    private bool isProcessingPlacement = false;
     
     // Command points dictionaries
     private Dictionary<string, int> teamCommandPoints = new Dictionary<string, int>();
@@ -162,8 +164,16 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
 
     public void PlaceUnit(Vector3 position)
     {
+        // Prevent multiple simultaneous placements
+        if (isProcessingPlacement)
+        {
+            Debug.Log("Placement already in progress, please wait");
+            return;
+        }
+
         Debug.Log($"PlaceUnit called. IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}");
-    
+
+        // Double-check command points again to prevent race conditions
         if (!CanPlaceUnit())
         {
             Debug.Log($"Cannot place unit. Insufficient command points. Required: {GetUnitCost(selectedUnitType)}, Available: {GetCommandPoints(currentTeam)}");
@@ -179,8 +189,18 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
             return;
         }
 
-        // Critical change: Call this BEFORE instantiating the unit
-        // Deduct command points using RPC that targets ALL clients including the client who called it
+        // Lock placement process
+        isProcessingPlacement = true;
+
+        // CRITICAL: Locally deduct points immediately to prevent overplacement during latency
+        int currentPoints = teamCommandPoints[currentTeam];
+        int cost = unitCosts[selectedUnitType];
+        teamCommandPoints[currentTeam] = Mathf.Max(0, currentPoints - cost);
+        
+        // Notify UI immediately for responsive feedback
+        OnCommandPointsChanged?.Invoke(currentTeam, teamCommandPoints[currentTeam], teamMaxCommandPoints[currentTeam]);
+
+        // Deduct command points using RPC that targets ALL clients
         photonView.RPC("RPCSpendCommandPoints", RpcTarget.AllBuffered, currentTeam, (int)selectedUnitType);
 
         string prefabPath = $"UnitPrefabs/{selectedUnitType}";
@@ -189,6 +209,8 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         if (unitObject == null)
         {
             Debug.LogError($"Failed to instantiate unit prefab: {prefabPath}");
+            // Unlock placement process
+            isProcessingPlacement = false;
             return;
         }
 
@@ -197,12 +219,23 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         {
             Debug.LogError($"Prefab {selectedUnitType} does not have a BaseUnit component!");
             PhotonNetwork.Destroy(unitObject);
+            // Unlock placement process
+            isProcessingPlacement = false;
             return;
         }
 
         unit.SetTeam(currentTeam);
         
         photonView.RPC("RPCUnitPlaced", RpcTarget.All, unit.photonView.ViewID);
+        
+        // Add a delay before allowing next placement to prevent spam clicking
+        StartCoroutine(UnlockPlacementAfterDelay(0.2f));
+    }
+
+    private IEnumerator UnlockPlacementAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        isProcessingPlacement = false;
     }
 
     [PunRPC]
@@ -213,9 +246,25 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         if (teamCommandPoints.ContainsKey(team) && unitCosts.ContainsKey(unitType))
         {
             int previousPoints = teamCommandPoints[team];
-            teamCommandPoints[team] -= unitCosts[unitType];
+            int cost = unitCosts[unitType];
             
-            Debug.Log($"[{(PhotonNetwork.IsMasterClient ? "HOST" : "CLIENT")}] RPCSpendCommandPoints: {team} spent {unitCosts[unitType]} points for {unitType}. Points: {previousPoints} -> {teamCommandPoints[team]}");
+            // For the host, don't deduct points again - they were already deducted locally
+            // For the client, apply the deduction normally
+            if (PhotonNetwork.IsMasterClient && team == "TeamA" || 
+                !PhotonNetwork.IsMasterClient && team == "TeamB")
+            {
+                // This is our own team, and we've already deducted points locally
+                // So just ensure the value is correct, but don't deduct again
+                teamCommandPoints[team] = Mathf.Max(0, previousPoints);
+            }
+            else
+            {
+                // This is the other team, or we're receiving an RPC from the other player
+                // Apply the deduction normally
+                teamCommandPoints[team] = Mathf.Max(0, previousPoints - cost);
+            }
+            
+            Debug.Log($"[{(PhotonNetwork.IsMasterClient ? "HOST" : "CLIENT")}] RPCSpendCommandPoints: {team} spent {cost} points for {unitType}. Points: {previousPoints} -> {teamCommandPoints[team]}");
             
             // Notify listeners
             OnCommandPointsChanged?.Invoke(team, teamCommandPoints[team], teamMaxCommandPoints[team]);
