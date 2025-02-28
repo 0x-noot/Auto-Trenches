@@ -173,10 +173,13 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
         if (placementManager == null) return;
         
         bool currentReadyState = placementManager.IsLocalPlayerReady();
+        Debug.Log($"Ready button clicked. Current state: {currentReadyState}");
+        
+        // Toggle the ready state
         placementManager.SetTeamReady(currentTeam, !currentReadyState);
         
-        // Update button visuals
-        UpdateReadyButtonState(!currentReadyState);
+        // Force update of all UI
+        UpdateUI();
     }
 
     private void UpdateReadyButtonState(bool isReady)
@@ -271,23 +274,41 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
     {
         if (readyStatusText != null && placementManager != null)
         {
-            int readyCount = placementManager.GetReadyTeamsCount();
+            // Debug logs to help troubleshoot
+            Debug.Log($"UpdateReadyStatus: Local team: {currentTeam}, IsLocalReady: {placementManager.IsLocalPlayerReady()}");
+            Debug.Log($"TeamA ready: {placementManager.IsTeamReady("TeamA")}, TeamB ready: {placementManager.IsTeamReady("TeamB")}");
+            
+            // Get local player's team
+            string localTeam = currentTeam; // This is already set to the local player's team
+            
+            // Get the opponent's team
+            string opponentTeam = localTeam == "TeamA" ? "TeamB" : "TeamA";
+            
+            // Check if local player is ready
             bool isLocalReady = placementManager.IsLocalPlayerReady();
             
-            if (readyCount == 0)
-            {
-                readyStatusText.text = "Waiting for players to ready up...";
-            }
-            else if (readyCount == 1)
-            {
-                readyStatusText.text = isLocalReady ? 
-                    "You are ready. Waiting for opponent..." : 
-                    "Opponent is ready. Waiting for you...";
-            }
-            else // readyCount == 2
+            // Check if opponent's team is ready
+            bool isOpponentReady = placementManager.IsTeamReady(opponentTeam);
+            
+            // Determine status text
+            if (isLocalReady && isOpponentReady)
             {
                 readyStatusText.text = "All players ready! Starting battle...";
             }
+            else if (isLocalReady)
+            {
+                readyStatusText.text = "You are ready. Waiting for opponent...";
+            }
+            else if (isOpponentReady)
+            {
+                readyStatusText.text = "Opponent is ready. Waiting for you...";
+            }
+            else
+            {
+                readyStatusText.text = "Waiting for players to ready up...";
+            }
+            
+            Debug.Log($"Ready status set to: {readyStatusText.text}");
         }
     }
 }

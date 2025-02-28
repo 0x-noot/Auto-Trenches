@@ -330,22 +330,39 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!PhotonNetwork.IsConnected) return;
         
-        if (isReady && !readyTeams.Contains(team))
+        Debug.Log($"SetTeamReady called: team={team}, isReady={isReady}, currentState={isLocalPlayerReady}");
+        
+        // Only send RPC if we're changing state
+        if (isReady != isLocalPlayerReady)
         {
-            photonView.RPC("RPCSetTeamReady", RpcTarget.AllBuffered, team);
-            isLocalPlayerReady = true;
-        }
-        else if (!isReady && readyTeams.Contains(team))
-        {
-            photonView.RPC("RPCSetTeamNotReady", RpcTarget.AllBuffered, team);
-            isLocalPlayerReady = false;
+            if (isReady)
+            {
+                Debug.Log($"Setting {team} to ready");
+                photonView.RPC("RPCSetTeamReady", RpcTarget.AllBuffered, team);
+                isLocalPlayerReady = true;
+            }
+            else
+            {
+                Debug.Log($"Setting {team} to not ready");
+                photonView.RPC("RPCSetTeamNotReady", RpcTarget.AllBuffered, team);
+                isLocalPlayerReady = false;
+            }
         }
     }
 
     [PunRPC]
     private void RPCSetTeamReady(string team)
     {
+        Debug.Log($"RPCSetTeamReady: Adding {team} to readyTeams");
         readyTeams.Add(team);
+        
+        // If this is our team, update local ready state
+        if (team == (PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB"))
+        {
+            isLocalPlayerReady = true;
+            Debug.Log("Updated local ready state to true");
+        }
+        
         Debug.Log($"Team {team} is ready. Ready teams: {readyTeams.Count}/2");
         
         // Notify UI that readiness state changed
@@ -361,7 +378,16 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void RPCSetTeamNotReady(string team)
     {
+        Debug.Log($"RPCSetTeamNotReady: Removing {team} from readyTeams");
         readyTeams.Remove(team);
+        
+        // If this is our team, update local ready state
+        if (team == (PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB"))
+        {
+            isLocalPlayerReady = false;
+            Debug.Log("Updated local ready state to false");
+        }
+        
         Debug.Log($"Team {team} is not ready. Ready teams: {readyTeams.Count}/2");
         
         // Notify UI that readiness state changed
@@ -432,6 +458,11 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     private void RPCUnitsCleared()
     {
         OnUnitsChanged?.Invoke();
+    }
+
+    public bool IsTeamReady(string team)
+    {
+        return readyTeams.Contains(team);
     }
 
     public void ClearTeamUnits(string team)
