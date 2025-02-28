@@ -12,15 +12,28 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
     {
         public UnitType type;
         public Button button;
+        public TextMeshProUGUI costText;  // Added to display unit cost
+        public Image buttonImage;  // For visual feedback
     }
 
     [Header("UI References")]
     [SerializeField] private PlacementManager placementManager;
     [SerializeField] private List<UnitButton> unitButtons;
-    [SerializeField] private Button startBattleButton;
-    [SerializeField] private TextMeshProUGUI unitCountText;
+    [SerializeField] private Button readyButton;
+    [SerializeField] private TextMeshProUGUI readyButtonText;
+    [SerializeField] private TextMeshProUGUI readyStatusText;
     [SerializeField] private TextMeshProUGUI currentTurnText;
     [SerializeField] private GameObject placementPanel;
+
+    [Header("Visual Settings")]
+    [SerializeField] private Color selectedColor = Color.green;
+    [SerializeField] private Color affordableColor = Color.white;
+    [SerializeField] private Color unaffordableColor = new Color(0.7f, 0.7f, 0.7f, 0.5f);
+    [SerializeField] private Color readyColor = Color.green;
+    [SerializeField] private Color cancelColor = Color.red;
+
+    private string currentTeam;
+    private UnitType selectedUnitType;
 
     private void Awake()
     {
@@ -33,6 +46,7 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
     void Start()
     {
         Debug.Log($"UnitSelectionUI Start - IsMasterClient: {PhotonNetwork.IsMasterClient}");
+        
         // Get references if not set
         if (placementManager == null)
         {
@@ -44,12 +58,17 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
             }
         }
 
+        // Set current team
+        currentTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
+        selectedUnitType = UnitType.Fighter;  // Default selection
+
         // Subscribe to events
-        placementManager.OnUnitsChanged += UpdateUnitCountText;
+        placementManager.OnUnitsChanged += UpdateUI;
+        placementManager.OnCommandPointsChanged += HandleCommandPointsChanged;
 
         // Initialize buttons
         InitializeButtons();
-        UpdateUnitCountText();
+        UpdateUI();
 
         // Set initial turn text
         if (currentTurnText != null)
@@ -67,8 +86,10 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
     {
         if (placementManager != null)
         {
-            placementManager.OnUnitsChanged -= UpdateUnitCountText;
+            placementManager.OnUnitsChanged -= UpdateUI;
+            placementManager.OnCommandPointsChanged -= HandleCommandPointsChanged;
         }
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
@@ -85,13 +106,21 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
             case GameState.PlayerBPlacement:
                 Debug.Log($"Setting placementPanel active: {placementPanel != null}");
                 placementPanel.SetActive(true);
-                UpdateAllUI();
+                UpdateUI();
                 break;
                 
             case GameState.BattleStart:
             case GameState.BattleActive:
                 placementPanel.SetActive(false);
                 break;
+        }
+    }
+
+    private void HandleCommandPointsChanged(string team, int points, int maxPoints)
+    {
+        if (team == currentTeam)
+        {
+            UpdateButtonAffordability();
         }
     }
 
@@ -105,80 +134,160 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
                 UnitType type = unitButton.type;
                 unitButton.button.onClick.RemoveAllListeners();
                 unitButton.button.onClick.AddListener(() => SelectUnitType(type));
+                
+                // Display unit cost if costText is assigned
+                if (unitButton.costText != null && placementManager != null)
+                {
+                    int cost = placementManager.GetUnitCost(unitButton.type);
+                    unitButton.costText.text = cost.ToString();
+                }
             }
             else
             {
                 Debug.LogError($"Button for unit type {unitButton.type} is null!");
             }
         }
+        
+        // Set up ready button
+        if (readyButton != null)
+        {
+            readyButton.onClick.RemoveAllListeners();
+            readyButton.onClick.AddListener(OnReadyButtonClicked);
+            
+            // Set initial text
+            if (readyButtonText != null)
+            {
+                readyButtonText.text = "Ready";
+            }
+        }
+        
+        // Initially select the first unit type
+        if (unitButtons.Count > 0)
+        {
+            SelectUnitType(unitButtons[0].type);
+        }
+    }
+
+    private void OnReadyButtonClicked()
+    {
+        if (placementManager == null) return;
+        
+        bool currentReadyState = placementManager.IsLocalPlayerReady();
+        placementManager.SetTeamReady(currentTeam, !currentReadyState);
+        
+        // Update button visuals
+        UpdateReadyButtonState(!currentReadyState);
+    }
+
+    private void UpdateReadyButtonState(bool isReady)
+    {
+        if (readyButtonText != null)
+        {
+            readyButtonText.text = isReady ? "Cancel" : "Ready";
+        }
+        
+        // Change button color based on state
+        if (readyButton != null)
+        {
+            ColorBlock colors = readyButton.colors;
+            colors.normalColor = isReady ? cancelColor : readyColor;
+            readyButton.colors = colors;
+        }
     }
 
     public void SelectUnitType(UnitType type)
     {
-        if (placementManager == null)
+        selectedUnitType = type;
+        if (placementManager != null)
         {
-            Debug.LogError("PlacementManager is null!");
-            return;
+            placementManager.SelectUnitType(type);
         }
-
-        placementManager.SelectUnitType(type);
         
         // Update button visuals
         foreach (var unitButton in unitButtons)
         {
             bool isSelected = unitButton.type == type;
-            Image buttonImage = unitButton.button.GetComponent<Image>();
-            if (buttonImage != null)
+            if (unitButton.buttonImage != null)
             {
-                buttonImage.color = isSelected ? Color.green : Color.white;
+                unitButton.buttonImage.color = isSelected ? selectedColor : 
+                    (placementManager.CanPlaceUnit(currentTeam, unitButton.type) ? affordableColor : unaffordableColor);
             }
         }
     }
 
-    private void UpdateAllUI()
+    private void UpdateUI()
     {
-        UpdateUnitCountText();
-        UpdateButtonStates();
+        UpdateButtonAffordability();
+        UpdateReadyButtonState();
+        UpdateReadyStatus();
     }
 
-    private void UpdateButtonStates()
+    private void UpdateButtonAffordability()
     {
-        bool canPlace = placementManager.CanPlaceUnit();
+        if (placementManager == null) return;
+        
+        // Update each button's visual state based on affordability
         foreach (var unitButton in unitButtons)
         {
+            bool isSelected = unitButton.type == selectedUnitType;
+            bool canAfford = placementManager.CanPlaceUnit(currentTeam, unitButton.type);
+            
+            // Update button interactability
             if (unitButton.button != null)
             {
-                unitButton.button.interactable = canPlace;
+                unitButton.button.interactable = canAfford;
+            }
+            
+            // Update button visual
+            if (unitButton.buttonImage != null)
+            {
+                unitButton.buttonImage.color = isSelected ? selectedColor : 
+                    (canAfford ? affordableColor : unaffordableColor);
+            }
+            
+            // Update cost text color
+            if (unitButton.costText != null)
+            {
+                unitButton.costText.color = canAfford ? affordableColor : unaffordableColor;
             }
         }
     }
 
-    public void UpdateUnitCountText()
+    private void UpdateReadyButtonState()
     {
-        Debug.Log("UpdateUnitCountText called");
-        if (unitCountText != null && placementManager != null)
+        if (readyButton != null && placementManager != null)
         {
-            string currentTeam = placementManager.GetCurrentTeam();
-            int currentCount = placementManager.GetTeamUnits(currentTeam).Count;
-            int maxUnits = placementManager.GetMaxUnits();
-            Debug.Log($"Current count: {currentCount}, Max units: {maxUnits}");
-            unitCountText.text = $"Units: {currentCount}/{maxUnits}";
-
-            if (startBattleButton != null)
-            {
-                // Both players should see the button, but only enable it when units are placed
-                startBattleButton.gameObject.SetActive(true);
-                startBattleButton.interactable = currentCount > 0 && currentCount <= maxUnits;
-                Debug.Log($"Start button interactable set to: {startBattleButton.interactable}");
-            }
-            else
-            {
-                Debug.LogError("Start battle button is null!");
-            }
+            // Only enable the ready button if there's at least one unit placed
+            int unitCount = placementManager.GetTeamUnits(currentTeam).Count;
+            readyButton.interactable = unitCount > 0;
+            
+            // Update button state based on current readiness
+            bool isReady = placementManager.IsLocalPlayerReady();
+            UpdateReadyButtonState(isReady);
         }
-        else
+    }
+
+    private void UpdateReadyStatus()
+    {
+        if (readyStatusText != null && placementManager != null)
         {
-            Debug.LogError($"Unit count text is null: {unitCountText == null}, PlacementManager is null: {placementManager == null}");
+            int readyCount = placementManager.GetReadyTeamsCount();
+            bool isLocalReady = placementManager.IsLocalPlayerReady();
+            
+            if (readyCount == 0)
+            {
+                readyStatusText.text = "Waiting for players to ready up...";
+            }
+            else if (readyCount == 1)
+            {
+                readyStatusText.text = isLocalReady ? 
+                    "You are ready. Waiting for opponent..." : 
+                    "Opponent is ready. Waiting for you...";
+            }
+            else // readyCount == 2
+            {
+                readyStatusText.text = "All players ready! Starting battle...";
+            }
         }
     }
 }

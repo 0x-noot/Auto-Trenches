@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using Photon.Pun;
 
-public class PlacementManager : MonoBehaviourPunCallbacks
+public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     [System.Serializable]
     public class UnitPrefab
@@ -15,9 +15,19 @@ public class PlacementManager : MonoBehaviourPunCallbacks
 
     [Header("Unit Settings")]
     [SerializeField] private List<UnitPrefab> unitPrefabs;
-    [SerializeField] private int maxUnitsPerTeam = 11;
     [SerializeField] private Transform playerAUnitsParent;
     [SerializeField] private Transform playerBUnitsParent;
+
+    [Header("Command Points Settings")]
+    [SerializeField] private int startingCommandPoints = 20;
+    [SerializeField] private int maxCommandPoints = 30;
+    [SerializeField] private int pointsPerRound = 2;
+
+    [Header("Unit Costs")]
+    [SerializeField] private int tankCost = 5;
+    [SerializeField] private int mageCost = 4;
+    [SerializeField] private int rangeCost = 4;
+    [SerializeField] private int fighterCost = 3;
 
     [Header("Current Selection")]
     [SerializeField] private UnitType selectedUnitType = UnitType.Fighter;
@@ -27,9 +37,15 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     private ValidPlacementSystem validPlacement;
     private HashSet<string> readyTeams = new HashSet<string>();
     private string currentTeam;
-    private int currentUnitCount = 0;
+    private bool isLocalPlayerReady = false;
+    
+    // Command points dictionaries
+    private Dictionary<string, int> teamCommandPoints = new Dictionary<string, int>();
+    private Dictionary<string, int> teamMaxCommandPoints = new Dictionary<string, int>();
+    private Dictionary<UnitType, int> unitCosts = new Dictionary<UnitType, int>();
 
     public event Action OnUnitsChanged;
+    public event Action<string, int, int> OnCommandPointsChanged; // team, current, max
 
     private void Start()
     {
@@ -42,9 +58,20 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         currentTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
         Debug.Log($"PlacementManager initialized for {currentTeam}");
 
+        // Initialize unit costs
+        InitializeUnitCosts();
+        
+        // Initialize command points
+        InitializeCommandPoints();
+
         if (gameManager != null)
         {
             gameManager.OnGameStateChanged += HandleGameStateChanged;
+        }
+        
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnRoundStart += HandleRoundStart;
         }
     }
 
@@ -54,6 +81,59 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         {
             gameManager.OnGameStateChanged -= HandleGameStateChanged;
         }
+        
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnRoundStart -= HandleRoundStart;
+        }
+    }
+    
+    private void InitializeUnitCosts()
+    {
+        unitCosts[UnitType.Tank] = tankCost;
+        unitCosts[UnitType.Mage] = mageCost;
+        unitCosts[UnitType.Range] = rangeCost;
+        unitCosts[UnitType.Fighter] = fighterCost;
+    }
+    
+    private void InitializeCommandPoints()
+    {
+        // Initialize command points for both teams
+        teamCommandPoints["TeamA"] = startingCommandPoints;
+        teamCommandPoints["TeamB"] = startingCommandPoints;
+        
+        teamMaxCommandPoints["TeamA"] = startingCommandPoints;
+        teamMaxCommandPoints["TeamB"] = startingCommandPoints;
+
+        // Notify any listeners
+        OnCommandPointsChanged?.Invoke("TeamA", startingCommandPoints, startingCommandPoints);
+        OnCommandPointsChanged?.Invoke("TeamB", startingCommandPoints, startingCommandPoints);
+
+        Debug.Log($"PlacementManager: Initialized command points. A: {startingCommandPoints}, B: {startingCommandPoints}");
+    }
+    
+    private void HandleRoundStart(int round)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        
+        // Increase command points at the start of each round
+        photonView.RPC("RPCIncreaseCommandPoints", RpcTarget.All);
+    }
+    
+    [PunRPC]
+    private void RPCIncreaseCommandPoints()
+    {
+        foreach (string team in new[] { "TeamA", "TeamB" })
+        {
+            int newMax = Mathf.Min(teamMaxCommandPoints[team] + pointsPerRound, maxCommandPoints);
+            teamMaxCommandPoints[team] = newMax;
+            teamCommandPoints[team] = newMax; // Reset current points to new max
+
+            // Notify listeners
+            OnCommandPointsChanged?.Invoke(team, teamCommandPoints[team], teamMaxCommandPoints[team]);
+        }
+
+        Debug.Log($"PlacementManager: Increased command points. A: {teamCommandPoints["TeamA"]}/{teamMaxCommandPoints["TeamA"]}, B: {teamCommandPoints["TeamB"]}/{teamMaxCommandPoints["TeamB"]}");
     }
 
     private void HandleGameStateChanged(GameState newState)
@@ -63,22 +143,30 @@ public class PlacementManager : MonoBehaviourPunCallbacks
 
     public bool CanPlaceUnit()
     {
-        return currentUnitCount < maxUnitsPerTeam;
+        return CanPlaceUnit(currentTeam, selectedUnitType);
+    }
+    
+    public bool CanPlaceUnit(string team, UnitType unitType)
+    {
+        if (!teamCommandPoints.ContainsKey(team) || !unitCosts.ContainsKey(unitType))
+            return false;
+
+        return teamCommandPoints[team] >= unitCosts[unitType];
     }
 
     public void SelectUnitType(UnitType type)
     {
         selectedUnitType = type;
-        Debug.Log($"Selected unit type: {type}");
+        Debug.Log($"Selected unit type: {type}, Cost: {GetUnitCost(type)}");
     }
 
     public void PlaceUnit(Vector3 position)
     {
-        Debug.Log($"PlaceUnit called. IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}, CurrentCount: {currentUnitCount}");
+        Debug.Log($"PlaceUnit called. IsMasterClient: {PhotonNetwork.IsMasterClient}, CurrentTeam: {currentTeam}");
     
         if (!CanPlaceUnit())
         {
-            Debug.Log("Maximum number of units reached!");
+            Debug.Log($"Cannot place unit. Insufficient command points. Required: {GetUnitCost(selectedUnitType)}, Available: {GetCommandPoints(currentTeam)}");
             return;
         }
 
@@ -90,6 +178,10 @@ public class PlacementManager : MonoBehaviourPunCallbacks
             Debug.LogWarning($"Cannot place units for other team. Local: {currentTeam}");
             return;
         }
+
+        // Critical change: Call this BEFORE instantiating the unit
+        // Deduct command points using RPC that targets ALL clients including the client who called it
+        photonView.RPC("RPCSpendCommandPoints", RpcTarget.AllBuffered, currentTeam, (int)selectedUnitType);
 
         string prefabPath = $"UnitPrefabs/{selectedUnitType}";
         GameObject unitObject = PhotonNetwork.Instantiate(prefabPath, position, Quaternion.identity);
@@ -109,9 +201,51 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         }
 
         unit.SetTeam(currentTeam);
-        currentUnitCount++;
         
         photonView.RPC("RPCUnitPlaced", RpcTarget.All, unit.photonView.ViewID);
+    }
+
+    [PunRPC]
+    private void RPCSpendCommandPoints(string team, int unitTypeInt)
+    {
+        UnitType unitType = (UnitType)unitTypeInt;
+        
+        if (teamCommandPoints.ContainsKey(team) && unitCosts.ContainsKey(unitType))
+        {
+            int previousPoints = teamCommandPoints[team];
+            teamCommandPoints[team] -= unitCosts[unitType];
+            
+            Debug.Log($"[{(PhotonNetwork.IsMasterClient ? "HOST" : "CLIENT")}] RPCSpendCommandPoints: {team} spent {unitCosts[unitType]} points for {unitType}. Points: {previousPoints} -> {teamCommandPoints[team]}");
+            
+            // Notify listeners
+            OnCommandPointsChanged?.Invoke(team, teamCommandPoints[team], teamMaxCommandPoints[team]);
+        }
+    }
+
+    private void RefundCommandPoints(string team, UnitType unitType)
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        photonView.RPC("RPCRefundCommandPoints", RpcTarget.AllBuffered, team, (int)unitType);
+    }
+
+    [PunRPC]
+    private void RPCRefundCommandPoints(string team, int unitTypeInt)
+    {
+        UnitType unitType = (UnitType)unitTypeInt;
+        
+        if (teamCommandPoints.ContainsKey(team) && unitCosts.ContainsKey(unitType))
+        {
+            teamCommandPoints[team] += unitCosts[unitType];
+            
+            // Make sure we don't exceed max points
+            teamCommandPoints[team] = Mathf.Min(teamCommandPoints[team], teamMaxCommandPoints[team]);
+            
+            // Notify listeners
+            OnCommandPointsChanged?.Invoke(team, teamCommandPoints[team], teamMaxCommandPoints[team]);
+            
+            Debug.Log($"PlacementManager: {team} refunded {unitCosts[unitType]} points for {unitType}. Remaining points: {teamCommandPoints[team]}/{teamMaxCommandPoints[team]}");
+        }
     }
 
     [PunRPC]
@@ -140,15 +274,65 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         OnUnitsChanged?.Invoke();
 
         var teamUnits = GetTeamUnits(unit.GetTeamId());
-        Debug.Log($"After placement - {unit.GetTeamId()} units: {teamUnits.Count}/{maxUnitsPerTeam}");
-
-        if (teamUnits.Count >= maxUnitsPerTeam)
+        Debug.Log($"After placement - {unit.GetTeamId()} units: {teamUnits.Count}");
+    }
+    
+    public void SetTeamReady(string team, bool isReady)
+    {
+        if (!PhotonNetwork.IsConnected) return;
+        
+        if (isReady && !readyTeams.Contains(team))
         {
-            if (PhotonNetwork.IsMasterClient)
-            {
-                photonView.RPC("RPCTeamReadyForBattle", RpcTarget.All, unit.GetTeamId());
-            }
+            photonView.RPC("RPCSetTeamReady", RpcTarget.AllBuffered, team);
+            isLocalPlayerReady = true;
         }
+        else if (!isReady && readyTeams.Contains(team))
+        {
+            photonView.RPC("RPCSetTeamNotReady", RpcTarget.AllBuffered, team);
+            isLocalPlayerReady = false;
+        }
+    }
+
+    [PunRPC]
+    private void RPCSetTeamReady(string team)
+    {
+        readyTeams.Add(team);
+        Debug.Log($"Team {team} is ready. Ready teams: {readyTeams.Count}/2");
+        
+        // Notify UI that readiness state changed
+        OnUnitsChanged?.Invoke(); // Reuse this event to update UI
+        
+        // Check if all teams are ready
+        if (readyTeams.Count == 2 && PhotonNetwork.IsMasterClient)
+        {
+            gameManager?.StartBattle();
+        }
+    }
+
+    [PunRPC]
+    private void RPCSetTeamNotReady(string team)
+    {
+        readyTeams.Remove(team);
+        Debug.Log($"Team {team} is not ready. Ready teams: {readyTeams.Count}/2");
+        
+        // Notify UI that readiness state changed
+        OnUnitsChanged?.Invoke();
+    }
+
+    public bool IsLocalPlayerReady()
+    {
+        return isLocalPlayerReady;
+    }
+
+    public int GetReadyTeamsCount()
+    {
+        return readyTeams.Count;
+    }
+
+    private void ResetReadyState()
+    {
+        readyTeams.Clear();
+        isLocalPlayerReady = false;
     }
 
     public void ClearUnits()
@@ -166,8 +350,33 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         }
         placedUnits.Clear();
         readyTeams.Clear();
-        currentUnitCount = 0;
+        isLocalPlayerReady = false;
+        
+        // Reset command points
+        ResetCommandPoints();
+        
         photonView.RPC("RPCUnitsCleared", RpcTarget.All);
+    }
+
+    private void ResetCommandPoints()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+
+        photonView.RPC("RPCResetCommandPoints", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCResetCommandPoints()
+    {
+        foreach (string team in new[] { "TeamA", "TeamB" })
+        {
+            teamCommandPoints[team] = teamMaxCommandPoints[team];
+            
+            // Notify listeners
+            OnCommandPointsChanged?.Invoke(team, teamCommandPoints[team], teamMaxCommandPoints[team]);
+        }
+        
+        Debug.Log($"PlacementManager: Reset command points. A: {teamCommandPoints["TeamA"]}/{teamMaxCommandPoints["TeamA"]}, B: {teamCommandPoints["TeamB"]}/{teamMaxCommandPoints["TeamB"]}");
     }
 
     [PunRPC]
@@ -181,31 +390,55 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsMasterClient) return;
 
         Debug.Log($"Clearing units for team: {team}");
+        
+        // Keep track of units to refund
+        Dictionary<UnitType, int> unitsToRefund = new Dictionary<UnitType, int>();
+        
         foreach (var unit in placedUnits.ToList())
         {
             if (unit != null && unit.GetTeamId() == team)
             {
+                // Count unit types for refund
+                UnitType unitType = unit.GetUnitType();
+                if (!unitsToRefund.ContainsKey(unitType))
+                {
+                    unitsToRefund[unitType] = 0;
+                }
+                unitsToRefund[unitType]++;
+                
                 PhotonNetwork.Destroy(unit.gameObject);
             }
         }
         
         placedUnits.RemoveAll(unit => unit == null || unit.GetTeamId() == team);
+        
+        // Reset ready state for the team
+        readyTeams.Remove(team);
+        if (team == currentTeam)
+        {
+            isLocalPlayerReady = false;
+        }
+        
         photonView.RPC("RPCTeamUnitsCleared", RpcTarget.All, team);
+        
+        // Refund command points
+        foreach (var kvp in unitsToRefund)
+        {
+            for (int i = 0; i < kvp.Value; i++)
+            {
+                RefundCommandPoints(team, kvp.Key);
+            }
+        }
     }
 
     [PunRPC]
     private void RPCTeamUnitsCleared(string team)
     {
         readyTeams.Remove(team);
-        
-        // Reset unit count for the appropriate team
-        if ((PhotonNetwork.IsMasterClient && team == "TeamA") ||
-            (!PhotonNetwork.IsMasterClient && team == "TeamB"))
+        if (team == currentTeam)
         {
-            currentUnitCount = 0;
-            Debug.Log($"Reset unit count for {team}");
+            isLocalPlayerReady = false;
         }
-
         placedUnits.RemoveAll(unit => unit == null || unit.GetTeamId() == team);
         OnUnitsChanged?.Invoke();
     }
@@ -221,14 +454,20 @@ public class PlacementManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public int GetPlacedUnitsCount()
+    // Getters
+    public int GetCommandPoints(string team)
     {
-        return currentUnitCount;
+        return teamCommandPoints.ContainsKey(team) ? teamCommandPoints[team] : 0;
     }
 
-    public int GetMaxUnits()
+    public int GetMaxCommandPoints(string team)
     {
-        return maxUnitsPerTeam;
+        return teamMaxCommandPoints.ContainsKey(team) ? teamMaxCommandPoints[team] : 0;
+    }
+
+    public int GetUnitCost(UnitType unitType)
+    {
+        return unitCosts.ContainsKey(unitType) ? unitCosts[unitType] : 0;
     }
 
     public List<BaseUnit> GetPlacedUnits()
@@ -244,5 +483,53 @@ public class PlacementManager : MonoBehaviourPunCallbacks
     public string GetCurrentTeam()
     {
         return currentTeam;
+    }
+    
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Write TeamA command points data
+            stream.SendNext(teamCommandPoints["TeamA"]);
+            stream.SendNext(teamMaxCommandPoints["TeamA"]);
+
+            // Write TeamB command points data
+            stream.SendNext(teamCommandPoints["TeamB"]);
+            stream.SendNext(teamMaxCommandPoints["TeamB"]);
+            
+            // Send ready state information
+            stream.SendNext(readyTeams.Contains("TeamA"));
+            stream.SendNext(readyTeams.Contains("TeamB"));
+        }
+        else
+        {
+            // Read TeamA command points data
+            teamCommandPoints["TeamA"] = (int)stream.ReceiveNext();
+            teamMaxCommandPoints["TeamA"] = (int)stream.ReceiveNext();
+
+            // Read TeamB command points data
+            teamCommandPoints["TeamB"] = (int)stream.ReceiveNext();
+            teamMaxCommandPoints["TeamB"] = (int)stream.ReceiveNext();
+            
+            // Read ready state information
+            bool teamAReady = (bool)stream.ReceiveNext();
+            bool teamBReady = (bool)stream.ReceiveNext();
+            
+            // Update ready teams set
+            if (teamAReady) readyTeams.Add("TeamA");
+            else readyTeams.Remove("TeamA");
+            
+            if (teamBReady) readyTeams.Add("TeamB");
+            else readyTeams.Remove("TeamB");
+            
+            // Update local player ready state
+            string localTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
+            isLocalPlayerReady = readyTeams.Contains(localTeam);
+            
+            // Notify UI of changes
+            OnCommandPointsChanged?.Invoke("TeamA", teamCommandPoints["TeamA"], teamMaxCommandPoints["TeamA"]);
+            OnCommandPointsChanged?.Invoke("TeamB", teamCommandPoints["TeamB"], teamMaxCommandPoints["TeamB"]);
+            OnUnitsChanged?.Invoke();
+        }
     }
 }
