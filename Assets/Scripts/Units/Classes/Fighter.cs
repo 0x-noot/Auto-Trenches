@@ -5,13 +5,13 @@ using Photon.Pun;
 public class Fighter : BaseUnit
 {
     [Header("Fighter-Specific Settings")]
-    [SerializeField] private float baseCriticalStrikeChance = 0.15f;
+    [SerializeField] private float baseCriticalStrikeChance = 0.10f;
     [SerializeField] private float currentCriticalStrikeChance;
 
     [Header("ApeShit Ability Settings")]
     [SerializeField] private float apeShitDuration = 4f;
-    [SerializeField] private float apeShitAttackSpeedMultiplier = 2.2f;
-    [SerializeField] private float apeShitCritChanceBonus = 0.25f;
+    [SerializeField] private float apeShitAttackSpeedMultiplier = 2.0f;
+    [SerializeField] private float apeShitCritChanceBonus = 0.20f;
     
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem rageParticles;
@@ -23,9 +23,9 @@ public class Fighter : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Fighter;
-        baseHealth = 900f;
-        baseDamage = 130f;
-        baseAttackSpeed = 1.3f;
+        baseHealth = 950f;
+        baseDamage = 110f;
+        baseAttackSpeed = 1.2f;
         baseMoveSpeed = 3.5f;
         attackRange = 3.5f;
         abilityChance = 0.08f;

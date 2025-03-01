@@ -139,11 +139,15 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 
         if (photonView.IsMine)
         {
-            // For melee effects, use direct instantiation
-            GameObject meleeEffect = null;
+            // For melee effects, use PhotonNetwork.Instantiate
             if (meleeAttackEffectPrefab != null)
             {
-                meleeEffect = Instantiate(meleeAttackEffectPrefab, transform.position, Quaternion.identity);
+                GameObject meleeEffect = PhotonNetwork.Instantiate(
+                    meleeAttackEffectPrefab.name, 
+                    transform.position, 
+                    Quaternion.identity
+                );
+                
                 if (meleeEffect != null)
                 {
                     MeleeAttackEffect effect = meleeEffect.GetComponent<MeleeAttackEffect>();
@@ -151,7 +155,9 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                     {
                         effect.SetupEffect(originalPosition, targetPosition);
                     }
-                    Destroy(meleeEffect, 1f);
+                    
+                    // Destroy after delay - need to use PhotonNetwork.Destroy
+                    StartCoroutine(DestroyAfterDelay(meleeEffect, 1f));
                 }
             }
             
@@ -160,6 +166,15 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         }
 
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
+    }
+
+    private IEnumerator DestroyAfterDelay(GameObject obj, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (obj != null && PhotonNetwork.IsConnected)
+        {
+            PhotonNetwork.Destroy(obj);
+        }
     }
 
     private IEnumerator PerformRangedAttackSequence(BaseUnit target)

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1810198500495821939}
   - component: {fileID: 2979059114526521438}
   - component: {fileID: 9164621720400548196}
+  - component: {fileID: 8706098115305087573}
   m_Layer: 0
   m_Name: Slash
   m_TagString: Untagged
@@ -129,3 +130,25 @@ MonoBehaviour:
   slashSprite: {fileID: 2979059114526521438}
   startColor: {r: 1, g: 1, b: 1, a: 1}
   endColor: {r: 1, g: 1, b: 1, a: 0}
+--- !u!114 &8706098115305087573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7712415899826019650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0

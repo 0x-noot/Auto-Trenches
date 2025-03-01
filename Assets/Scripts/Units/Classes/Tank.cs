@@ -24,11 +24,11 @@ public class Tank : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Tank;
-        maxHealth = 1800f;
-        attackDamage = 60f;
+        maxHealth = 2000f;
+        attackDamage = 55f;
         attackRange = 3.5f;
         moveSpeed = 2.5f;
-        attackSpeed = 0.9f;
+        attackSpeed = 0.8f;
         abilityChance = 0.04f;
         
         currentArmorBonus = baseArmorBonus;

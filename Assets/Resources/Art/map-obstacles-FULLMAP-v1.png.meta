@@ -422,7 +422,19 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      map-obstacles-FULLMAP-v1_0: 7020430029461907731
+      map-obstacles-FULLMAP-v1_1: -8471540142824245345
+      map-obstacles-FULLMAP-v1_10: -8370942280550259179
+      map-obstacles-FULLMAP-v1_11: -8820988663076142931
+      map-obstacles-FULLMAP-v1_2: 5438883656267858518
+      map-obstacles-FULLMAP-v1_3: -6247208626049137928
+      map-obstacles-FULLMAP-v1_4: 4993744582643132005
+      map-obstacles-FULLMAP-v1_5: 2154195455272995448
+      map-obstacles-FULLMAP-v1_6: 2999570664376324686
+      map-obstacles-FULLMAP-v1_7: -998241297690672507
+      map-obstacles-FULLMAP-v1_8: 8997786180778158527
+      map-obstacles-FULLMAP-v1_9: 690703869979618744
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

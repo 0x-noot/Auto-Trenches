@@ -24,7 +24,7 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
             isFirstRound = false;
         }
 
-        float damage = 8f + (1.5f * survivingUnits) + winStreak;
+        float damage = 7f + (1.25f * survivingUnits) + winStreak;
         photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
     }
 

@@ -21,14 +21,14 @@ public class Mage : BaseUnit
     private void Awake()
     {
         unitType = UnitType.Mage;
-        baseHealth = 700f;
-        baseDamage = 180f;
+        baseHealth = 750f;
+        baseDamage = 150f;
         attackRange = 10f;
         baseMoveSpeed = 3f;
-        baseAttackSpeed = 0.7f;
+        baseAttackSpeed = 0.65f;
         
         // Explicitly set ability chance from BaseUnit
-        abilityChance = 0.03f;
+        abilityChance = 0.05f;
         
         // Set current stats equal to base stats initially
         maxHealth = baseHealth;

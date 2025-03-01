@@ -6,23 +6,23 @@ using Photon.Realtime;
 public class Range : BaseUnit
 {
     [Header("Range-Specific Settings")]
-    [SerializeField] private float longRangeBonus = 15f;
+    [SerializeField] private float longRangeBonus = 20f;
     [SerializeField] private float longRangeThreshold = 4f;
 
     [Header("Explosion Ability Settings")]
     [SerializeField] private float explosionRadius = 3.5f;
-    [SerializeField] private float explosionDamageMultiplier = 0.3f;
+    [SerializeField] private float explosionDamageMultiplier = 0.35f;
     [SerializeField] private GameObject explosionEffectPrefab;
     private bool isExplosiveArrow = false;
 
     private void Awake()
     {
         unitType = UnitType.Range;
-        maxHealth = 700f;
-        attackDamage = 120f;
+        maxHealth = 750f;
+        attackDamage = 100f;
         attackRange = 12f;
         moveSpeed = 3f;
-        attackSpeed = 0.9f;
+        attackSpeed = 0.8f;
         abilityChance = 0.06f;
         base.Awake();
         Debug.Log($"Range unit initialized: {gameObject.name}");

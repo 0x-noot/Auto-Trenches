@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 5e374c312f7594b4e945ed731dac1986
+guid: adaf5ba5f77de1c43a2a0512f6912c4e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2447061937332416652
-    second: smol-stone1_0
+      213: 7757395169452795793
+    second: Mage button unit-v2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: smol-stone1_0
+      name: Mage button unit-v2_0
       rect:
         serializedVersion: 2
-        x: 8
-        y: 6
-        width: 10
-        height: 8
+        x: 0
+        y: 0
+        width: 34
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 47f0ce1122a4a0ed0800000000000000
-      internalID: -2447061937332416652
+      spriteID: 197a0916ecdc7ab60800000000000000
+      internalID: 7757395169452795793
       vertices: []
       indices: 
       edges: []
@@ -147,8 +147,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      smol-stone1_0: -2447061937332416652
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
