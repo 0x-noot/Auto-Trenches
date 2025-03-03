@@ -6,7 +6,8 @@ public enum UnitType
     Knight,         // Was Tank
     Cleric,         // New unit
     Barbarian,      // New unit
-    PeasantMilitia  // New unit
+    PeasantMilitia,  // New unit
+    Blacksmith
 }
 
 public enum UnitState

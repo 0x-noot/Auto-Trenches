@@ -155,29 +155,25 @@ public class OrderSynergyUI : MonoBehaviourPunCallbacks
 
     private void HandleGameStateChanged(GameState newState)
     {
+        
         // Show during both battle AND placement
         bool shouldShow = (newState == GameState.BattleActive || 
                         newState == GameState.BattleStart ||
                         newState == GameState.PlayerAPlacement ||
                         newState == GameState.PlayerBPlacement);
         
-        // Force show based on our rules, not hiding on state change
-        if (!synergyPanel.activeSelf && shouldShow)
+        if (shouldShow)
         {
             synergyPanel.SetActive(true);
+            
+            // Ensure all order panels are visible
+            EnsureAllOrderPanelsVisible();
             
             // Trigger animation if available
             if (panelAnimator != null)
             {
                 panelAnimator.SetTrigger("Show");
             }
-        }
-        
-        // Add failsafe activation
-        if (!synergyPanel.activeSelf && shouldShow)
-        {
-            // Double-check after 0.5s in case another script deactivates it
-            Invoke("ForceActivatePanel", 0.5f);
         }
     }
 
@@ -208,13 +204,20 @@ public class OrderSynergyUI : MonoBehaviourPunCallbacks
             element.countText.text = count.ToString();
         }
         
-        // Show/hide panel based on count
-        if (element.panel != null)
+        // Ensure panel is always visible during battle
+        if (element.panel != null && !element.panel.activeSelf)
         {
-            bool shouldShow = count > 0;
-            if (element.panel.activeSelf != shouldShow)
+            element.panel.SetActive(true);
+        }
+    }
+
+    private void EnsureAllOrderPanelsVisible()
+    {
+        foreach (OrderUIElement element in orderElements)
+        {
+            if (element.panel != null && !element.panel.activeSelf)
             {
-                element.panel.SetActive(shouldShow);
+                element.panel.SetActive(true);
             }
         }
     }

@@ -33,6 +33,7 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private int clericCost = 4;
     [SerializeField] private int barbarianCost = 4;
     [SerializeField] private int peasantMilitiaCost = 2;
+    [SerializeField] private int blacksmithCost = 5;
 
     [Header("Current Selection")]
     [SerializeField] private UnitType selectedUnitType = UnitType.Berserker;  // Was UnitType.Fighter
@@ -104,10 +105,10 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         unitCosts[UnitType.Sorcerer] = sorcererCost;    // Was Mage
         unitCosts[UnitType.Archer] = archerCost;        // Was Range
         unitCosts[UnitType.Berserker] = berserkerCost;  // Was Fighter
-        // Add the new unit costs
         unitCosts[UnitType.Cleric] = clericCost;
         unitCosts[UnitType.Barbarian] = barbarianCost;
         unitCosts[UnitType.PeasantMilitia] = peasantMilitiaCost;
+        unitCosts[UnitType.Blacksmith] = blacksmithCost;
     }
     
     private void InitializeCommandPoints()

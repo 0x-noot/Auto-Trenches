@@ -129,7 +129,7 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         
         // Add your new units to the existing conditionals
         if (unitType == UnitType.Knight || unitType == UnitType.Berserker || 
-            unitType == UnitType.Barbarian || unitType == UnitType.PeasantMilitia)
+            unitType == UnitType.Barbarian || unitType == UnitType.PeasantMilitia || unitType == UnitType.Blacksmith)
         {
             StartCoroutine(PerformMeleeAttackSequence(target));
         }
