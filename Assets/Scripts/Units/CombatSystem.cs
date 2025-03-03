@@ -4,7 +4,22 @@ using Photon.Pun;
 
 public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
-    private BaseUnit unit;
+    // Backing field for lazy initialization
+    private BaseUnit _unit;
+    // Property that initializes _unit on first access
+    private BaseUnit unit 
+    {
+        get 
+        {
+            if (_unit == null) 
+            {
+                _unit = GetComponent<BaseUnit>();
+                Debug.Log($"Lazy init: {gameObject.name} unit type = {_unit.GetUnitType()}");
+            }
+            return _unit;
+        }
+    }
+    
     private float nextAttackTime = 0f;
     
     [Header("Combat Settings")]
@@ -15,26 +30,27 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private float meleeAttackRecoil = 0.3f;
     [SerializeField] private float meleeAttackLunge = 0.5f;
     
-    [Header("Range Attack Settings")]
+    [Header("Archer Attack Settings")]
     [SerializeField] private GameObject arrowPrefab;
     [SerializeField] private float arrowSpeed = 15f;
     [SerializeField] private float arrowArcHeight = 1f;
     [SerializeField] private float arrowHomingStrength = 0.8f;
     
-    [Header("Mage Attack Settings")]
+    [Header("Sorcerer Attack Settings")]
     [SerializeField] private GameObject spellPrefab;
     [SerializeField] private float spellSpeed = 10f;
     [SerializeField] private float spellCastDelay = 0.2f;
     
     private void Awake()
     {
-        unit = GetComponent<BaseUnit>();
+        // Note: Not setting _unit directly here, will use lazy-loaded property instead
         if (!TryGetComponent<EnemyTargeting>(out var targeting))
         {
             Debug.LogError($"CombatSystem requires EnemyTargeting component on {gameObject.name}!");
         }
 
-        ValidateReferences();
+        // Delay validation to Start to ensure unit type is initialized
+        Invoke("ValidateReferences", 0.1f);
     }
 
     private void ValidateReferences()
@@ -45,21 +61,31 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             return;
         }
 
-        switch (unit.GetUnitType())
+        // Add debug to see what type is being reported
+        Debug.Log($"Unit {gameObject.name} has type: {unit.GetUnitType()}");
+
+        // Properly check the unit type
+        UnitType unitType = unit.GetUnitType();
+        
+        // Handle each unit type correctly
+        if (unitType == UnitType.Archer)
         {
-            case UnitType.Range:
-                if (arrowPrefab == null)
-                    Debug.LogError($"Arrow prefab is missing for Range unit {gameObject.name}!");
-                break;
-            case UnitType.Mage:
-                if (spellPrefab == null)
-                    Debug.LogError($"Spell prefab is missing for Mage unit {gameObject.name}!");
-                break;
-            case UnitType.Fighter:
-            case UnitType.Tank:
-                if (meleeAttackEffectPrefab == null)
-                    Debug.LogError($"Melee attack effect prefab is missing for {unit.GetUnitType()} unit {gameObject.name}!");
-                break;
+            if (arrowPrefab == null)
+                Debug.LogError($"Arrow prefab is missing for Archer unit {gameObject.name}!");
+        }
+        else if (unitType == UnitType.Sorcerer)
+        {
+            if (spellPrefab == null)
+                Debug.LogError($"Spell prefab is missing for Sorcerer unit {gameObject.name}!");
+        }
+        else if (unitType == UnitType.Knight || unitType == UnitType.Berserker)
+        {
+            if (meleeAttackEffectPrefab == null)
+                Debug.LogError($"Melee attack effect prefab is missing for {unitType} unit {gameObject.name}!");
+        }
+        else
+        {
+            Debug.LogWarning($"Unknown unit type {unitType} for {gameObject.name}");
         }
     }
 
@@ -97,21 +123,23 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         {
             return;
         }
+
+        // Use the same approach for determining attack type as in ValidateReferences
+        UnitType unitType = unit.GetUnitType();
         
-        switch (unit.GetUnitType())
+        // Add your new units to the existing conditionals
+        if (unitType == UnitType.Knight || unitType == UnitType.Berserker || 
+            unitType == UnitType.Barbarian || unitType == UnitType.PeasantMilitia)
         {
-            case UnitType.Tank:
-            case UnitType.Fighter:
-                StartCoroutine(PerformMeleeAttackSequence(target));
-                break;
-                
-            case UnitType.Range:
-                StartCoroutine(PerformRangedAttackSequence(target));
-                break;
-                
-            case UnitType.Mage:
-                StartCoroutine(PerformMageAttackSequence(target));
-                break;
+            StartCoroutine(PerformMeleeAttackSequence(target));
+        }
+        else if (unitType == UnitType.Archer)
+        {
+            StartCoroutine(PerformRangedAttackSequence(target));
+        }
+        else if (unitType == UnitType.Sorcerer || unitType == UnitType.Cleric)
+        {
+            StartCoroutine(PerformMageAttackSequence(target));
         }
     }
 
@@ -205,8 +233,8 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                 ArrowProjectile arrow = arrowObj.GetComponent<ArrowProjectile>();
                 if (arrow != null)
                 {
-                    Range rangeUnit = unit as Range;
-                    arrow.Initialize(rangeUnit, target);
+                    Archer archerUnit = unit as Archer;
+                    arrow.Initialize(archerUnit, target);
                     arrow.StartFlight();
                     arrow.MoveToTarget(target.transform.position, arrowSpeed);
                 }

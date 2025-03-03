@@ -15,14 +15,14 @@ GameObject:
   - component: {fileID: 4093855614760905040}
   - component: {fileID: 1165684704454462248}
   - component: {fileID: 1647429070346559058}
-  - component: {fileID: 1823176806197746853}
   - component: {fileID: 6585370680212932942}
   - component: {fileID: 8136012349583099317}
+  - component: {fileID: 6266460163584166274}
   - component: {fileID: 4609681545036959117}
   - component: {fileID: 1648302430750897838}
   - component: {fileID: 8046160645993138282}
   m_Layer: 0
-  m_Name: Fighter
+  m_Name: Berserker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -199,29 +199,6 @@ MonoBehaviour:
   targetingRange: 100
   updateInterval: 0.5
   positionVariance: 0.5
---- !u!114 &1823176806197746853
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5973173910556211883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b094a73858e92e4cbde5c5131e454d4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  teamId: 
-  deathAnimationDuration: 1
-  useDeathAnimation: 1
-  baseAbilityCooldown: 15
-  abilityChance: 0.2
-  baseCriticalStrikeChance: 0.2
-  currentCriticalStrikeChance: 0
-  apeShitDuration: 5
-  apeShitAttackSpeedMultiplier: 2
-  apeShitCritChanceBonus: 0.3
-  rageParticles: {fileID: 8136012349583099317}
 --- !u!114 &6585370680212932942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4977,6 +4954,30 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!114 &6266460163584166274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d43f50f22871c84caa35eab36868bd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orderType: 2
+  teamId: 
+  deathAnimationDuration: 1
+  useDeathAnimation: 1
+  baseAbilityCooldown: 15
+  abilityChance: 0.05
+  baseCriticalStrikeChance: 0.1
+  currentCriticalStrikeChance: 0
+  bloodRageDuration: 4
+  bloodRageAttackSpeedMultiplier: 2
+  bloodRageCritChanceBonus: 0.2
+  rageParticles: {fileID: 8136012349583099317}
 --- !u!199 &4609681545036959117
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -5071,13 +5072,13 @@ MonoBehaviour:
   prefixField: -1
   Synchronization: 3
   OwnershipTransfer: 0
-  observableSearch: 0
+  observableSearch: 2
   ObservedComponents:
   - {fileID: 4093855614760905040}
   - {fileID: 1165684704454462248}
   - {fileID: 1647429070346559058}
-  - {fileID: 1823176806197746853}
   - {fileID: 6585370680212932942}
+  - {fileID: 6266460163584166274}
   - {fileID: 8046160645993138282}
   sceneViewId: 0
   InstantiationId: 0
@@ -5131,6 +5132,14 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5307584492516263952, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 5307584492516263952, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 5507293933271101215, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
       propertyPath: m_Name
       value: HealthBar
@@ -5168,6 +5177,14 @@ PrefabInstance:
       value: 1080
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -5197,11 +5214,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 960
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 540
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 5835798744483796760, guid: 2da2d928fb9857f4ca9226f8a08a0c6b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

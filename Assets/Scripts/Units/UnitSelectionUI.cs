@@ -60,7 +60,7 @@ public class UnitSelectionUI : MonoBehaviourPunCallbacks
 
         // Set current team
         currentTeam = PhotonNetwork.IsMasterClient ? "TeamA" : "TeamB";
-        selectedUnitType = UnitType.Fighter;  // Default selection
+        selectedUnitType = UnitType.Berserker;  // Default selection (was Fighter)
 
         // Subscribe to events
         placementManager.OnUnitsChanged += UpdateUI;

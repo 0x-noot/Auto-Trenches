@@ -1,9 +1,12 @@
 public enum UnitType
 {
-    Fighter,
-    Mage,
-    Range,
-    Tank
+    Berserker,      // Was Fighter
+    Sorcerer,       // Was Mage
+    Archer,         // Was Range
+    Knight,         // Was Tank
+    Cleric,         // New unit
+    Barbarian,      // New unit
+    PeasantMilitia  // New unit
 }
 
 public enum UnitState

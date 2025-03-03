@@ -2,35 +2,45 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class Tank : BaseUnit
+public class Knight : BaseUnit
 {
-    [Header("Tank-Specific Settings")]
+    [Header("Knight-Specific Settings")]
     [SerializeField] private float baseArmorBonus = 25f;
     private float currentArmorBonus;
 
-    [Header("Shield Ability Settings")]
-    [SerializeField] private float shieldDuration = 6f;
-    [SerializeField] private float shieldArmorMultiplier = 2.5f;
+    [Header("Divine Aegis Ability Settings")]
+    [SerializeField] private float divineAegisDuration = 6f;
+    [SerializeField] private float divineAegisArmorMultiplier = 2.5f;
     
     [Header("Visual Effects")]
-    [SerializeField] private GameObject shieldEffectPrefab;
-    [SerializeField] private Color shieldActiveColor = new Color(0, 0.8f, 1f, 1f);
+    [SerializeField] private GameObject divineAegisEffectPrefab;
+    [SerializeField] private Color divineAegisActiveColor = new Color(1f, 0.9f, 0.4f, 1f); // Golden glow
     
     private GameObject activeShieldEffect;
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
     private bool shieldEffectStarted = false;
 
-    private void Awake()
+    protected override void Awake()
     {
-        unitType = UnitType.Tank;
-        maxHealth = 2000f;
-        attackDamage = 55f;
+        // Set unit-specific properties BEFORE calling base.Awake()
+        unitType = UnitType.Knight;
+        orderType = OrderType.Shield;
+        baseHealth = 2000f;
+        baseDamage = 55f;
+        baseAttackSpeed = 0.8f;
+        baseMoveSpeed = 2.5f;
         attackRange = 3.5f;
-        moveSpeed = 2.5f;
-        attackSpeed = 0.8f;
         abilityChance = 0.04f;
         
+        // Now call base.Awake after setting type and order
+        base.Awake();
+        
+        // Initialize
+        maxHealth = baseHealth;
+        attackDamage = baseDamage;
+        attackSpeed = baseAttackSpeed;
+        moveSpeed = baseMoveSpeed;
         currentArmorBonus = baseArmorBonus;
         
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -42,7 +52,7 @@ public class Tank : BaseUnit
 
     protected override void OnDestroy()
     {
-        ResetShieldEffects();
+        ResetDivineAegisEffects();
         base.OnDestroy();
     }
 
@@ -50,7 +60,7 @@ public class Tank : BaseUnit
     {
         if (currentState == UnitState.Dead)
         {
-            ResetShieldEffects();
+            ResetDivineAegisEffects();
         }
         base.UpdateState(newState);
     }
@@ -60,7 +70,7 @@ public class Tank : BaseUnit
         base.HandleGameStateChanged(newState);
         if (newState != GameState.BattleActive && isAbilityActive)
         {
-            ResetShieldEffects();
+            ResetDivineAegisEffects();
         }
     }
 
@@ -75,11 +85,11 @@ public class Tank : BaseUnit
     {
         if (!photonView.IsMine) return;
         
-        Debug.Log($"Tank TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
+        Debug.Log($"Knight TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
         
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
-            Debug.Log("Activating shield ability!");
+            Debug.Log("Activating Divine Aegis ability!");
             photonView.RPC("RPCActivateAbility", RpcTarget.All);
         }
     }
@@ -88,29 +98,29 @@ public class Tank : BaseUnit
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
-        Debug.Log("Tank RPCActivateAbility called");
+        Debug.Log("Knight RPCActivateAbility called");
         // Directly start the ability coroutine
         shieldEffectStarted = true;
-        StartCoroutine(ShieldAbility());
+        StartCoroutine(DivineAegisAbility());
     }
 
     protected override void PerformAbilityActivation()
     {
-        Debug.Log("Tank PerformAbilityActivation called");
+        Debug.Log("Knight PerformAbilityActivation called");
         if (!shieldEffectStarted)
         {
             shieldEffectStarted = true;
-            StartCoroutine(ShieldAbility());
+            StartCoroutine(DivineAegisAbility());
         }
     }
 
-    private IEnumerator ShieldAbility()
+    private IEnumerator DivineAegisAbility()
     {
-        Debug.Log("Tank ShieldAbility coroutine started");
-        photonView.RPC("RPCActivateShieldEffects", RpcTarget.All);
+        Debug.Log("Knight DivineAegisAbility coroutine started");
+        photonView.RPC("RPCActivateDivineAegisEffects", RpcTarget.All);
 
         float elapsedTime = 0f;
-        while (elapsedTime < shieldDuration && currentState != UnitState.Dead)
+        while (elapsedTime < divineAegisDuration && currentState != UnitState.Dead)
         {
             elapsedTime += Time.deltaTime;
             yield return null;
@@ -118,27 +128,27 @@ public class Tank : BaseUnit
 
         if (photonView.IsMine)
         {
-            ResetShieldEffects();
+            ResetDivineAegisEffects();
         }
     }
 
     [PunRPC]
-    private void RPCActivateShieldEffects()
+    private void RPCActivateDivineAegisEffects()
     {
-        Debug.Log("Tank RPCActivateShieldEffects called");
+        Debug.Log("Knight RPCActivateDivineAegisEffects called");
         // Increase armor
-        currentArmorBonus = baseArmorBonus * shieldArmorMultiplier;
+        currentArmorBonus = baseArmorBonus * divineAegisArmorMultiplier;
 
-        // Visual feedback on tank
+        // Visual feedback on knight
         if (spriteRenderer != null)
         {
-            spriteRenderer.color = shieldActiveColor;
+            spriteRenderer.color = divineAegisActiveColor;
         }
 
         // Spawn shield effect if prefab is assigned
-        if (shieldEffectPrefab != null && activeShieldEffect == null)
+        if (divineAegisEffectPrefab != null && activeShieldEffect == null)
         {
-            activeShieldEffect = Instantiate(shieldEffectPrefab, transform);
+            activeShieldEffect = Instantiate(divineAegisEffectPrefab, transform);
             var shieldEffect = activeShieldEffect.GetComponent<ShieldEffect>();
             if (shieldEffect != null)
             {
@@ -147,20 +157,20 @@ public class Tank : BaseUnit
         }
     }
 
-    private void ResetShieldEffects()
+    private void ResetDivineAegisEffects()
     {
         if (!photonView.IsMine) return;
-        photonView.RPC("RPCResetShieldEffects", RpcTarget.All);
+        photonView.RPC("RPCResetDivineAegisEffects", RpcTarget.All);
     }
 
     [PunRPC]
-    private void RPCResetShieldEffects()
+    private void RPCResetDivineAegisEffects()
     {
-        Debug.Log("Tank RPCResetShieldEffects called");
+        Debug.Log("Knight RPCResetDivineAegisEffects called");
         // Reset armor
         currentArmorBonus = baseArmorBonus;
 
-        // Reset tank visuals
+        // Reset knight visuals
         if (spriteRenderer != null)
         {
             spriteRenderer.color = originalColor;
@@ -194,7 +204,7 @@ public class Tank : BaseUnit
         }
         else
         {
-            currentArmorBonus = baseArmorBonus * shieldArmorMultiplier;
+            currentArmorBonus = baseArmorBonus * divineAegisArmorMultiplier;
         }
     }
 }

@@ -14,9 +14,9 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private Color trailStartColor = Color.white;
     [SerializeField] private Color trailEndColor = new Color(1, 1, 1, 0);
 
-    [Header("Explosive Arrow Settings")]
-    [SerializeField] private Color explosiveTrailColor = Color.red;
-    [SerializeField] private ParticleSystem explosiveParticles;
+    [Header("Blazing Volley Settings")] // Was "Explosive Arrow Settings"
+    [SerializeField] private Color blazingTrailColor = Color.red; // Was explosiveTrailColor
+    [SerializeField] private ParticleSystem blazingParticles; // Was explosiveParticles
     
     [Header("Flight Settings")]
     [SerializeField] private float rotationSpeed = 360f;
@@ -27,7 +27,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
     private Vector3 originalScale;
     private bool isFlying = false;
     private bool isDestroyed = false;
-    private Range sourceUnit;
+    private Archer sourceUnit; // Was Range
     private BaseUnit targetUnit;
     private float currentFlightProgress = 0f;
     private bool isMoving = false;
@@ -87,7 +87,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    public void Initialize(Range source, BaseUnit target)
+    public void Initialize(Archer source, BaseUnit target) // Was Range
     {
         if (!photonView.IsMine) return;
         
@@ -105,8 +105,8 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
             (source != null) ? source.photonView.ViewID : -1, 
             (target != null) ? target.photonView.ViewID : -1);
                 
-        if (source != null && source.IsExplosiveArrow())
-            SetupExplosiveArrow();
+        if (source != null && source.IsBlazingVolleyActive()) // Was IsExplosiveArrow()
+            SetupBlazingArrow(); // Was SetupExplosiveArrow()
         else
             SetupNormalArrow();
     }
@@ -118,7 +118,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
         {
             PhotonView sourceView = PhotonView.Find(sourceViewID);
             if (sourceView != null)
-                sourceUnit = sourceView.GetComponent<Range>();
+                sourceUnit = sourceView.GetComponent<Archer>(); // Was Range
         }
         
         if (targetViewID != -1)
@@ -128,20 +128,20 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
                 targetUnit = targetView.GetComponent<BaseUnit>();
         }
 
-        if (sourceUnit != null && sourceUnit.IsExplosiveArrow())
-            SetupExplosiveArrow();
+        if (sourceUnit != null && sourceUnit.IsBlazingVolleyActive()) // Was IsExplosiveArrow()
+            SetupBlazingArrow(); // Was SetupExplosiveArrow()
         else
             SetupNormalArrow();
     }
 
-    private void SetupExplosiveArrow()
+    private void SetupBlazingArrow() // Was SetupExplosiveArrow()
     {
         if (arrowTrail != null)
         {
             Gradient gradient = new Gradient();
             gradient.SetKeys(
                 new GradientColorKey[] { 
-                    new GradientColorKey(explosiveTrailColor, 0.0f), 
+                    new GradientColorKey(blazingTrailColor, 0.0f), // Was explosiveTrailColor 
                     new GradientColorKey(Color.yellow, 1.0f) 
                 },
                 new GradientAlphaKey[] { 
@@ -152,9 +152,9 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
             arrowTrail.colorGradient = gradient;
         }
 
-        if (explosiveParticles != null)
+        if (blazingParticles != null) // Was explosiveParticles
         {
-            explosiveParticles.Play();
+            blazingParticles.Play(); // Was explosiveParticles
         }
     }
 
@@ -258,7 +258,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
         }
                 
         // Handle explosion if needed
-        if (sourceUnit != null && sourceUnit.IsExplosiveArrow() && targetUnit != null)
+        if (sourceUnit != null && sourceUnit.IsBlazingVolleyActive() && targetUnit != null) // Was IsExplosiveArrow()
         {
              Debug.Log($"Calling CreateExplosion on sourceUnit: {sourceUnit.gameObject.name}");
             sourceUnit.CreateExplosion(transform.position, targetUnit);
@@ -266,7 +266,7 @@ public class ArrowProjectile : MonoBehaviourPunCallbacks, IPunObservable
         else
         {
             Debug.Log($"Explosion conditions not met: sourceUnit={sourceUnit != null}, " +
-                    $"isExplosive={sourceUnit?.IsExplosiveArrow()}, targetUnit={targetUnit != null}");
+                    $"isBlazingVolley={sourceUnit?.IsBlazingVolleyActive()}, targetUnit={targetUnit != null}"); // Was isExplosive
         }
         
         // Notify other clients

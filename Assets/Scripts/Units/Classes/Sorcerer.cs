@@ -3,34 +3,37 @@ using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 
-public class Mage : BaseUnit
+public class Sorcerer : BaseUnit
 {
-    [Header("Mage-Specific Settings")]
+    [Header("Sorcerer-Specific Settings")]
     [SerializeField] private float magicPenetration = 15f;
 
-    [Header("Freeze Ability Settings")]
-    [SerializeField] private float freezeDuration = 2.5f;
-    [SerializeField] private float freezeRadius = 10f;  // Increased to match attack range
-    [SerializeField] private GameObject freezeEffectPrefab;
+    [Header("Frostbind Ability Settings")]
+    [SerializeField] private float frostbindDuration = 2.5f;
+    [SerializeField] private float frostbindRadius = 10f;  // Increased to match attack range
+    [SerializeField] private GameObject frostbindEffectPrefab;
     [HideInInspector] public bool freezeEffectStarted = false;
 
     private List<int> frozenUnitViewIDs = new List<int>();
     private Coroutine freezeCoroutine;
     private const float AUTO_UNFREEZE_SAFETY = 5f; // Maximum time any unit can be frozen
 
-    private void Awake()
+    protected override void Awake()
     {
-        unitType = UnitType.Mage;
+        // Set unit-specific properties BEFORE calling base.Awake()
+        unitType = UnitType.Sorcerer;
+        orderType = OrderType.Arcane;
         baseHealth = 750f;
         baseDamage = 150f;
-        attackRange = 10f;
-        baseMoveSpeed = 3f;
         baseAttackSpeed = 0.65f;
-        
-        // Explicitly set ability chance from BaseUnit
+        baseMoveSpeed = 3f;
+        attackRange = 10f;
         abilityChance = 0.05f;
         
-        // Set current stats equal to base stats initially
+        // Now call base.Awake after setting type and order
+        base.Awake();
+        
+        // Initialize
         maxHealth = baseHealth;
         attackDamage = baseDamage;
         attackSpeed = baseAttackSpeed;
@@ -45,7 +48,7 @@ public class Mage : BaseUnit
         if (isAbilityActive && !freezeEffectStarted && photonView.IsMine)
         {
             freezeEffectStarted = true;
-            freezeCoroutine = StartCoroutine(FreezeAbility());
+            freezeCoroutine = StartCoroutine(FrostbindAbility());
         }
     }
 
@@ -74,7 +77,7 @@ public class Mage : BaseUnit
         if (!freezeEffectStarted)
         {
             freezeEffectStarted = true;
-            freezeCoroutine = StartCoroutine(FreezeAbility());
+            freezeCoroutine = StartCoroutine(FrostbindAbility());
         }
     }
 
@@ -119,7 +122,7 @@ public class Mage : BaseUnit
         return attackDamage + magicPenetration;
     }
 
-    private IEnumerator FreezeAbility()
+    private IEnumerator FrostbindAbility()
     {
         // Get target from the EnemyTargeting component
         EnemyTargeting targeting = GetComponent<EnemyTargeting>();
@@ -139,7 +142,7 @@ public class Mage : BaseUnit
             targetUnit.GetTeamId() != teamId && 
             targetUnit.GetCurrentState() != UnitState.Dead)
         {
-            Debug.Log($"Mage freezing target from targeting component: {targetUnit.gameObject.name}");
+            Debug.Log($"Sorcerer freezing target from targeting component: {targetUnit.gameObject.name}");
             PhotonView enemyView = targetUnit.GetComponent<PhotonView>();
             if (enemyView != null)
             {
@@ -148,12 +151,12 @@ public class Mage : BaseUnit
         }
         else
         {
-            Debug.Log("Mage has no valid target to freeze from targeting component");
+            Debug.Log("Sorcerer has no valid target to freeze from targeting component");
         }
 
         // Safety timer to ensure units are unfrozen
         float timeElapsed = 0;
-        while (timeElapsed < freezeDuration && photonView != null && photonView.IsMine)
+        while (timeElapsed < frostbindDuration && photonView != null && photonView.IsMine)
         {
             timeElapsed += Time.deltaTime;
             yield return null;
@@ -192,17 +195,17 @@ public class Mage : BaseUnit
         }
 
         // Spawn freeze effect
-        if (freezeEffectPrefab != null)
+        if (frostbindEffectPrefab != null)
         {
             GameObject freezeEffect = Instantiate(
-                freezeEffectPrefab,
+                frostbindEffectPrefab,
                 enemy.transform.position,
                 Quaternion.identity,
                 enemy.transform
             );
             
             // Destroy the effect after the freeze duration
-            Destroy(freezeEffect, freezeDuration);
+            Destroy(freezeEffect, frostbindDuration);
         }
 
         // Disable the enemy unit's components
@@ -246,20 +249,20 @@ public class Mage : BaseUnit
         // Deactivate any active ability for all unit types
         unit.photonView.RPC("RPCDeactivateAbility", RpcTarget.All);
         
-        // Handle Mage units specially to prevent freeze effects
-        Mage mageUnit = unit.GetComponent<Mage>();
-        if (mageUnit != null && mageUnit != this) // Prevent recursion if freezing another mage
+        // Handle Sorcerer units specially to prevent freeze effects
+        Sorcerer sorcererUnit = unit.GetComponent<Sorcerer>();
+        if (sorcererUnit != null && sorcererUnit != this) // Prevent recursion if freezing another sorcerer
         {
             // Cancel any ongoing freeze effects
-            if (mageUnit.freezeEffectStarted)
+            if (sorcererUnit.freezeEffectStarted)
             {
-                if (mageUnit.freezeCoroutine != null)
+                if (sorcererUnit.freezeCoroutine != null)
                 {
-                    mageUnit.StopCoroutine(mageUnit.freezeCoroutine);
-                    mageUnit.freezeCoroutine = null;
+                    sorcererUnit.StopCoroutine(sorcererUnit.freezeCoroutine);
+                    sorcererUnit.freezeCoroutine = null;
                 }
-                mageUnit.freezeEffectStarted = false;
-                mageUnit.SafeUnfreezeAllUnits();
+                sorcererUnit.freezeEffectStarted = false;
+                sorcererUnit.SafeUnfreezeAllUnits();
             }
         }
     }
@@ -432,6 +435,6 @@ public class Mage : BaseUnit
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, freezeRadius);
+        Gizmos.DrawWireSphere(transform.position, frostbindRadius);
     }
 }

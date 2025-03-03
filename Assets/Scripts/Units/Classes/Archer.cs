@@ -3,29 +3,41 @@ using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
 
-public class Range : BaseUnit
+public class Archer : BaseUnit
 {
-    [Header("Range-Specific Settings")]
+    [Header("Archer-Specific Settings")]
     [SerializeField] private float longRangeBonus = 20f;
     [SerializeField] private float longRangeThreshold = 4f;
 
-    [Header("Explosion Ability Settings")]
+    [Header("Blazing Volley Ability Settings")]
     [SerializeField] private float explosionRadius = 3.5f;
     [SerializeField] private float explosionDamageMultiplier = 0.35f;
     [SerializeField] private GameObject explosionEffectPrefab;
-    private bool isExplosiveArrow = false;
+    private bool isBlazingVolleyActive = false;
 
-    private void Awake()
+
+    protected override void Awake()
     {
-        unitType = UnitType.Range;
-        maxHealth = 750f;
-        attackDamage = 100f;
+        // Set unit-specific properties BEFORE calling base.Awake()
+        unitType = UnitType.Archer;
+        orderType = OrderType.Arcane;
+        baseHealth = 750f;
+        baseDamage = 100f;
+        baseAttackSpeed = 0.8f;
+        baseMoveSpeed = 3f;
         attackRange = 12f;
-        moveSpeed = 3f;
-        attackSpeed = 0.8f;
         abilityChance = 0.06f;
+        
+        // Now call base.Awake after setting type and order
         base.Awake();
-        Debug.Log($"Range unit initialized: {gameObject.name}");
+        
+        // Initialize
+        maxHealth = baseHealth;
+        attackDamage = baseDamage;
+        attackSpeed = baseAttackSpeed;
+        moveSpeed = baseMoveSpeed;
+        
+        Debug.Log($"Archer unit initialized with type: {unitType}, order: {orderType}");
     }
 
     protected override void TryActivateAbility()
@@ -36,36 +48,36 @@ public class Range : BaseUnit
         
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
-            Debug.Log("Activating explosive arrow ability!");
+            Debug.Log("Activating Blazing Volley ability!");
             photonView.RPC("RPCActivateAbility", RpcTarget.All);
         }
     }
+    
     [PunRPC]
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
-        isExplosiveArrow = true;
+        isBlazingVolleyActive = true;
     }
 
     protected override void DeactivateAbility()
     {
         if (!photonView.IsMine) return;
-        isExplosiveArrow = false;
+        isBlazingVolleyActive = false;
         base.DeactivateAbility();
     }
 
-    public bool IsExplosiveArrow()
+    public bool IsBlazingVolleyActive()
     {
-        return isExplosiveArrow;
+        return isBlazingVolleyActive;
     }
 
     public void CreateExplosion(Vector3 position, BaseUnit primaryTarget)
     {
         Debug.Log($"CreateExplosion called on {gameObject.name}");
-        Debug.Log($"isExplosiveArrow: {isExplosiveArrow}, IsMine: {photonView.IsMine}");
+        Debug.Log($"isBlazingVolleyActive: {isBlazingVolleyActive}, IsMine: {photonView.IsMine}");
 
-
-        if (!isExplosiveArrow || !photonView.IsMine)
+        if (!isBlazingVolleyActive || !photonView.IsMine)
         {
             Debug.Log("CreateExplosion early return - conditions not met");
             return;
@@ -118,6 +130,17 @@ public class Range : BaseUnit
     {
         float baseDamage = attackDamage;
         
+        // Apply Arcane order synergy if target is affected by ability
+        if (orderType == OrderType.Arcane && 
+            currentTarget != null && 
+            currentTarget.IsAbilityActive() &&
+            synergyBonuses.ContainsKey("Arcane_affectedTargetDamage"))
+        {
+            float bonusMultiplier = synergyBonuses["Arcane_affectedTargetDamage"];
+            baseDamage *= (1f + bonusMultiplier);
+        }
+        
+        // Apply long range bonus
         if (currentTarget != null)
         {
             float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
@@ -132,7 +155,7 @@ public class Range : BaseUnit
 
     private void OnDrawGizmosSelected()
     {
-        if (isExplosiveArrow)
+        if (isBlazingVolleyActive)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, explosionRadius);

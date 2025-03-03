@@ -2,16 +2,16 @@ using UnityEngine;
 using System.Collections;
 using Photon.Pun;
 
-public class Fighter : BaseUnit
+public class Berserker : BaseUnit
 {
-    [Header("Fighter-Specific Settings")]
+    [Header("Berserker-Specific Settings")]
     [SerializeField] private float baseCriticalStrikeChance = 0.10f;
     [SerializeField] private float currentCriticalStrikeChance;
 
-    [Header("ApeShit Ability Settings")]
-    [SerializeField] private float apeShitDuration = 4f;
-    [SerializeField] private float apeShitAttackSpeedMultiplier = 2.0f;
-    [SerializeField] private float apeShitCritChanceBonus = 0.20f;
+    [Header("Blood Rage Ability Settings")]
+    [SerializeField] private float bloodRageDuration = 4f;
+    [SerializeField] private float bloodRageAttackSpeedMultiplier = 2.0f;
+    [SerializeField] private float bloodRageCritChanceBonus = 0.20f;
     
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem rageParticles;
@@ -20,15 +20,20 @@ public class Fighter : BaseUnit
     private Color originalColor;
     private bool abilityStarted = false;
 
-    private void Awake()
+    protected override void Awake()
     {
-        unitType = UnitType.Fighter;
+        // Set unit-specific properties BEFORE calling base.Awake()
+        unitType = UnitType.Berserker;
+        orderType = OrderType.Wild;
         baseHealth = 950f;
         baseDamage = 110f;
         baseAttackSpeed = 1.2f;
         baseMoveSpeed = 3.5f;
         attackRange = 3.5f;
         abilityChance = 0.08f;
+        
+        // Now call base.Awake after setting type and order
+        base.Awake();
         
         // Set current stats equal to base stats initially
         maxHealth = baseHealth;
@@ -90,11 +95,11 @@ public class Fighter : BaseUnit
     {
         if (!photonView.IsMine) return;
         
-        Debug.Log($"Fighter TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
+        Debug.Log($"Berserker TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
         
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
-            Debug.Log("Activating apeshit ability!");
+            Debug.Log("Activating Blood Rage ability!");
             photonView.RPC("RPCActivateAbility", RpcTarget.All);
         }
     }
@@ -103,29 +108,29 @@ public class Fighter : BaseUnit
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
-        Debug.Log("Fighter RPCActivateAbility called");
+        Debug.Log("Berserker RPCActivateAbility called");
         // Directly start the ability coroutine
         abilityStarted = true;
-        StartCoroutine(ApeShitAbility());
+        StartCoroutine(BloodRageAbility());
     }
 
     protected override void PerformAbilityActivation()
     {
-        Debug.Log("Fighter PerformAbilityActivation called");
+        Debug.Log("Berserker PerformAbilityActivation called");
         if (!abilityStarted)
         {
             abilityStarted = true;
-            StartCoroutine(ApeShitAbility());
+            StartCoroutine(BloodRageAbility());
         }
     }
 
-    private IEnumerator ApeShitAbility()
+    private IEnumerator BloodRageAbility()
     {
-        Debug.Log("Fighter ApeShitAbility coroutine started");
+        Debug.Log("Berserker BloodRageAbility coroutine started");
         photonView.RPC("RPCApplyAbilityBuffs", RpcTarget.All);
 
         float elapsedTime = 0f;
-        while (elapsedTime < apeShitDuration && currentState == UnitState.Attacking)
+        while (elapsedTime < bloodRageDuration && currentState == UnitState.Attacking)
         {
             elapsedTime += Time.deltaTime;
             yield return null;
@@ -140,10 +145,10 @@ public class Fighter : BaseUnit
     [PunRPC]
     private void RPCApplyAbilityBuffs()
     {
-        Debug.Log("Fighter RPCApplyAbilityBuffs called");
+        Debug.Log("Berserker RPCApplyAbilityBuffs called");
         // Apply buffs
-        attackSpeed = baseAttackSpeed * apeShitAttackSpeedMultiplier;
-        currentCriticalStrikeChance += apeShitCritChanceBonus;
+        attackSpeed = baseAttackSpeed * bloodRageAttackSpeedMultiplier;
+        currentCriticalStrikeChance += bloodRageCritChanceBonus;
 
         // Visual feedback
         if (spriteRenderer != null)
@@ -167,7 +172,7 @@ public class Fighter : BaseUnit
     [PunRPC]
     private void RPCResetAbilityEffects()
     {
-        Debug.Log("Fighter RPCResetAbilityEffects called");
+        Debug.Log("Berserker RPCResetAbilityEffects called");
         // Reset stats
         attackSpeed = baseAttackSpeed;
         currentCriticalStrikeChance = baseCriticalStrikeChance;

@@ -1,18 +1,23 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
 
 public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
 {
     [Header("Base Stats")]
-    protected UnitType unitType;
+    // Initialize to avoid default value
+    protected UnitType unitType = UnitType.Berserker;
     protected float baseHealth;
     protected float baseDamage;
     protected float baseAttackSpeed;
     protected float baseMoveSpeed;
     protected float attackRange;
+
+    [Header("Order Settings")]
+    [SerializeField] protected OrderType orderType = OrderType.None;
 
     // Current stats
     protected float maxHealth;
@@ -54,12 +59,24 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     // Network optimization
     private float lastStateUpdateTime = 0f;
     private const float STATE_UPDATE_INTERVAL = 0.2f; // 5 updates per second max
-    private bool isDirty = false;
+    protected bool isDirty = false;
+
+    // Track synergy bonuses
+    protected Dictionary<string, float> synergyBonuses = new Dictionary<string, float>();
 
     public event Action<BaseUnit> OnUnitDeath;
     public event Action<BaseUnit> OnAbilityActivated;
     public event Action<BaseUnit> OnAbilityDeactivated;
 
+    // Force initialization before other components
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void InitializeUnitTypes()
+    {
+        // Just forcing code to initialize the enum
+        Debug.Log("Initializing unit type system");
+        UnitType[] types = (UnitType[])Enum.GetValues(typeof(UnitType));
+    }
+    
     protected virtual void Awake()
     {
         // Get components
@@ -70,17 +87,27 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         if (healthSystem == null) Debug.LogError($"Missing HealthSystem on {gameObject.name}");
         if (movementSystem == null) Debug.LogError($"Missing MovementSystem on {gameObject.name}");
         if (combatSystem == null) Debug.LogError($"Missing CombatSystem on {gameObject.name}");
+        
+        // Debug the unit type for troubleshooting
+        Debug.Log($"BaseUnit.Awake: {gameObject.name} has unitType={unitType}, orderType={orderType}");
     }
 
     protected virtual void Start()
     {
         if (!photonView.IsMine) return;
 
+        Debug.Log($"BaseUnit.Start: {gameObject.name} has unitType={unitType}, orderType={orderType}");
         InitializeBaseStats();
         ApplyUpgrades();
         if (!isInitialized)
         {
             InitializeUnit();
+        }
+        
+        // Register with OrderSystem if applicable
+        if (orderType != OrderType.None && OrderSystem.Instance != null)
+        {
+            OrderSystem.Instance.RegisterUnit(this);
         }
     }
 
@@ -184,9 +211,15 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     protected virtual void OnDestroy()
     {
         CleanupUnit();
+        
+        // Unregister from OrderSystem if applicable
+        if (orderType != OrderType.None && OrderSystem.Instance != null)
+        {
+            OrderSystem.Instance.UnregisterUnit(this);
+        }
     }
 
-    private void OnDisable()
+    public virtual void OnDisable()
     {
         CleanupUnit();
     }
@@ -550,44 +583,172 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
             }
         }
     }
+    
+    // Apply a synergy bonus to a specific stat
+    [PunRPC]
+    protected virtual void RPCApplySynergyBonus(string orderName, string statName, float bonusMultiplier)
+    {
+        string bonusKey = $"{orderName}_{statName}";
+        
+        // Store the bonus for tracking
+        synergyBonuses[bonusKey] = bonusMultiplier;
+        
+        // Apply the bonus based on the stat
+        switch (statName.ToLower())
+        {
+            case "health":
+                float healthBonus = maxHealth * bonusMultiplier;
+                currentMaxHealth += healthBonus;
+                currentHealth += healthBonus;
+                
+                // Update health system if available
+                if (healthSystem != null && healthSystem.enabled)
+                {
+                    healthSystem.Initialize(currentMaxHealth);
+                }
+                break;
+                
+            case "damage":
+                float damageBonus = attackDamage * bonusMultiplier;
+                currentAttackDamage += damageBonus;
+                break;
+                
+            case "attackspeed":
+                // For attack speed, we directly add the value rather than using a percentage
+                currentAttackSpeed += bonusMultiplier;
+                break;
+                
+            case "movespeed":
+                float speedBonus = moveSpeed * bonusMultiplier;
+                currentMoveSpeed += speedBonus;
+                
+                // Update movement system if available
+                if (movementSystem != null && movementSystem.enabled)
+                {
+                    movementSystem.SetMoveSpeed(currentMoveSpeed);
+                }
+                break;
+                
+            case "abilitychance":
+                // For ability chance, we directly add the percentage points
+                abilityChance += bonusMultiplier;
+                break;
+        }
+        
+        Debug.Log($"{gameObject.name} received {bonusMultiplier:P0} {orderName} synergy bonus to {statName}");
+        
+        // Mark as dirty for sync
+        isDirty = true;
+    }
+
+    // Remove a synergy bonus
+    [PunRPC]
+    protected virtual void RPCRemoveSynergyBonus(string orderName, string statName)
+    {
+        string bonusKey = $"{orderName}_{statName}";
+        
+        // If we don't have this bonus stored, return
+        if (!synergyBonuses.ContainsKey(bonusKey))
+            return;
+            
+        float bonusMultiplier = synergyBonuses[bonusKey];
+        
+        // Remove the bonus based on the stat
+        switch (statName.ToLower())
+        {
+            case "health":
+                float healthBonus = maxHealth * bonusMultiplier;
+                currentMaxHealth -= healthBonus;
+                currentHealth = Mathf.Min(currentHealth, currentMaxHealth);
+                
+                // Update health system if available
+                if (healthSystem != null && healthSystem.enabled)
+                {
+                    healthSystem.Initialize(currentMaxHealth);
+                }
+                break;
+                
+            case "damage":
+                float damageBonus = attackDamage * bonusMultiplier;
+                currentAttackDamage -= damageBonus;
+                break;
+                
+            case "attackspeed":
+                // For attack speed, we directly subtract the value
+                currentAttackSpeed -= bonusMultiplier;
+                break;
+                
+            case "movespeed":
+                float speedBonus = moveSpeed * bonusMultiplier;
+                currentMoveSpeed -= speedBonus;
+                
+                // Update movement system if available
+                if (movementSystem != null && movementSystem.enabled)
+                {
+                    movementSystem.SetMoveSpeed(currentMoveSpeed);
+                }
+                break;
+                
+            case "abilitychance":
+                // For ability chance, we directly subtract the percentage points
+                abilityChance -= bonusMultiplier;
+                break;
+        }
+        
+        // Remove the stored bonus
+        synergyBonuses.Remove(bonusKey);
+        
+        Debug.Log($"{gameObject.name} removed {bonusMultiplier:P0} {orderName} synergy bonus from {statName}");
+        
+        // Mark as dirty for sync
+        isDirty = true;
+    }
+
+    // Public method to apply a synergy bonus (calls RPC)
+    public void ApplySynergyBonus(string orderName, string statName, float bonusMultiplier)
+    {
+        if (!photonView.IsMine) return;
+        
+        photonView.RPC("RPCApplySynergyBonus", RpcTarget.All, orderName, statName, bonusMultiplier);
+    }
+
+    // Public method to remove a synergy bonus (calls RPC)
+    public void RemoveSynergyBonus(string orderName, string statName)
+    {
+        if (!photonView.IsMine) return;
+        
+        photonView.RPC("RPCRemoveSynergyBonus", RpcTarget.All, orderName, statName);
+    }
+
+    // Check if unit has lower than 50% health (for Wild synergy)
+    public bool IsLowHealth()
+    {
+        return currentHealth < (currentMaxHealth * 0.5f);
+    }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {
-            // Only send critical unit data, minimize bandwidth
+            // Writing data
             stream.SendNext(currentHealth);
             stream.SendNext((int)currentState);
             stream.SendNext(isAbilityActive);
+            stream.SendNext((int)orderType);
             // Don't need to send teamId - it won't change during battle
         }
         else
         {
-            // Receive unit data
-            float newHealth = (float)stream.ReceiveNext();
-            UnitState newState = (UnitState)stream.ReceiveNext();
-            bool newAbilityState = (bool)stream.ReceiveNext();
+            // Reading data
+            currentHealth = (float)stream.ReceiveNext();
+            currentState = (UnitState)stream.ReceiveNext();
+            isAbilityActive = (bool)stream.ReceiveNext();
+            orderType = (OrderType)stream.ReceiveNext();
             
-            // Only update health if it changed significantly
-            if (Mathf.Abs(currentHealth - newHealth) > 0.1f)
+            // Update health display
+            if (healthSystem != null && healthSystem.enabled)
             {
-                currentHealth = newHealth;
-                if (healthSystem != null && healthSystem.enabled)
-                {
-                    healthSystem.TakeDamage(0); // Force healthbar update
-                }
-            }
-            
-            // Only update state if it changed
-            if (currentState != newState)
-            {
-                currentState = newState;
-            }
-            
-            // Only update ability state if it changed
-            if (isAbilityActive != newAbilityState)
-            {
-                isAbilityActive = newAbilityState;
+                healthSystem.SetHealth(currentHealth, currentMaxHealth);
             }
         }
     }
@@ -596,10 +757,28 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     public string GetTeamId() => teamId;
     public virtual UnitState GetCurrentState() => currentState;
     public virtual float GetAttackRange() => attackRange;
-    public virtual float GetAttackDamage() => currentAttackDamage;
+    
+    public virtual float GetAttackDamage()
+    {
+        float baseDamage = currentAttackDamage;
+        
+        // Apply Wild synergy (bonus damage when below 50% health)
+        if (orderType == OrderType.Wild && IsLowHealth() && synergyBonuses.ContainsKey("Wild_lowHealthDamage"))
+        {
+            float bonusMultiplier = synergyBonuses["Wild_lowHealthDamage"];
+            baseDamage *= (1 + bonusMultiplier);
+        }
+        
+        // Apply Arcane synergy (bonus damage to affected targets)
+        // This would need more complex implementation with target tracking
+        
+        return baseDamage;
+    }
+    
     public virtual float GetAttackSpeed() => currentAttackSpeed;
     public virtual float GetMoveSpeed() => currentMoveSpeed;
     public virtual UnitType GetUnitType() => unitType;
+    public OrderType GetOrderType() => orderType;
     public float GetDeathAnimationDuration() => deathAnimationDuration;
     public bool IsAbilityActive() => isAbilityActive;
 }
