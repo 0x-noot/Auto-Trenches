@@ -15,6 +15,7 @@ public class PeasantMilitia : BaseUnit
     [SerializeField] private GameObject strengthEffectPrefab;
     [SerializeField] private Color baseColor = Color.white;
     [SerializeField] private Color strengthColor = new Color(1f, 0.8f, 0.2f, 1f); // Golden
+    [SerializeField] private int particlesSortingOrder = 5;
     
     private SpriteRenderer spriteRenderer;
     private float lastGroupCheckTime = 0f;
@@ -79,6 +80,45 @@ public class PeasantMilitia : BaseUnit
             lastGroupCheckTime = Time.time;
             CheckForNearbyMilitia();
         }
+    }
+    
+    private void LateUpdate()
+    {
+        // If we have strength effects, make sure they stay positioned correctly
+        foreach (GameObject effect in strengthEffects.ToList())
+        {
+            if (effect != null)
+            {
+                if (effect.transform.parent != transform)
+                {
+                    effect.transform.SetParent(transform);
+                    effect.transform.localPosition = Vector3.up * 0.5f;
+                }
+            }
+            else
+            {
+                // Remove null references
+                strengthEffects.Remove(effect);
+            }
+        }
+    }
+
+    protected override void HandleGameStateChanged(GameState newState)
+    {
+        base.HandleGameStateChanged(newState);
+
+        if (newState == GameState.BattleEnd || newState == GameState.PlayerAPlacement)
+        {
+            // Clean up strength effects
+            CleanupStrengthEffects();
+        }
+    }
+    
+    protected override void Die()
+    {
+        // Make sure to clean up effects before dying
+        CleanupStrengthEffects();
+        base.Die();
     }
 
     private void CheckForNearbyMilitia()
@@ -152,7 +192,7 @@ public class PeasantMilitia : BaseUnit
     private void UpdateStrengthVisuals(int count)
     {
         // Clear old effects first
-        foreach (GameObject effect in strengthEffects)
+        foreach (GameObject effect in strengthEffects.ToList())
         {
             if (effect != null)
             {
@@ -164,9 +204,9 @@ public class PeasantMilitia : BaseUnit
                 {
                     Destroy(effect);
                 }
+                strengthEffects.Remove(effect);
             }
         }
-        strengthEffects.Clear();
         
         // Nothing more to do if no nearby militia
         if (count <= 0)
@@ -188,7 +228,7 @@ public class PeasantMilitia : BaseUnit
         // Spawn strength effect if enough nearby militia (2+)
         if (count >= 2 && strengthEffectPrefab != null && photonView.IsMine)
         {
-            // Use PhotonNetwork.Instantiate to create a networked effect visible to all players
+            // Use PhotonNetwork.Instantiate to create a networked effect
             GameObject effect = PhotonNetwork.Instantiate(
                 strengthEffectPrefab.name,
                 transform.position + Vector3.up * 0.5f,
@@ -199,23 +239,46 @@ public class PeasantMilitia : BaseUnit
             float scale = 1f + (count * 0.1f);
             effect.transform.localScale = Vector3.one * scale;
             
-            // Make sure the effect follows this unit
-            effect.transform.SetParent(transform);
-            
-            // Set sorting order on any renderers in the effect
-            Renderer[] renderers = effect.GetComponentsInChildren<Renderer>();
-            foreach (Renderer renderer in renderers)
-            {
-                renderer.sortingOrder = 5; // Set an appropriate sorting order
-            }
-            
-            strengthEffects.Add(effect);
+            // Use RPC to ensure all clients attach the effect to the right unit
+            int effectViewID = effect.GetComponent<PhotonView>().ViewID;
+            photonView.RPC("RPCAttachStrengthEffect", RpcTarget.AllBuffered, effectViewID);
             
             // Add a safety timer to destroy effect if it gets orphaned
             StartCoroutine(SafetyDestroyEffect(effect, 30f));
         }
     }
-
+    
+    [PunRPC]
+    private void RPCAttachStrengthEffect(int effectViewID)
+    {
+        // Find the effect by its view ID
+        PhotonView effectView = PhotonView.Find(effectViewID);
+        if (effectView == null) return;
+        
+        GameObject effect = effectView.gameObject;
+        
+        // Set the parent
+        effect.transform.SetParent(transform);
+        
+        // Reset local position to be above the unit
+        effect.transform.localPosition = Vector3.up * 0.5f;
+        
+        // Set sorting order on any renderers in the effect
+        Renderer[] renderers = effect.GetComponentsInChildren<Renderer>();
+        foreach (Renderer renderer in renderers)
+        {
+            renderer.sortingOrder = particlesSortingOrder;
+        }
+        
+        // Add to our list if this is our effect
+        if (effectView.IsMine && !strengthEffects.Contains(effect))
+        {
+            strengthEffects.Add(effect);
+        }
+        
+        Debug.Log($"Attached strength effect {effectViewID} to unit {gameObject.name}");
+    }
+    
     private IEnumerator SafetyDestroyEffect(GameObject effect, float maxLifetime)
     {
         yield return new WaitForSeconds(maxLifetime);
@@ -225,6 +288,7 @@ public class PeasantMilitia : BaseUnit
             if (view != null && view.IsMine)
             {
                 PhotonNetwork.Destroy(effect);
+                Debug.Log("Safety cleanup of strength effect");
             }
         }
     }
@@ -244,6 +308,54 @@ public class PeasantMilitia : BaseUnit
         return baseDamage;
     }
 
+    private void CleanupStrengthEffects()
+    {
+        // Clean up any effects we own
+        foreach (GameObject effect in strengthEffects.ToList())
+        {
+            if (effect != null)
+            {
+                PhotonView view = effect.GetComponent<PhotonView>();
+                if (view != null && view.IsMine)
+                {
+                    // Only destroy if we own it
+                    PhotonNetwork.Destroy(effect);
+                    Debug.Log($"Cleaned up strength effect: {effect.name}");
+                }
+                else if (view != null)
+                {
+                    // We don't own it, so just detach it from our unit but don't destroy
+                    effect.transform.SetParent(null);
+                    Debug.Log($"Detached non-owned strength effect: {effect.name}");
+                }
+                strengthEffects.Remove(effect);
+            }
+        }
+        strengthEffects.Clear();
+        
+        // Master client can clean up orphaned effects, but only ones it owns
+        if (PhotonNetwork.IsMasterClient)
+        {
+            try {
+                GameObject[] effects = GameObject.FindGameObjectsWithTag("StrengthEffect");
+                foreach (GameObject effect in effects)
+                {
+                    PhotonView view = effect.GetComponent<PhotonView>();
+                    // Only destroy if we are the owner
+                    if (view != null && (view.IsMine || view.CreatorActorNr == 0))
+                    {
+                        PhotonNetwork.Destroy(effect);
+                        Debug.Log($"Master cleaned up orphaned strength effect: {effect.name}");
+                    }
+                }
+            }
+            catch (UnityException ex)
+            {
+                Debug.LogWarning($"StrengthEffect tag issue: {ex.Message}");
+            }
+        }
+    }
+
     // Helper methods to access group info
     public int GetNearbyMilitiaCount()
     {
@@ -253,49 +365,6 @@ public class PeasantMilitia : BaseUnit
     public float GetGroupSpeedBonus()
     {
         return currentSpeedBonus;
-    }
-
-    protected override void HandleGameStateChanged(GameState newState)
-{
-    base.HandleGameStateChanged(newState);
-
-    if (newState == GameState.BattleEnd || newState == GameState.PlayerAPlacement)
-    {
-        // Clean up strength effects
-        CleanupStrengthEffects();
-    }
-}
-
-    private void CleanupStrengthEffects()
-    {
-        // Clean up any effects we own
-        foreach (GameObject effect in strengthEffects)
-        {
-            if (effect != null)
-            {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null && view.IsMine)
-                {
-                    PhotonNetwork.Destroy(effect);
-                    Debug.Log($"Cleaned up strength effect: {effect.name}");
-                }
-            }
-        }
-        strengthEffects.Clear();
-        
-        // If master client, try to clean up any orphaned effects
-        if (PhotonNetwork.IsMasterClient)
-        {
-            GameObject[] effects = GameObject.FindGameObjectsWithTag("StrengthEffect");
-            foreach (GameObject effect in effects)
-            {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null)
-                {
-                    PhotonNetwork.Destroy(view);
-                }
-            }
-        }
     }
 
     [PunRPC]

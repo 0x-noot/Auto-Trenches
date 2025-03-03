@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3435559517558918284}
   m_Layer: 0
   m_Name: StrengthEffect
-  m_TagString: Untagged
+  m_TagString: StrengthEffect
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

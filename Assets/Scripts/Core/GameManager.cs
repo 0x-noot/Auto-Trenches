@@ -448,6 +448,38 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private void CleanupAllEffects()
+    {
+        // Try to find and destroy all effect objects by their tags
+        string[] effectTags = { "StunEffect", "HealEffect", "StrengthEffect" };
+        
+        foreach (string tag in effectTags)
+        {
+            try
+            {
+                GameObject[] effects = GameObject.FindGameObjectsWithTag(tag);
+                foreach (GameObject effect in effects)
+                {
+                    PhotonView view = effect.GetComponent<PhotonView>();
+                    if (view != null && PhotonNetwork.IsMasterClient)
+                    {
+                        PhotonNetwork.Destroy(effect);
+                        Debug.Log($"Master cleaning up orphaned {tag}: {effect.name}");
+                    }
+                    else if (view != null && view.IsMine)
+                    {
+                        PhotonNetwork.Destroy(effect);
+                        Debug.Log($"Client cleaning up owned {tag}: {effect.name}");
+                    }
+                }
+            }
+            catch (UnityException)
+            {
+                Debug.LogWarning($"Tag '{tag}' not defined. Skipping tag-based cleanup.");
+            }
+        }
+    }
+
     private void EndBattle(string winner)
     {
         if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
@@ -459,7 +491,7 @@ public class GameManager : MonoBehaviourPunCallbacks
 
         // Clean up any projectiles before ending
         CleanupProjectiles();
-        
+        CleanupAllEffects();
         // Use AllBuffered to ensure all clients get the end battle message
         photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
     }
@@ -470,6 +502,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         isBattleEnding = true;
         UpdateGameState(GameState.BattleEnd);
         DisableAllUnits();
+        CleanupAllEffects();
         OnGameOver?.Invoke(winner);
     }
 

@@ -194,11 +194,6 @@ public class Cleric : BaseUnit
             // Clean up effects
             CleanupAllEffects();
             
-            // Reset healing state
-            isAbilityActive = false;
-            isHealingActive = false;
-            healedUnitsViewIDs.Clear();
-            
             // Reset visual feedback
             SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer != null)
@@ -212,37 +207,32 @@ public class Cleric : BaseUnit
 
     private void CleanupAllEffects()
     {
-        // If we're the master client, we can try to destroy any orphaned network objects
-        if (PhotonNetwork.IsMasterClient)
+        // Clean up heal effects created by this client
+        if (photonView.IsMine)
         {
-            // Find all effects by tag
-            GameObject[] effects = GameObject.FindGameObjectsWithTag("HealEffect");
-            
-            foreach (GameObject effect in effects)
-            {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null)
+            try {
+                GameObject[] healEffects = GameObject.FindGameObjectsWithTag("HealEffect");
+                
+                foreach (GameObject effect in healEffects)
                 {
-                    PhotonNetwork.Destroy(view);
-                    Debug.Log($"Master client cleaning up heal effect: {effect.name}");
+                    PhotonView view = effect.GetComponent<PhotonView>();
+                    // Only destroy effects we own
+                    if (view != null && view.IsMine)
+                    {
+                        PhotonNetwork.Destroy(view);
+                        Debug.Log($"Cleaned up owned heal effect: {effect.name}");
+                    }
                 }
             }
-        }
-        else
-        {
-            // For clients, only clean up effects they own
-            GameObject[] effects = GameObject.FindGameObjectsWithTag("HealEffect");
-            
-            foreach (GameObject effect in effects)
+            catch (UnityException ex)
             {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null && view.IsMine)
-                {
-                    PhotonNetwork.Destroy(view);
-                    Debug.Log($"Client cleaning up owned heal effect: {effect.name}");
-                }
+                Debug.LogWarning($"HealEffect tag issue: {ex.Message}");
             }
         }
+        
+        // Reset state
+        isHealingActive = false;
+        healedUnitsViewIDs.Clear();
     }
 
 

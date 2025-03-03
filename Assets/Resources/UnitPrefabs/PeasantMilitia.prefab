@@ -211,6 +211,7 @@ MonoBehaviour:
   strengthEffectPrefab: {fileID: 5836467377318981612, guid: 737350d03661f364ea7841b1b52cec36, type: 3}
   baseColor: {r: 1, g: 1, b: 1, a: 1}
   strengthColor: {r: 1, g: 0.8, b: 0.2, a: 1}
+  particlesSortingOrder: 5
 --- !u!114 &5318177992719422665
 MonoBehaviour:
   m_ObjectHideFlags: 0

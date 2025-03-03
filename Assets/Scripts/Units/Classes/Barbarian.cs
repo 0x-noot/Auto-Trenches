@@ -74,59 +74,55 @@ public class Barbarian : BaseUnit
         base.HandleGameStateChanged(newState);
 
         if (newState == GameState.BattleEnd || newState == GameState.PlayerAPlacement || 
-            newState == GameState.PlayerBPlacement || newState == GameState.GameOver)
+            newState == GameState.GameOver)
         {
             // Immediately cleanup any active abilities and effects
-            StopAllCoroutines();
-            
-            // Release any stunned target (for Barbarian)
-            if (currentStunnedTarget != null && photonView.IsMine)
+            if (isAbilityActive)
             {
-                ReleaseStunnedTarget();
+                Debug.Log("Game state changed - cleaning up stun effects");
+                StopAllCoroutines();
+                
+                // Clean up effects
+                CleanupAllEffects();
+                
+                isAbilityActive = false;
             }
-            
-            // Clean up effects
-            CleanupAllEffects();
-            
-            // Reset state
-            isAbilityActive = false;
-            abilityStarted = false;
         }
     }
 
     private void CleanupAllEffects()
     {
-        // If we're the master client, we can try to destroy any orphaned network objects
-        if (PhotonNetwork.IsMasterClient)
+        // Clean up stun effects created by this client
+        if (photonView.IsMine)
         {
-            // Find all effects by tag
-            GameObject[] effects = GameObject.FindGameObjectsWithTag("StunEffect"); // Or "HealEffect" for Cleric
-            
-            foreach (GameObject effect in effects)
-            {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null)
+            try {
+                GameObject[] stunEffects = GameObject.FindGameObjectsWithTag("StunEffect");
+                
+                foreach (GameObject effect in stunEffects)
                 {
-                    PhotonNetwork.Destroy(view);
-                    Debug.Log($"Master client cleaning up effect: {effect.name}");
+                    PhotonView view = effect.GetComponent<PhotonView>();
+                    // Only destroy effects we own
+                    if (view != null && view.IsMine)
+                    {
+                        PhotonNetwork.Destroy(view);
+                        Debug.Log($"Cleaned up owned stun effect: {effect.name}");
+                    }
                 }
             }
-        }
-        else
-        {
-            // For clients, only clean up effects they own
-            GameObject[] effects = GameObject.FindGameObjectsWithTag("StunEffect"); // Or "HealEffect" for Cleric
-            
-            foreach (GameObject effect in effects)
+            catch (UnityException ex)
             {
-                PhotonView view = effect.GetComponent<PhotonView>();
-                if (view != null && view.IsMine)
-                {
-                    PhotonNetwork.Destroy(view);
-                    Debug.Log($"Client cleaning up owned effect: {effect.name}");
-                }
+                Debug.LogWarning($"StunEffect tag issue: {ex.Message}");
             }
         }
+        
+        // Release any stunned target
+        if (currentStunnedTarget != null && photonView.IsMine)
+        {
+            ReleaseStunnedTarget();
+        }
+        
+        // Reset state
+        abilityStarted = false;
     }
 
     public override void UpdateState(UnitState newState)
