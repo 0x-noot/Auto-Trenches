@@ -22,6 +22,21 @@ public class HealthSystem : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    private void Update()
+    {
+        // Keep the health bar above the unit without inheriting rotation
+        if (transform.parent != null)
+        {
+            // Store the parent position
+            Vector3 parentPosition = transform.parent.position;
+            
+            // Set position but maintain original rotation
+            Quaternion originalRotation = transform.rotation;
+            transform.position = parentPosition;
+            transform.rotation = originalRotation;
+        }
+    }
+
     public void Initialize(float max)
     {
         if (!photonView.IsMine) return;

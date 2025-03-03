@@ -156,7 +156,14 @@ public class PeasantMilitia : BaseUnit
         {
             if (effect != null)
             {
-                Destroy(effect);
+                if (effect.GetComponent<PhotonView>() != null && effect.GetComponent<PhotonView>().IsMine)
+                {
+                    PhotonNetwork.Destroy(effect);
+                }
+                else
+                {
+                    Destroy(effect);
+                }
             }
         }
         strengthEffects.Clear();
@@ -178,21 +185,47 @@ public class PeasantMilitia : BaseUnit
             spriteRenderer.color = Color.Lerp(baseColor, strengthColor, intensity);
         }
         
-        // Spawn strength effect if enough nearby militia (3+)
+        // Spawn strength effect if enough nearby militia (2+)
         if (count >= 2 && strengthEffectPrefab != null && photonView.IsMine)
         {
-            GameObject effect = Instantiate(
-                strengthEffectPrefab,
+            // Use PhotonNetwork.Instantiate to create a networked effect visible to all players
+            GameObject effect = PhotonNetwork.Instantiate(
+                strengthEffectPrefab.name,
                 transform.position + Vector3.up * 0.5f,
-                Quaternion.identity,
-                transform
+                Quaternion.identity
             );
             
             // Scale effect based on bonus
             float scale = 1f + (count * 0.1f);
             effect.transform.localScale = Vector3.one * scale;
             
+            // Make sure the effect follows this unit
+            effect.transform.SetParent(transform);
+            
+            // Set sorting order on any renderers in the effect
+            Renderer[] renderers = effect.GetComponentsInChildren<Renderer>();
+            foreach (Renderer renderer in renderers)
+            {
+                renderer.sortingOrder = 5; // Set an appropriate sorting order
+            }
+            
             strengthEffects.Add(effect);
+            
+            // Add a safety timer to destroy effect if it gets orphaned
+            StartCoroutine(SafetyDestroyEffect(effect, 30f));
+        }
+    }
+
+    private IEnumerator SafetyDestroyEffect(GameObject effect, float maxLifetime)
+    {
+        yield return new WaitForSeconds(maxLifetime);
+        if (effect != null)
+        {
+            PhotonView view = effect.GetComponent<PhotonView>();
+            if (view != null && view.IsMine)
+            {
+                PhotonNetwork.Destroy(effect);
+            }
         }
     }
 
@@ -220,6 +253,49 @@ public class PeasantMilitia : BaseUnit
     public float GetGroupSpeedBonus()
     {
         return currentSpeedBonus;
+    }
+
+    protected override void HandleGameStateChanged(GameState newState)
+{
+    base.HandleGameStateChanged(newState);
+
+    if (newState == GameState.BattleEnd || newState == GameState.PlayerAPlacement)
+    {
+        // Clean up strength effects
+        CleanupStrengthEffects();
+    }
+}
+
+    private void CleanupStrengthEffects()
+    {
+        // Clean up any effects we own
+        foreach (GameObject effect in strengthEffects)
+        {
+            if (effect != null)
+            {
+                PhotonView view = effect.GetComponent<PhotonView>();
+                if (view != null && view.IsMine)
+                {
+                    PhotonNetwork.Destroy(effect);
+                    Debug.Log($"Cleaned up strength effect: {effect.name}");
+                }
+            }
+        }
+        strengthEffects.Clear();
+        
+        // If master client, try to clean up any orphaned effects
+        if (PhotonNetwork.IsMasterClient)
+        {
+            GameObject[] effects = GameObject.FindGameObjectsWithTag("StrengthEffect");
+            foreach (GameObject effect in effects)
+            {
+                PhotonView view = effect.GetComponent<PhotonView>();
+                if (view != null)
+                {
+                    PhotonNetwork.Destroy(view);
+                }
+            }
+        }
     }
 
     [PunRPC]
