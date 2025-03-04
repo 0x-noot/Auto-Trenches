@@ -28,7 +28,6 @@ public class Archer : BaseUnit
         attackRange = 12f;
         abilityChance = 0.06f;
         
-        // Now call base.Awake after setting type and order
         base.Awake();
         
         // Initialize

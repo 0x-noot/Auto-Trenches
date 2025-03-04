@@ -172,17 +172,17 @@ public class PeasantMilitia : BaseUnit
             // Remove old bonus first
             if (currentSpeedBonus > 0)
             {
-                currentMoveSpeed = baseSpeedValue;
+                moveSpeed = baseSpeedValue;
             }
             
             // Apply new bonus
             currentSpeedBonus = newSpeedBonus;
-            currentMoveSpeed = baseSpeedValue * (1 + currentSpeedBonus);
+            moveSpeed = baseSpeedValue * (1 + currentSpeedBonus);
             
             // Update movement component
             if (movementSystem != null && movementSystem.enabled)
             {
-                movementSystem.SetMoveSpeed(currentMoveSpeed);
+                movementSystem.SetMoveSpeed(moveSpeed);
             }
             
             Debug.Log($"Militia group bonus updated: {count} nearby units, {currentSpeedBonus:P0} speed bonus");
@@ -378,11 +378,11 @@ public class PeasantMilitia : BaseUnit
         // Re-apply group bonus if any
         if (currentSpeedBonus > 0)
         {
-            currentMoveSpeed = baseSpeedValue * (1 + currentSpeedBonus);
+            moveSpeed = baseSpeedValue * (1 + currentSpeedBonus);
             
             if (movementSystem != null && movementSystem.enabled)
             {
-                movementSystem.SetMoveSpeed(currentMoveSpeed);
+                movementSystem.SetMoveSpeed(moveSpeed);
             }
         }
     }

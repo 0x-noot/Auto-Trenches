@@ -26,11 +26,6 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     protected float attackSpeed;
     protected float moveSpeed;
 
-    // Stats with upgrades applied
-    protected float currentMaxHealth;
-    protected float currentAttackDamage;
-    protected float currentAttackSpeed;
-    protected float currentMoveSpeed;
     private float abilityCheckTimer = 0f;
     private const float ABILITY_CHECK_INTERVAL = 1.5f;
 
@@ -98,7 +93,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
 
         Debug.Log($"BaseUnit.Start: {gameObject.name} has unitType={unitType}, orderType={orderType}");
         InitializeBaseStats();
-        ApplyUpgrades();
+        ApplyDefaultStats();
         if (!isInitialized)
         {
             InitializeUnit();
@@ -115,28 +110,23 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (isInitialized) return;
 
-        currentHealth = currentMaxHealth;
+        currentHealth = maxHealth;
         currentState = UnitState.Idle;
 
         // Initialize health system
         if (healthSystem != null)
         {
-            healthSystem.Initialize(currentMaxHealth);
+            healthSystem.Initialize(maxHealth);
         }
 
         if (movementSystem != null)
         {
-            movementSystem.SetMoveSpeed(currentMoveSpeed);
+            movementSystem.SetMoveSpeed(moveSpeed);
         }
 
         nextAbilityTime = Time.time + UnityEngine.Random.Range(0f, baseAbilityCooldown);
 
         // Subscribe to events
-        if (EconomyManager.Instance != null)
-        {
-            EconomyManager.Instance.OnUpgradePurchased += HandleUpgradePurchased;
-        }
-
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
@@ -153,18 +143,13 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         baseAttackSpeed = attackSpeed;
         baseMoveSpeed = moveSpeed;
     }
-
-    protected void ApplyUpgrades()
+    
+    // Apply default stats without any multipliers
+    public void ApplyDefaultStats(float armorMultiplier = 1.0f, float damageMultiplier = 1.0f, 
+        float speedMultiplier = 1.0f, float attackSpeedMultiplier = 1.0f)
     {
         if (!photonView.IsMine || !PhotonNetwork.IsMessageQueueRunning) return;
         
-        if (EconomyManager.Instance == null) return;
-
-        float armorMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Armor);
-        float damageMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Training);
-        float speedMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.Speed);
-        float attackSpeedMultiplier = EconomyManager.Instance.GetUpgradeMultiplier(teamId, UpgradeType.AttackSpeed);
-
         photonView.RPC("RPCApplyUpgrades", RpcTarget.All, 
             armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
     }
@@ -175,37 +160,30 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!gameObject.activeInHierarchy) return;
 
-        currentMaxHealth = maxHealth * armorMultiplier;
-        currentAttackDamage = attackDamage * damageMultiplier;
-        currentMoveSpeed = moveSpeed * speedMultiplier;
-        currentAttackSpeed = attackSpeed * attackSpeedMultiplier;
+        // Apply multipliers directly to base stats
+        maxHealth = baseHealth * armorMultiplier;
+        attackDamage = baseDamage * damageMultiplier;
+        moveSpeed = baseMoveSpeed * speedMultiplier;
+        attackSpeed = baseAttackSpeed * attackSpeedMultiplier;
 
         // Update current health proportionally
         if (currentHealth > 0)
         {
-            float healthPercentage = currentHealth / maxHealth;
-            currentHealth = currentMaxHealth * healthPercentage;
+            float healthPercentage = currentHealth / baseHealth;
+            currentHealth = maxHealth * healthPercentage;
             
             if (healthSystem != null && healthSystem.enabled)
             {
-                healthSystem.Initialize(currentMaxHealth);
+                healthSystem.Initialize(maxHealth);
             }
         }
 
         if (movementSystem != null && movementSystem.enabled)
         {
-            movementSystem.SetMoveSpeed(currentMoveSpeed);
+            movementSystem.SetMoveSpeed(moveSpeed);
         }
 
         isDirty = true;
-    }
-
-    private void HandleUpgradePurchased(string team, UpgradeType type, int level)
-    {
-        if (team == teamId && photonView.IsMine && gameObject.activeInHierarchy)
-        {
-            ApplyUpgrades();
-        }
     }
 
     protected virtual void OnDestroy()
@@ -229,10 +207,6 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
-        }
-        if (EconomyManager.Instance != null)
-        {
-            EconomyManager.Instance.OnUpgradePurchased -= HandleUpgradePurchased;
         }
 
         StopAllCoroutines();
@@ -379,7 +353,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
             // Update healthbar directly
             if (healthSystem != null && healthSystem.enabled)
             {
-                healthSystem.SetHealth(currentHealth, currentMaxHealth);
+                healthSystem.SetHealth(currentHealth, maxHealth);
             }
             
             if (currentHealth <= 0 && currentState != UnitState.Dead)
@@ -404,7 +378,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         
         if (healthSystem != null && healthSystem.enabled)
         {
-            healthSystem.SetHealth(currentHealth, currentMaxHealth);
+            healthSystem.SetHealth(currentHealth, maxHealth);
         }
         
         if (currentHealth <= 0 && currentState != UnitState.Dead)
@@ -598,34 +572,34 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         {
             case "health":
                 float healthBonus = maxHealth * bonusMultiplier;
-                currentMaxHealth += healthBonus;
+                maxHealth += healthBonus;
                 currentHealth += healthBonus;
                 
                 // Update health system if available
                 if (healthSystem != null && healthSystem.enabled)
                 {
-                    healthSystem.Initialize(currentMaxHealth);
+                    healthSystem.Initialize(maxHealth);
                 }
                 break;
                 
             case "damage":
                 float damageBonus = attackDamage * bonusMultiplier;
-                currentAttackDamage += damageBonus;
+                attackDamage += damageBonus;
                 break;
                 
             case "attackspeed":
                 // For attack speed, we directly add the value rather than using a percentage
-                currentAttackSpeed += bonusMultiplier;
+                attackSpeed += bonusMultiplier;
                 break;
                 
             case "movespeed":
                 float speedBonus = moveSpeed * bonusMultiplier;
-                currentMoveSpeed += speedBonus;
+                moveSpeed += speedBonus;
                 
                 // Update movement system if available
                 if (movementSystem != null && movementSystem.enabled)
                 {
-                    movementSystem.SetMoveSpeed(currentMoveSpeed);
+                    movementSystem.SetMoveSpeed(moveSpeed);
                 }
                 break;
                 
@@ -658,34 +632,34 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         {
             case "health":
                 float healthBonus = maxHealth * bonusMultiplier;
-                currentMaxHealth -= healthBonus;
-                currentHealth = Mathf.Min(currentHealth, currentMaxHealth);
+                maxHealth -= healthBonus;
+                currentHealth = Mathf.Min(currentHealth, maxHealth);
                 
                 // Update health system if available
                 if (healthSystem != null && healthSystem.enabled)
                 {
-                    healthSystem.Initialize(currentMaxHealth);
+                    healthSystem.Initialize(maxHealth);
                 }
                 break;
                 
             case "damage":
                 float damageBonus = attackDamage * bonusMultiplier;
-                currentAttackDamage -= damageBonus;
+                attackDamage -= damageBonus;
                 break;
                 
             case "attackspeed":
                 // For attack speed, we directly subtract the value
-                currentAttackSpeed -= bonusMultiplier;
+                attackSpeed -= bonusMultiplier;
                 break;
                 
             case "movespeed":
                 float speedBonus = moveSpeed * bonusMultiplier;
-                currentMoveSpeed -= speedBonus;
+                moveSpeed -= speedBonus;
                 
                 // Update movement system if available
                 if (movementSystem != null && movementSystem.enabled)
                 {
-                    movementSystem.SetMoveSpeed(currentMoveSpeed);
+                    movementSystem.SetMoveSpeed(moveSpeed);
                 }
                 break;
                 
@@ -723,7 +697,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     // Check if unit has lower than 50% health (for Wild synergy)
     public bool IsLowHealth()
     {
-        return currentHealth < (currentMaxHealth * 0.5f);
+        return currentHealth < (maxHealth * 0.5f);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -748,7 +722,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
             // Update health display
             if (healthSystem != null && healthSystem.enabled)
             {
-                healthSystem.SetHealth(currentHealth, currentMaxHealth);
+                healthSystem.SetHealth(currentHealth, maxHealth);
             }
         }
     }
@@ -760,7 +734,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
     
     public virtual float GetAttackDamage()
     {
-        float baseDamage = currentAttackDamage;
+        float baseDamage = attackDamage;
         
         // Apply Wild synergy (bonus damage when below 50% health)
         if (orderType == OrderType.Wild && IsLowHealth() && synergyBonuses.ContainsKey("Wild_lowHealthDamage"))
@@ -770,13 +744,20 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         }
         
         // Apply Arcane synergy (bonus damage to affected targets)
-        // This would need more complex implementation with target tracking
+        if (orderType == OrderType.Arcane && 
+            currentTarget != null && 
+            currentTarget.IsAbilityActive() &&
+            synergyBonuses.ContainsKey("Arcane_affectedTargetDamage"))
+        {
+            float bonusMultiplier = synergyBonuses["Arcane_affectedTargetDamage"];
+            baseDamage *= (1f + bonusMultiplier);
+        }
         
         return baseDamage;
     }
     
-    public virtual float GetAttackSpeed() => currentAttackSpeed;
-    public virtual float GetMoveSpeed() => currentMoveSpeed;
+    public virtual float GetAttackSpeed() => attackSpeed;
+    public virtual float GetMoveSpeed() => moveSpeed;
     public virtual UnitType GetUnitType() => unitType;
     public OrderType GetOrderType() => orderType;
     public float GetDeathAnimationDuration() => deathAnimationDuration;

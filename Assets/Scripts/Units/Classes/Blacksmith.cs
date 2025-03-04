@@ -444,12 +444,6 @@ public class Blacksmith : BaseUnit
         base.DeactivateAbility();
     }
 
-    [PunRPC]
-    protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
-    {
-        base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
-    }
-
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;

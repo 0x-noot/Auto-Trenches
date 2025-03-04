@@ -431,6 +431,12 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             if (unit != null && unit.gameObject != null && unit.gameObject.activeInHierarchy)
             {
+                // Initialize unit with default stats (no upgrades)
+                if (unit.photonView.IsMine)
+                {
+                    unit.ApplyDefaultStats();
+                }
+                
                 EnableUnitCombat(unit);
                 yield return new WaitForSeconds(unitActivationInterval);
             }

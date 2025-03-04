@@ -196,7 +196,7 @@ public class Knight : BaseUnit
     protected override void RPCApplyUpgrades(float armorMultiplier, float damageMultiplier, float speedMultiplier, float attackSpeedMultiplier)
     {
         base.RPCApplyUpgrades(armorMultiplier, damageMultiplier, speedMultiplier, attackSpeedMultiplier);
-        // Update base armor bonus with upgrades
+        // Update base armor bonus with multiplier
         baseArmorBonus = 25f * armorMultiplier;
         if (!isAbilityActive)
         {

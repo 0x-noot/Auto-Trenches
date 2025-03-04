@@ -140,7 +140,7 @@ public class Barbarian : BaseUnit
 
     public override float GetAttackDamage()
     {
-        float damage = currentAttackDamage;
+        float damage = attackDamage;
         
         // Check for critical strike
         if (Random.value < currentCriticalStrikeChance)
