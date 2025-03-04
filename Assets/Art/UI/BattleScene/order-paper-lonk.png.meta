@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 84f6b0cbca06b424a90ae82ca3030210
+guid: 448fe14462ca0814684c22f9119e6192
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7388396280925699924
-    second: med-scroll_0
+      213: -7459589392524081087
+    second: order-paper-lonk_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: med-scroll_0
+      name: order-paper-lonk_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 94
-        height: 26
+        width: 61
+        height: 52
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ca04b975ab4277990800000000000000
-      internalID: -7388396280925699924
+      spriteID: 148845858f63a7890800000000000000
+      internalID: -7459589392524081087
       vertices: []
       indices: 
       edges: []
@@ -138,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      med-scroll_0: -7388396280925699924
+      order-paper-lonk_0: -7459589392524081087
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

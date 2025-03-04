@@ -267,7 +267,7 @@ MonoBehaviour:
   useDeathAnimation: 1
   baseAbilityCooldown: 15
   abilityChance: 0.05
-  baseKnockbackDistance: 10
+  baseKnockbackDistance: 5
   knockbackBoostPerRealmUnit: 0.5
   crashDamage: 75
   crashRadius: 2.5
