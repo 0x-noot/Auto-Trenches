@@ -15,26 +15,42 @@ public class PlayerHealthUI : MonoBehaviour
     
     public void SetHP(float currentHP, float maxHP)
     {
-        float value = currentHP / maxHP;
-        Debug.Log($"Slider Update - Value: {value}, Current HP: {currentHP}, Max HP: {maxHP}");
-        
-        // Ensure slider is active and enabled
-        if (hpSlider.gameObject.activeInHierarchy && hpSlider.enabled)
-        {
-            // Force updates
-            hpSlider.value = value;
-            hpSlider.SetValueWithoutNotify(value);
+        try {
+            // Guard against null references
+            if (hpSlider == null || hpText == null) return;
             
-            // Trigger canvas updates
-            Canvas.ForceUpdateCanvases();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(hpSlider.GetComponent<RectTransform>());
+            // Avoid division by zero
+            if (maxHP <= 0) maxHP = 1;
+            
+            float value = Mathf.Clamp01(currentHP / maxHP);
+            
+            // Update slider value
+            if (hpSlider.gameObject.activeInHierarchy && hpSlider.enabled)
+            {
+                hpSlider.value = value;
+            }
+            
+            // Update text
+            if (hpText.gameObject.activeInHierarchy)
+            {
+                hpText.text = $"{Mathf.CeilToInt(currentHP)}";
+            }
         }
-        
-        hpText.text = $"{Mathf.CeilToInt(currentHP)}";
+        catch (System.Exception ex) {
+            Debug.LogError($"Error in SetHP: {ex.Message}");
+        }
     }
     
     public void SetPlayerColor(bool isPlayerA)
     {
-        fillImage.color = isPlayerA ? playerAColor : playerBColor;
+        try {
+            if (fillImage != null)
+            {
+                fillImage.color = isPlayerA ? playerAColor : playerBColor;
+            }
+        }
+        catch (System.Exception ex) {
+            Debug.LogError($"Error in SetPlayerColor: {ex.Message}");
+        }
     }
 }

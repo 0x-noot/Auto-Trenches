@@ -14,6 +14,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     
     private bool isConnecting = false;
     private Dictionary<string, bool> playerReadyStatus = new Dictionary<string, bool>();
+    private bool isLoadingLevel = false;
 
     private void Awake()
     {
@@ -21,6 +22,14 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // Apply lighter optimizations for WebGL
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                PhotonNetwork.SendRate = 25; // Default is 30
+                PhotonNetwork.SerializationRate = 12; // Default is 15
+                Debug.Log("Applied WebGL-specific Photon optimizations");
+            }
         }
         else
         {
@@ -129,8 +138,12 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     private void StartGame()
     {
-        if (PhotonNetwork.IsMasterClient)
+        if (PhotonNetwork.IsMasterClient && !isLoadingLevel)
         {
+            isLoadingLevel = true;
+            Debug.Log("All players ready, starting game");
+            
+            // Just load the level directly for all platforms including WebGL
             PhotonNetwork.LoadLevel(battleSceneName);
         }
     }
@@ -157,12 +170,14 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.LogWarning($"Disconnected from server: {cause}");
         isConnecting = false;
+        isLoadingLevel = false;
         lobbyUI?.OnDisconnected();
     }
 
     public override void OnJoinedRoom()
     {
         Debug.Log($"Joined Room: {PhotonNetwork.CurrentRoom.Name}");
+        isLoadingLevel = false;
         lobbyUI?.OnRoomJoined(PhotonNetwork.IsMasterClient);
     }
 
@@ -188,6 +203,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         Debug.Log("Left Room");
+        isLoadingLevel = false;
         lobbyUI?.OnRoomLeft();
     }
 

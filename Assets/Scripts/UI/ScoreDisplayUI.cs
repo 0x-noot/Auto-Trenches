@@ -1,3 +1,4 @@
+// Fix for ScoreDisplayUI.cs - this appears to be the source of errors
 using UnityEngine;
 using TMPro;
 using System.Linq;
@@ -17,40 +18,111 @@ public class ScoreDisplayUI : MonoBehaviourPunCallbacks
 
     private PlayerHP playerAHP;
     private PlayerHP playerBHP;
+    private bool isInitialized = false;
 
     private void Start()
     {
         Debug.Log("ScoreDisplayUI: Start method called");
+        
+        // Add guard to prevent this from executing during scene transitions
+        if (!gameObject.scene.isLoaded || !gameObject.activeInHierarchy)
+        {
+            Debug.Log("ScoreDisplayUI: Scene not fully loaded or object inactive, delaying initialization");
+            return;
+        }
 
+        // Wrap initialization in try/catch to prevent WebGL crashes
+        try
+        {
+            InitializeDisplay();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Error initializing ScoreDisplayUI: {ex.Message}");
+        }
+    }
+    
+    private void OnEnable()
+    {
+        // Try initialization again if it failed during Start
+        if (!isInitialized && gameObject.activeInHierarchy)
+        {
+            StartCoroutine(DelayedInitialization());
+        }
+    }
+    
+    private System.Collections.IEnumerator DelayedInitialization()
+    {
+        // Wait for scene to be fully loaded
+        yield return new WaitForSeconds(0.5f);
+        
+        if (!isInitialized && BattleRoundManager.Instance != null)
+        {
+            try
+            {
+                InitializeDisplay();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Error in delayed initialization: {ex.Message}");
+            }
+        }
+    }
+    
+    private void InitializeDisplay()
+    {
         if (BattleRoundManager.Instance != null)
         {
             // Set colors based on whether this client is Player A or B
             bool isPlayerA = PhotonNetwork.IsMasterClient;
-            playerAHealthUI.SetPlayerColor(isPlayerA);
-            playerBHealthUI.SetPlayerColor(!isPlayerA);
             
-            // Get references to specific PlayerHP components
-            playerAHP = playerAHPObject?.GetComponent<PlayerHP>();
-            playerBHP = playerBHPObject?.GetComponent<PlayerHP>();
-
-            Debug.Log($"ScoreDisplayUI: PlayerA HP Reference: {playerAHP != null}");
-            Debug.Log($"ScoreDisplayUI: PlayerB HP Reference: {playerBHP != null}");
-
-            // Subscribe to HP change events
+            // Safety check on UI references
+            if (playerAHealthUI != null && playerBHealthUI != null)
+            {
+                playerAHealthUI.SetPlayerColor(isPlayerA);
+                playerBHealthUI.SetPlayerColor(!isPlayerA);
+            }
+            
+            // Safely get HP objects
+            SafeGetHPReferences();
+            
+            UpdateDisplay();
+            
+            // Subscribe to events AFTER initialization
+            if (!isInitialized)
+            {
+                if (BattleRoundManager.Instance != null)
+                {
+                    BattleRoundManager.Instance.OnRoundStart += HandleRoundStart;
+                    BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
+                }
+                
+                isInitialized = true;
+            }
+        }
+    }
+    
+    private void SafeGetHPReferences()
+    {
+        // Get references to specific PlayerHP components
+        if (playerAHPObject != null)
+        {
+            playerAHP = playerAHPObject.GetComponent<PlayerHP>();
             if (playerAHP != null)
             {
                 playerAHP.OnHPChanged += UpdatePlayerAHP;
                 UpdatePlayerAHP(); // Initial update
             }
+        }
+        
+        if (playerBHPObject != null)
+        {
+            playerBHP = playerBHPObject.GetComponent<PlayerHP>();
             if (playerBHP != null)
             {
                 playerBHP.OnHPChanged += UpdatePlayerBHP;
                 UpdatePlayerBHP(); // Initial update
             }
-
-            UpdateDisplay();
-            BattleRoundManager.Instance.OnRoundStart += HandleRoundStart;
-            BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
         }
     }
 
@@ -68,24 +140,40 @@ public class ScoreDisplayUI : MonoBehaviourPunCallbacks
             BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
         }
     }
+    
+    // Add a safety method to ensure we don't call BattleRoundManager while it's not ready
+    private bool IsRoundManagerReady()
+    {
+        return BattleRoundManager.Instance != null &&
+               BattleRoundManager.Instance.gameObject != null &&
+               BattleRoundManager.Instance.gameObject.activeInHierarchy;
+    }
 
     private void UpdatePlayerAHP()
     {
-        if (BattleRoundManager.Instance != null)
+        if (IsRoundManagerReady() && playerAHealthUI != null)
         {
-            float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
-            Debug.Log($"ScoreDisplayUI: Updating Player A HP: {playerAHP}");
-            playerAHealthUI.SetHP(playerAHP, 100f);
+            try {
+                float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
+                playerAHealthUI.SetHP(playerAHP, 100f);
+            }
+            catch (System.Exception ex) {
+                Debug.LogError($"Error updating Player A HP: {ex.Message}");
+            }
         }
     }
 
     private void UpdatePlayerBHP()
     {
-        if (BattleRoundManager.Instance != null)
+        if (IsRoundManagerReady() && playerBHealthUI != null)
         {
-            float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
-            Debug.Log($"ScoreDisplayUI: Updating Player B HP: {playerBHP}");
-            playerBHealthUI.SetHP(playerBHP, 100f);
+            try {
+                float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
+                playerBHealthUI.SetHP(playerBHP, 100f);
+            }
+            catch (System.Exception ex) {
+                Debug.LogError($"Error updating Player B HP: {ex.Message}");
+            }
         }
     }
 
@@ -103,20 +191,26 @@ public class ScoreDisplayUI : MonoBehaviourPunCallbacks
 
     private void UpdateDisplay()
     {
-        if (BattleRoundManager.Instance == null) return;
+        if (!IsRoundManagerReady()) return;
 
-        int currentRound = BattleRoundManager.Instance.GetCurrentRound();
-        float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
-        float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
+        try {
+            int currentRound = BattleRoundManager.Instance.GetCurrentRound();
+            float playerAHPValue = BattleRoundManager.Instance.GetPlayerAHP();
+            float playerBHPValue = BattleRoundManager.Instance.GetPlayerBHP();
 
-        Debug.Log($"ScoreDisplayUI: UpdateDisplay - Round: {currentRound}, PlayerA HP: {playerAHP}, PlayerB HP: {playerBHP}");
-
-        // Show round number
-        currentRoundText.text = $"Round {currentRound}";
-        
-        // Update HP displays - note that the display order is the same for both players,
-        // but the colors indicate which is the local player
-        playerAHealthUI.SetHP(playerAHP, 100f);
-        playerBHealthUI.SetHP(playerBHP, 100f);
+            // Show round number (if text component exists)
+            if (currentRoundText != null)
+                currentRoundText.text = $"Round {currentRound}";
+            
+            // Update HP displays safely
+            if (playerAHealthUI != null)
+                playerAHealthUI.SetHP(playerAHPValue, 100f);
+                
+            if (playerBHealthUI != null)
+                playerBHealthUI.SetHP(playerBHPValue, 100f);
+        }
+        catch (System.Exception ex) {
+            Debug.LogError($"Error in UpdateDisplay: {ex.Message}");
+        }
     }
 }
