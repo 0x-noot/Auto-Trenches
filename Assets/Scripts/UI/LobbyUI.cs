@@ -224,20 +224,46 @@ public class LobbyUI : MonoBehaviour
         leaveLobbyButton.gameObject.SetActive(true);
         readyButton.interactable = true;
         
-        if (isMasterClient)
+        // Get the host's name from master client
+        if (Photon.Pun.PhotonNetwork.CurrentRoom != null && 
+            Photon.Pun.PhotonNetwork.CurrentRoom.Players.ContainsKey(1)) // Master client is always ID 1
         {
-            statusText.text = "Waiting for opponent...";
-            UpdateHostInfo(usernameInput.text, 0, 0);
-            clientNameText.text = "Waiting for player...";
-            clientStatsText.text = "";
+            string hostNickname = Photon.Pun.PhotonNetwork.CurrentRoom.Players[1].NickName;
+            
+            if (isMasterClient)
+            {
+                statusText.text = "Waiting for opponent...";
+                UpdateHostInfo(hostNickname, 0, 0);
+                clientNameText.text = "Waiting for player...";
+                clientStatsText.text = "";
+            }
+            else
+            {
+                hostNameText.text = hostNickname; // Show actual host name
+                hostStatsText.text = "Wins: 0 Losses: 0";
+                clientNameText.text = usernameInput.text;
+                clientStatsText.text = "Wins: 0 Losses: 0";
+                statusText.text = "Waiting for players to ready up...";
+            }
         }
         else
         {
-            hostNameText.text = "Host";
-            hostStatsText.text = "Wins: 0 Losses: 0";
-            clientNameText.text = usernameInput.text;
-            clientStatsText.text = "Wins: 0 Losses: 0";
-            statusText.text = "Waiting for players to ready up...";
+            // Fallback if we can't get the host info for some reason
+            if (isMasterClient)
+            {
+                statusText.text = "Waiting for opponent...";
+                UpdateHostInfo(usernameInput.text, 0, 0);
+                clientNameText.text = "Waiting for player...";
+                clientStatsText.text = "";
+            }
+            else
+            {
+                hostNameText.text = "Host"; // Fallback
+                hostStatsText.text = "Wins: 0 Losses: 0";
+                clientNameText.text = usernameInput.text;
+                clientStatsText.text = "Wins: 0 Losses: 0";
+                statusText.text = "Waiting for players to ready up...";
+            }
         }
     }
 
@@ -278,7 +304,14 @@ public class LobbyUI : MonoBehaviour
                 var entryUI = entryObj.GetComponent<LobbyEntryUI>();
                 if (entryUI != null)
                 {
-                    entryUI.Initialize(room.Name, () => OnJoinRoomClicked(room.Name));
+                    // Try to get host name from custom properties
+                    string hostName = "Unknown";
+                    if (room.CustomProperties.TryGetValue("HostName", out object hostNameObj))
+                    {
+                        hostName = hostNameObj.ToString();
+                    }
+                    
+                    entryUI.Initialize(room.Name, hostName, () => OnJoinRoomClicked(room.Name));
                 }
             }
         }

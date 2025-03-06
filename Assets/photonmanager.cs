@@ -14,7 +14,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     
     private bool isConnecting = false;
     private Dictionary<string, bool> playerReadyStatus = new Dictionary<string, bool>();
-    private bool isLoadingLevel = false;
 
     private void Awake()
     {
@@ -22,14 +21,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            
-            // Apply lighter optimizations for WebGL
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-            {
-                PhotonNetwork.SendRate = 25; // Default is 30
-                PhotonNetwork.SerializationRate = 12; // Default is 15
-                Debug.Log("Applied WebGL-specific Photon optimizations");
-            }
         }
         else
         {
@@ -67,6 +58,12 @@ public class PhotonManager : MonoBehaviourPunCallbacks
             MaxPlayers = 2,
             PublishUserId = true
         };
+        
+        // Add host name as a custom property
+        ExitGames.Client.Photon.Hashtable customProps = new ExitGames.Client.Photon.Hashtable();
+        customProps.Add("HostName", playerName);
+        roomOptions.CustomRoomProperties = customProps;
+        roomOptions.CustomRoomPropertiesForLobby = new string[] { "HostName" };
 
         PhotonNetwork.CreateRoom(null, roomOptions); // null for random room name
     }
@@ -138,14 +135,22 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     private void StartGame()
     {
-        if (PhotonNetwork.IsMasterClient && !isLoadingLevel)
+        if (PhotonNetwork.IsMasterClient)
         {
-            isLoadingLevel = true;
-            Debug.Log("All players ready, starting game");
-            
-            // Just load the level directly for all platforms including WebGL
             PhotonNetwork.LoadLevel(battleSceneName);
         }
+    }
+    
+    // Add this new method to update host name in an existing room:
+    private void UpdateRoomHostName()
+    {
+        if (!PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) return;
+        
+        // Update room properties with host name
+        ExitGames.Client.Photon.Hashtable roomProps = new ExitGames.Client.Photon.Hashtable();
+        roomProps.Add("HostName", PhotonNetwork.LocalPlayer.NickName);
+        
+        PhotonNetwork.CurrentRoom.SetCustomProperties(roomProps);
     }
 
     #region Photon Callbacks
@@ -170,14 +175,19 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.LogWarning($"Disconnected from server: {cause}");
         isConnecting = false;
-        isLoadingLevel = false;
         lobbyUI?.OnDisconnected();
     }
 
     public override void OnJoinedRoom()
     {
         Debug.Log($"Joined Room: {PhotonNetwork.CurrentRoom.Name}");
-        isLoadingLevel = false;
+        
+        // If this player is the host, make sure room has the host name property
+        if (PhotonNetwork.IsMasterClient)
+        {
+            UpdateRoomHostName();
+        }
+        
         lobbyUI?.OnRoomJoined(PhotonNetwork.IsMasterClient);
     }
 
@@ -203,7 +213,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     public override void OnLeftRoom()
     {
         Debug.Log("Left Room");
-        isLoadingLevel = false;
         lobbyUI?.OnRoomLeft();
     }
 
@@ -224,7 +233,11 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     public override void OnMasterClientSwitched(Player newMasterClient)
     {
-        // Handle master client switching if needed
+        // If the master client changes, update the room properties
+        if (PhotonNetwork.LocalPlayer.ActorNumber == newMasterClient.ActorNumber)
+        {
+            UpdateRoomHostName();
+        }
     }
 
     #endregion
