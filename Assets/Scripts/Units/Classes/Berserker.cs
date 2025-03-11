@@ -9,7 +9,7 @@ public class Berserker : BaseUnit
     [SerializeField] private float currentCriticalStrikeChance;
 
     [Header("Blood Rage Ability Settings")]
-    [SerializeField] private float bloodRageDuration = 4f;
+    [SerializeField] private float bloodRageDuration = 5f;
     [SerializeField] private float bloodRageAttackSpeedMultiplier = 2.0f;
     [SerializeField] private float bloodRageCritChanceBonus = 0.20f;
     
@@ -26,7 +26,7 @@ public class Berserker : BaseUnit
         unitType = UnitType.Berserker;
         orderType = OrderType.Wild;
         baseHealth = 950f;
-        baseDamage = 110f;
+        baseDamage = 120f;
         baseAttackSpeed = 1.2f;
         baseMoveSpeed = 3.5f;
         attackRange = 3.5f;

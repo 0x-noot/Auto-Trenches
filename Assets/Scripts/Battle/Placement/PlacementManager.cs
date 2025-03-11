@@ -30,10 +30,10 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private int archerCost = 4;     // Was rangeCost
     [SerializeField] private int berserkerCost = 3;  // Was fighterCost
     // New unit costs
-    [SerializeField] private int clericCost = 4;
-    [SerializeField] private int barbarianCost = 4;
-    [SerializeField] private int peasantMilitiaCost = 2;
-    [SerializeField] private int blacksmithCost = 5;
+    [SerializeField] private int clericCost = 3;
+    [SerializeField] private int barbarianCost = 3;
+    [SerializeField] private int peasantMilitiaCost = 3;
+    [SerializeField] private int blacksmithCost = 4;
 
     [Header("Current Selection")]
     [SerializeField] private UnitType selectedUnitType = UnitType.Berserker;  // Was UnitType.Fighter
@@ -175,6 +175,15 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         LogDebug($"Selected unit type: {type}, Cost: {GetUnitCost(type)}");
     }
 
+    // Add this method to register the unit after it's placed
+    private void RegisterUnitPosition(BaseUnit unit, Vector3 position)
+    {
+        if (validPlacement != null && unit != null)
+        {
+            validPlacement.RegisterUnitAtPosition(position, unit);
+        }
+    }
+
     public void PlaceUnit(Vector3 position)
     {
         // Generate a unique timestamp for this placement request
@@ -202,6 +211,13 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         if (!canPlace)
         {
             Debug.LogWarning($"Cannot place units for other team. Local: {currentTeam}");
+            return;
+        }
+        
+        // Check if the position is already occupied or invalid
+        if (!validPlacement.IsValidPosition(position))
+        {
+            LogDebug($"Cannot place unit at position {position}. Position is invalid or already occupied.");
             return;
         }
 
@@ -266,6 +282,10 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
             }
 
             unit.SetTeam(currentTeam);
+            
+            // Register the unit's position to prevent duplicate placements
+            RegisterUnitPosition(unit, position);
+            
             LogDebug($"[{(PhotonNetwork.IsMasterClient ? "HOST" : "CLIENT")}] Unit placed successfully, sending RPC");
             
             photonView.RPC("RPCUnitPlaced", RpcTarget.All, unit.photonView.ViewID, requestTimestamp);
@@ -397,6 +417,9 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
             {
                 gameManager?.RegisterEnemyUnit(unit);
             }
+            
+            // Register the unit position for other clients too
+            RegisterUnitPosition(unit, unit.transform.position);
             
             // Register with OrderSystem if applicable
             OrderType orderType = unit.GetOrderType();
@@ -534,6 +557,12 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
         {
             if (unit != null && unit.gameObject != null)
             {
+                // Unregister unit position before destroying it
+                if (validPlacement != null)
+                {
+                    validPlacement.UnregisterUnitAtPosition(unit.transform.position, unit.GetTeamId());
+                }
+                
                 LogDebug($"Destroying unit: {unit.GetUnitType()} from team {unit.GetTeamId()}");
                 PhotonNetwork.Destroy(unit.gameObject);
             }
@@ -595,6 +624,12 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
                     unitsToRefund[unitType] = 0;
                 }
                 unitsToRefund[unitType]++;
+                
+                // Unregister unit position before destroying it
+                if (validPlacement != null)
+                {
+                    validPlacement.UnregisterUnitAtPosition(unit.transform.position, team);
+                }
                 
                 PhotonNetwork.Destroy(unit.gameObject);
             }

@@ -6,7 +6,7 @@ using Photon.Pun;
 public class Cleric : BaseUnit
 {
     [Header("Cleric-Specific Settings")]
-    [SerializeField] private float healAmount = 200f;
+    [SerializeField] private float healAmount = 250f;
     [SerializeField] private float healRadius = 5f;
 
     [Header("Divine Blessing Ability Settings")]
@@ -23,7 +23,7 @@ public class Cleric : BaseUnit
         unitType = UnitType.Cleric;
         orderType = OrderType.Shield;
         baseHealth = 800f;
-        baseDamage = 60f;
+        baseDamage = 70f;
         baseAttackSpeed = 0.7f;
         baseMoveSpeed = 3f;
         attackRange = 5f;

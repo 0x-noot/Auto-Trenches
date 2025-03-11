@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 4e1435a3cf8db9e4f9af6507610b2daf
+guid: 937e90f4984b59f4ca5329ea5e37014a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7045163723482646674
-    second: CASTLE-MAIN_MENU_BG_0
+      213: 5885223496262673260
+    second: torch_sprite_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 18
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CASTLE-MAIN_MENU_BG_0
+      name: torch_sprite_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 320
-        height: 180
+        width: 10
+        height: 23
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e67395d9bec8a3e90800000000000000
-      internalID: -7045163723482646674
+      spriteID: c63e48ea6938ca150800000000000000
+      internalID: 5885223496262673260
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CASTLE-MAIN_MENU_BG_0: -7045163723482646674
+      torch_sprite_0: 5885223496262673260
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

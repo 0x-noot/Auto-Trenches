@@ -7,9 +7,9 @@ using Photon.Pun;
 public class PeasantMilitia : BaseUnit
 {
     [Header("Peasant Militia-Specific Settings")]
-    [SerializeField] private float groupRadius = 5f;
-    [SerializeField] private float groupMovementSpeedBonus = 0.1f; // 10% per nearby militia
-    [SerializeField] private float groupMaxSpeedBonus = 0.4f; // 40% max bonus
+    [SerializeField] private float groupRadius = 4f;
+    [SerializeField] private float groupMovementSpeedBonus = 0.07f; // 10% per nearby militia
+    [SerializeField] private float groupMaxSpeedBonus = 0.28f; // 40% max bonus
 
     [Header("Strength in Numbers Visual Effects")]
     [SerializeField] private GameObject strengthEffectPrefab;
@@ -32,9 +32,9 @@ public class PeasantMilitia : BaseUnit
         // Set unit-specific properties BEFORE calling base.Awake()
         unitType = UnitType.PeasantMilitia;
         orderType = OrderType.Realm;
-        baseHealth = 500f;
+        baseHealth = 450f;
         baseDamage = 40f;
-        baseAttackSpeed = 1.2f;
+        baseAttackSpeed = 1.0f;
         baseMoveSpeed = 3.1f;
         attackRange = 2.8f;
         abilityChance = 0f; // No special ability, uses passive synergy instead
@@ -301,7 +301,7 @@ public class PeasantMilitia : BaseUnit
         if (nearbyMilitiaCount > 0)
         {
             // Each nearby militia adds 10% damage, up to 40%
-            float damageBonus = Mathf.Min(nearbyMilitiaCount * 0.1f, 0.4f);
+            float damageBonus = Mathf.Min(nearbyMilitiaCount * 0.05f, 0.20f);
             baseDamage *= (1 + damageBonus);
         }
         

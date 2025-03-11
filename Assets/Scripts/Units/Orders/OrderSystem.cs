@@ -266,7 +266,7 @@ public class OrderSystem : MonoBehaviourPunCallbacks, IPunObservable
 
     private void ApplyShieldSynergy(List<BaseUnit> units, int count)
     {
-        // Shield Order: +15% health, +10% ability trigger chance
+        // Shield Order: +15% health, +15% ability trigger chance (was 10%)
         foreach (BaseUnit unit in units)
         {
             if (unit == null || !unit.photonView.IsMine) continue;
@@ -275,9 +275,9 @@ public class OrderSystem : MonoBehaviourPunCallbacks, IPunObservable
             unit.ApplySynergyBonus("Shield", "health", 0.15f);
             
             // Apply ability chance boost
-            unit.ApplySynergyBonus("Shield", "abilityChance", 0.10f);
+            unit.ApplySynergyBonus("Shield", "abilityChance", 0.15f); // Was 0.10f
             
-            LogDebug($"Applied Shield synergy to {unit.GetUnitType()} - boosted health by 15% and ability chance by 10%");
+            LogDebug($"Applied Shield synergy to {unit.GetUnitType()} - boosted health by 15% and ability chance by 15%");
         }
     }
 
@@ -317,13 +317,13 @@ public class OrderSystem : MonoBehaviourPunCallbacks, IPunObservable
 
     private void ApplyRealmSynergy(List<BaseUnit> units, int count)
     {
-        // Realm Order: Each additional Militia grants +15% health and damage
+        // Realm Order: Each additional Militia grants +15% health and damage (30% cap)
         foreach (BaseUnit unit in units)
         {
             if (unit == null || !unit.photonView.IsMine) continue;
             
-            // Calculate bonus based on number of units
-            float bonusMultiplier = (count - 1) * 0.15f; // -1 because we don't count the unit itself
+            // Calculate bonus based on number of units, capped at 30%
+            float bonusMultiplier = Mathf.Min((count - 1) * 0.10f, 0.30f); // Was (count - 1) * 0.15f
             
             // Apply health and damage boosts
             unit.ApplySynergyBonus("Realm", "health", bonusMultiplier);

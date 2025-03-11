@@ -9,7 +9,7 @@ public class Blacksmith : BaseUnit
     [Header("Blacksmith-Specific Settings")]
     [SerializeField] private float baseKnockbackDistance = 3.0f;
     [SerializeField] private float knockbackBoostPerRealmUnit = 0.5f;
-    [SerializeField] private float crashDamage = 75f;
+    [SerializeField] private float crashDamage = 100f;
     [SerializeField] private float crashRadius = 2.5f;
 
     [Header("Anvil Crash Ability Settings")]
@@ -33,7 +33,7 @@ public class Blacksmith : BaseUnit
         unitType = UnitType.Blacksmith;
         orderType = OrderType.Realm;
         baseHealth = 1200f;
-        baseDamage = 80f;
+        baseDamage = 95f;
         baseAttackSpeed = 0.7f;
         baseMoveSpeed = 2.8f;
         attackRange = 3.0f;

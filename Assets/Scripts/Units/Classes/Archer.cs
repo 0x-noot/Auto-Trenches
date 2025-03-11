@@ -22,7 +22,7 @@ public class Archer : BaseUnit
         unitType = UnitType.Archer;
         orderType = OrderType.Arcane;
         baseHealth = 750f;
-        baseDamage = 100f;
+        baseDamage = 110f;
         baseAttackSpeed = 0.8f;
         baseMoveSpeed = 3f;
         attackRange = 12f;

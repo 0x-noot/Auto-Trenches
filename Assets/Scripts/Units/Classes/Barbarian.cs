@@ -9,7 +9,7 @@ public class Barbarian : BaseUnit
     [SerializeField] private float currentCriticalStrikeChance;
 
     [Header("Primal Strike Ability Settings")]
-    [SerializeField] private float stunDuration = 1.5f;
+    [SerializeField] private float stunDuration = 2.0f;
     [SerializeField] private float damageBonus = 0.5f; // 50% damage bonus
     [SerializeField] private GameObject stunEffectPrefab;
     
@@ -29,7 +29,7 @@ public class Barbarian : BaseUnit
         unitType = UnitType.Barbarian;
         orderType = OrderType.Wild;
         baseHealth = 850f;
-        baseDamage = 100f;
+        baseDamage = 110f;
         baseAttackSpeed = 0.9f;
         baseMoveSpeed = 3.4f;
         attackRange = 3.5f;

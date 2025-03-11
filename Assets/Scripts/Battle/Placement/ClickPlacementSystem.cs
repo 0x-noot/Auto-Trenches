@@ -87,6 +87,16 @@ public class ClickPlacementSystem : MonoBehaviourPunCallbacks
                 Debug.Log("ClickPlacementSystem: Cannot place more units (maximum reached or not allowed)");
             }
         }
+        else
+        {
+            // This is the key addition - if not valid, try to get nearest valid position
+            // which will run the indicator logic if the position is occupied
+            Vector3 validPos = validPlacement.GetNearestValidPosition(worldPos);
+            if (validPos == Vector3.zero)
+            {
+                Debug.Log("ClickPlacementSystem: No valid placement position found");
+            }
+        }
     }
 
     public override void OnEnable()

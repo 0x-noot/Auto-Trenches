@@ -26,7 +26,7 @@ public class Knight : BaseUnit
         // Set unit-specific properties BEFORE calling base.Awake()
         unitType = UnitType.Knight;
         orderType = OrderType.Shield;
-        baseHealth = 2000f;
+        baseHealth = 1800f;
         baseDamage = 55f;
         baseAttackSpeed = 0.8f;
         baseMoveSpeed = 2.5f;
