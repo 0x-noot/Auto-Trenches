@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Mage button unit-v1_0: 9136031688430552921
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
