@@ -636,7 +636,7 @@ MonoBehaviour:
   mainMenuPanel: {fileID: 568465527}
   settingsPanel: {fileID: 1461322666}
   infoPanel: {fileID: 1265944616}
-  lobbyPanel: {fileID: 0}
+  lobbyPanel: {fileID: 1639504457}
 --- !u!1 &228839386
 GameObject:
   m_ObjectHideFlags: 0
