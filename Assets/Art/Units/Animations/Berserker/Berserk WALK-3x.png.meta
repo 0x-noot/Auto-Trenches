@@ -1,0 +1,730 @@
+fileFormatVersion: 2
+guid: aac9b53fca7804959ba0f4c3f604a92f
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1522434288210315991
+    second: Berserk WALK-3x_0
+  - first:
+      213: -8678793134169259375
+    second: Berserk WALK-3x_1
+  - first:
+      213: 3156025973459383346
+    second: Berserk WALK-3x_2
+  - first:
+      213: -8598511857703715521
+    second: Berserk WALK-3x_3
+  - first:
+      213: -113323358988249740
+    second: Berserk WALK-3x_4
+  - first:
+      213: 479513075998869146
+    second: Berserk WALK-3x_5
+  - first:
+      213: -9216608423554053487
+    second: Berserk WALK-3x_6
+  - first:
+      213: -939537116568344914
+    second: Berserk WALK-3x_7
+  - first:
+      213: 9088420253828072529
+    second: Berserk WALK-3x_8
+  - first:
+      213: 7806811615816751607
+    second: Berserk WALK-3x_9
+  - first:
+      213: 8457650590114676252
+    second: Berserk WALK-3x_10
+  - first:
+      213: 6848950064757039807
+    second: Berserk WALK-3x_11
+  - first:
+      213: -414440563522414685
+    second: Berserk WALK-3x_12
+  - first:
+      213: -1312829451655287622
+    second: Berserk WALK-3x_13
+  - first:
+      213: -2117516228918939713
+    second: Berserk WALK-3x_14
+  - first:
+      213: 726171750902382810
+    second: Berserk WALK-3x_15
+  - first:
+      213: 3991097961356290400
+    second: Berserk WALK-3x_16
+  - first:
+      213: -5064737615304437828
+    second: Berserk WALK-3x_17
+  - first:
+      213: 2790918837146707030
+    second: Berserk WALK-3x_18
+  - first:
+      213: -5748315463919202824
+    second: Berserk WALK-3x_19
+  - first:
+      213: 3447735061476935515
+    second: Berserk WALK-3x_20
+  - first:
+      213: -1275276995901973633
+    second: Berserk WALK-3x_21
+  - first:
+      213: -763913692207559307
+    second: Berserk WALK-3x_22
+  - first:
+      213: -7709780289010165785
+    second: Berserk WALK-3x_23
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Berserk WALK-3x_0
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 749
+        width: 80
+        height: 101
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7da86ae3be5c02510800000000000000
+      internalID: 1522434288210315991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_1
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 755
+        width: 71
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1920ebe60abbe8780800000000000000
+      internalID: -8678793134169259375
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_2
+      rect:
+        serializedVersion: 2
+        x: 341
+        y: 752
+        width: 62
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 234f3f9c6e47ccb20800000000000000
+      internalID: 3156025973459383346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_3
+      rect:
+        serializedVersion: 2
+        x: 476
+        y: 755
+        width: 80
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3df594b503fba880800000000000000
+      internalID: -8598511857703715521
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_4
+      rect:
+        serializedVersion: 2
+        x: 29
+        y: 611
+        width: 80
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 47550c261056d6ef0800000000000000
+      internalID: -113323358988249740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_5
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 608
+        width: 68
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9641102a9297a600800000000000000
+      internalID: 479513075998869146
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_6
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 611
+        width: 59
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 19a00307877081080800000000000000
+      internalID: -9216608423554053487
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_7
+      rect:
+        serializedVersion: 2
+        x: 488
+        y: 608
+        width: 77
+        height: 101
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea626a968f716f2f0800000000000000
+      internalID: -939537116568344914
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_8
+      rect:
+        serializedVersion: 2
+        x: 29
+        y: 467
+        width: 80
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15443ee711e802e70800000000000000
+      internalID: 9088420253828072529
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_9
+      rect:
+        serializedVersion: 2
+        x: 206
+        y: 464
+        width: 71
+        height: 101
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f996256dcd575c60800000000000000
+      internalID: 7806811615816751607
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_10
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 464
+        width: 59
+        height: 101
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1e7822b66c9f5570800000000000000
+      internalID: 8457650590114676252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_11
+      rect:
+        serializedVersion: 2
+        x: 482
+        y: 467
+        width: 77
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb26b3eebcb5c0f50800000000000000
+      internalID: 6848950064757039807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_12
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 323
+        width: 89
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a7dbb6d08c9f3af0800000000000000
+      internalID: -414440563522414685
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_13
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 323
+        width: 65
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: abc6a63c194e7cde0800000000000000
+      internalID: -1312829451655287622
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_14
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 323
+        width: 59
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbf692975321d92e0800000000000000
+      internalID: -2117516228918939713
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_15
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 323
+        width: 74
+        height: 113
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad0c57a2c51e31a00800000000000000
+      internalID: 726171750902382810
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_16
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 176
+        width: 89
+        height: 140
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0696d6a337a336730800000000000000
+      internalID: 3991097961356290400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_17
+      rect:
+        serializedVersion: 2
+        x: 161
+        y: 179
+        width: 107
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbf483719ff66b9b0800000000000000
+      internalID: -5064737615304437828
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_18
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 179
+        width: 92
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 654631d35e55bb620800000000000000
+      internalID: 2790918837146707030
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_19
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 179
+        width: 74
+        height: 143
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8fd063c9a81e930b0800000000000000
+      internalID: -5748315463919202824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_20
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 32
+        width: 89
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b570ef285c0d8df20800000000000000
+      internalID: 3447735061476935515
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_21
+      rect:
+        serializedVersion: 2
+        x: 179
+        y: 35
+        width: 83
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7b1905345e4d4ee0800000000000000
+      internalID: -1275276995901973633
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_22
+      rect:
+        serializedVersion: 2
+        x: 329
+        y: 35
+        width: 86
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57d49e85b880665f0800000000000000
+      internalID: -763913692207559307
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Berserk WALK-3x_23
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 35
+        width: 80
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e79d31ecab510590800000000000000
+      internalID: -7709780289010165785
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

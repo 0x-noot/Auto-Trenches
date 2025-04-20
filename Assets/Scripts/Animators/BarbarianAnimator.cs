@@ -1,10 +1,13 @@
 using UnityEngine;
 using Photon.Pun;
 
-public class BarbarianAnimator : MonoBehaviourPunCallbacks
+public class BarbarianAnimator : MonoBehaviourPunCallbacks, IPunObservable
 {
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private int currentDirection = 1; // Default to down
+    private bool isMoving = false;
+    private bool isAttacking = false;
     
     void Awake()
     {
@@ -12,38 +15,75 @@ public class BarbarianAnimator : MonoBehaviourPunCallbacks
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
     
-    public void SetMoving(bool isMoving)
+    public void SetMoving(bool moving)
     {
-        animator.SetBool("isMoving", isMoving);
+        isMoving = moving;
+        if (animator != null)
+        {
+            animator.SetBool("isMoving", moving);
+        }
     }
     
-    public void SetAttacking(bool isAttacking)
+    public void SetAttacking(bool attacking)
     {
-        animator.SetBool("isAttacking", isAttacking);
+        isAttacking = attacking;
+        if (animator != null)
+        {
+            animator.SetBool("isAttacking", attacking);
+        }
     }
     
     public void SetDirection(int direction)
     {
-        animator.SetInteger("direction", direction);
-        // No need to flip sprite since they're already properly oriented
+        currentDirection = direction;
+        if (animator != null)
+        {
+            animator.SetInteger("direction", direction);
+        }
     }
     
-    // Helper method to determine direction from a movement vector
     public void SetDirectionFromVector(Vector2 direction)
     {
         if (direction.magnitude < 0.1f) return;
         
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         
-        // Convert angle to direction index
-        // Up = 0, Down = 1, Right = 2, Left = 3
+        int newDirection;
         if (angle > 45 && angle < 135) // Up
-            SetDirection(0);
+            newDirection = 0;
         else if (angle < -45 && angle > -135) // Down
-            SetDirection(1);
+            newDirection = 1;
         else if ((angle >= -45 && angle <= 45)) // Right
-            SetDirection(2);
+            newDirection = 2;
         else // Left
-            SetDirection(3);
+            newDirection = 3;
+            
+        SetDirection(newDirection);
+    }
+    
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting)
+        {
+            // Send animation state
+            stream.SendNext(currentDirection);
+            stream.SendNext(isMoving);
+            stream.SendNext(isAttacking);
+        }
+        else
+        {
+            // Receive animation state
+            int receivedDirection = (int)stream.ReceiveNext();
+            bool receivedMoving = (bool)stream.ReceiveNext();
+            bool receivedAttacking = (bool)stream.ReceiveNext();
+            
+            // Only apply if we're not the owner
+            if (!photonView.IsMine)
+            {
+                SetDirection(receivedDirection);
+                SetMoving(receivedMoving);
+                SetAttacking(receivedAttacking);
+            }
+        }
     }
 }

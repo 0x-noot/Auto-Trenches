@@ -1,0 +1,655 @@
+fileFormatVersion: 2
+guid: 3dc03c264629e40b788782843fd1e223
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6132384197170367822
+    second: Blacksmith walk-x3_0
+  - first:
+      213: 2458370380093953581
+    second: Blacksmith walk-x3_1
+  - first:
+      213: 827074252040126166
+    second: Blacksmith walk-x3_2
+  - first:
+      213: -8399443503700900919
+    second: Blacksmith walk-x3_3
+  - first:
+      213: -5426986659431895498
+    second: Blacksmith walk-x3_4
+  - first:
+      213: -8295269509387261505
+    second: Blacksmith walk-x3_5
+  - first:
+      213: 3218714893591638719
+    second: Blacksmith walk-x3_6
+  - first:
+      213: 1121103787757794401
+    second: Blacksmith walk-x3_7
+  - first:
+      213: 466998915010105160
+    second: Blacksmith walk-x3_8
+  - first:
+      213: -6980962445112460784
+    second: Blacksmith walk-x3_9
+  - first:
+      213: -1967530697868688574
+    second: Blacksmith walk-x3_10
+  - first:
+      213: -8512804437999484765
+    second: Blacksmith walk-x3_11
+  - first:
+      213: 2719449100566093507
+    second: Blacksmith walk-x3_12
+  - first:
+      213: -692562844374013324
+    second: Blacksmith walk-x3_13
+  - first:
+      213: -5616168844480240019
+    second: Blacksmith walk-x3_14
+  - first:
+      213: -8845815001745036196
+    second: Blacksmith walk-x3_15
+  - first:
+      213: -7878406138046721165
+    second: Blacksmith walk-x3_16
+  - first:
+      213: 3366286284546124707
+    second: Blacksmith walk-x3_17
+  - first:
+      213: 7197694207300915729
+    second: Blacksmith walk-x3_18
+  - first:
+      213: -7544455090115769006
+    second: Blacksmith walk-x3_19
+  - first:
+      213: 4503990146299327502
+    second: Blacksmith walk-x3_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_0
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 755
+        width: 74
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b2f07d301565eaa0800000000000000
+      internalID: -6132384197170367822
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_1
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 755
+        width: 62
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2697dfe5d2ed1220800000000000000
+      internalID: 2458370380093953581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_2
+      rect:
+        serializedVersion: 2
+        x: 332
+        y: 752
+        width: 50
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6de39b376ab5a7b00800000000000000
+      internalID: 827074252040126166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_3
+      rect:
+        serializedVersion: 2
+        x: 470
+        y: 755
+        width: 80
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c302f2b2ae2f6b80800000000000000
+      internalID: -8399443503700900919
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_4
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 611
+        width: 68
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63e27cbf2687fa4b0800000000000000
+      internalID: -5426986659431895498
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_5
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 611
+        width: 56
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb9e7d8d45841ec80800000000000000
+      internalID: -8295269509387261505
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_6
+      rect:
+        serializedVersion: 2
+        x: 335
+        y: 611
+        width: 53
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb2f9c9642c2bac20800000000000000
+      internalID: 3218714893591638719
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_7
+      rect:
+        serializedVersion: 2
+        x: 479
+        y: 611
+        width: 74
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 164f5a184f5fe8f00800000000000000
+      internalID: 1121103787757794401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_8
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 458
+        width: 71
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 84f8ba7f90d1b7600800000000000000
+      internalID: 466998915010105160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_9
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 467
+        width: 56
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01abab494a3ae1f90800000000000000
+      internalID: -6980962445112460784
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_10
+      rect:
+        serializedVersion: 2
+        x: 341
+        y: 467
+        width: 59
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2434cd4314de1b4e0800000000000000
+      internalID: -1967530697868688574
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_11
+      rect:
+        serializedVersion: 2
+        x: 476
+        y: 467
+        width: 80
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a00ca667717cd980800000000000000
+      internalID: -8512804437999484765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_12
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 323
+        width: 74
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ce5ff77c8c6db520800000000000000
+      internalID: 2719449100566093507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_13
+      rect:
+        serializedVersion: 2
+        x: 212
+        y: 323
+        width: 53
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 47ae37c23c58366f0800000000000000
+      internalID: -692562844374013324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_14
+      rect:
+        serializedVersion: 2
+        x: 329
+        y: 323
+        width: 53
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d66a322113c5f02b0800000000000000
+      internalID: -5616168844480240019
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_15
+      rect:
+        serializedVersion: 2
+        x: 470
+        y: 323
+        width: 83
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5c6a208f1a5d3580800000000000000
+      internalID: -8845815001745036196
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_16
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 164
+        width: 65
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 373d779eb574aa290800000000000000
+      internalID: -7878406138046721165
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_17
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 179
+        width: 50
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ab24aa5a8377be20800000000000000
+      internalID: 3366286284546124707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_18
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 179
+        width: 50
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 112de0c1fb853e360800000000000000
+      internalID: 7197694207300915729
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_19
+      rect:
+        serializedVersion: 2
+        x: 470
+        y: 179
+        width: 71
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25d03c95116bc4790800000000000000
+      internalID: -7544455090115769006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Blacksmith walk-x3_20
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 29
+        width: 89
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e04f706cc23618e30800000000000000
+      internalID: 4503990146299327502
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

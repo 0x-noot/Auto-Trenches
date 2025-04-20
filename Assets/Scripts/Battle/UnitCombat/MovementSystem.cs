@@ -21,12 +21,10 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private LayerMask obstacleLayer;
     [SerializeField] private LayerMask unitLayer;
     
-    // Network optimization
     private Vector3 syncedPosition;
-    private Quaternion syncedRotation;
     private bool isSyncPositionDirty = false;
     private float lastSyncTime = 0f;
-    private const float SYNC_INTERVAL = 0.1f; // 10 updates per second max
+    private const float SYNC_INTERVAL = 0.1f;
     private float syncLerpSpeed = 10f;
 
     private void Awake()
@@ -34,9 +32,8 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
         unit = GetComponent<BaseUnit>();
         grid = Object.FindFirstObjectByType<Grid>();
         pathfinding = new PathfindingSystem(grid, obstacleLayer, unitLayer);
-        
+        transform.rotation = Quaternion.identity;
         syncedPosition = transform.position;
-        syncedRotation = transform.rotation;
     }
 
     private void Start()
@@ -65,7 +62,6 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     private void RPCSetMoveSpeed(float newSpeed)
     {
         moveSpeed = newSpeed;
-        Debug.Log($"Movement speed updated to: {moveSpeed}");
     }
 
     private void HandleGameStateChanged(GameState newState)
@@ -92,7 +88,6 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
         
         if (photonView.IsMine)
         {
-            // Owner controls movement
             if (isMoving)
             {
                 pathRecalculationTimer += Time.deltaTime;
@@ -103,22 +98,18 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
                 }
             }
             
-            // Mark position for sync at intervals
             if (Time.time - lastSyncTime > SYNC_INTERVAL)
             {
                 syncedPosition = transform.position;
-                syncedRotation = transform.rotation;
                 isSyncPositionDirty = true;
                 lastSyncTime = Time.time;
             }
         }
         else
         {
-            // Non-owner smoothly interpolates to synced position
             if (isMoving && Vector3.Distance(transform.position, syncedPosition) > 0.1f)
             {
                 transform.position = Vector3.Lerp(transform.position, syncedPosition, Time.deltaTime * syncLerpSpeed);
-                transform.rotation = Quaternion.Lerp(transform.rotation, syncedRotation, Time.deltaTime * syncLerpSpeed);
             }
         }
     }
@@ -191,6 +182,12 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
         isMoving = true;
         unit.UpdateState(UnitState.Moving);
         
+        BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetMoving(true);
+        }
+        
         while (currentPath.Count > 0)
         {
             Vector3 currentWaypoint = currentPath[0];
@@ -205,17 +202,17 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
 
                 Vector3 direction = (currentWaypoint - transform.position).normalized;
                 
-                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-                transform.rotation = Quaternion.AngleAxis(angle - 90f, Vector3.forward);
+                if (barbarianAnimator != null)
+                {
+                    barbarianAnimator.SetDirectionFromVector(new Vector2(direction.x, direction.y));
+                }
                 
                 float step = moveSpeed * Time.deltaTime;
                 transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, step);
                 
-                // Mark position as dirty for sync, but throttle updates
                 if (Time.time - lastSyncTime > SYNC_INTERVAL && photonView.IsMine)
                 {
                     syncedPosition = transform.position;
-                    syncedRotation = transform.rotation;
                     isSyncPositionDirty = true;
                     lastSyncTime = Time.time;
                 }
@@ -234,6 +231,11 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
         
         isMoving = false;
         unit.UpdateState(UnitState.Idle);
+        
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetMoving(false);
+        }
     }
 
     public void StopMovement()
@@ -243,7 +245,7 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     [PunRPC]
-    private void RPCStopMovement()
+    public void RPCStopMovement()
     {
         if (isMoving)
         {
@@ -252,11 +254,15 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
             isMoving = false;
             unit.UpdateState(UnitState.Idle);
             
-            // Final position sync when stopping
+            BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+            if (barbarianAnimator != null)
+            {
+                barbarianAnimator.SetMoving(false);
+            }
+            
             if (photonView.IsMine)
             {
                 syncedPosition = transform.position;
-                syncedRotation = transform.rotation;
                 isSyncPositionDirty = true;
             }
         }
@@ -266,16 +272,13 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
-            // Send basic state always
             stream.SendNext(isMoving);
             stream.SendNext(isEnabled);
             
-            // Only send position when dirty
             stream.SendNext(isSyncPositionDirty);
             if (isSyncPositionDirty)
             {
                 stream.SendNext(syncedPosition);
-                stream.SendNext(syncedRotation);
                 stream.SendNext(currentTargetPosition);
                 isSyncPositionDirty = false;
             }
@@ -289,10 +292,7 @@ public class MovementSystem : MonoBehaviourPunCallbacks, IPunObservable
             if (positionUpdated)
             {
                 syncedPosition = (Vector3)stream.ReceiveNext();
-                syncedRotation = (Quaternion)stream.ReceiveNext();
                 currentTargetPosition = (Vector3)stream.ReceiveNext();
-                
-                // Non-owners will interpolate to this position in Update()
             }
         }
     }
