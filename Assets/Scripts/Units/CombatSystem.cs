@@ -4,9 +4,7 @@ using Photon.Pun;
 
 public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 {
-    // Backing field for lazy initialization
     private BaseUnit _unit;
-    // Property that initializes _unit on first access
     private BaseUnit unit 
     {
         get 
@@ -14,7 +12,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             if (_unit == null) 
             {
                 _unit = GetComponent<BaseUnit>();
-                Debug.Log($"Lazy init: {gameObject.name} unit type = {_unit.GetUnitType()}");
             }
             return _unit;
         }
@@ -43,13 +40,11 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     
     private void Awake()
     {
-        // Note: Not setting _unit directly here, will use lazy-loaded property instead
         if (!TryGetComponent<EnemyTargeting>(out var targeting))
         {
             Debug.LogError($"CombatSystem requires EnemyTargeting component on {gameObject.name}!");
         }
 
-        // Delay validation to Start to ensure unit type is initialized
         Invoke("ValidateReferences", 0.1f);
     }
 
@@ -61,13 +56,8 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             return;
         }
 
-        // Add debug to see what type is being reported
-        Debug.Log($"Unit {gameObject.name} has type: {unit.GetUnitType()}");
-
-        // Properly check the unit type
         UnitType unitType = unit.GetUnitType();
         
-        // Handle each unit type correctly
         if (unitType == UnitType.Archer)
         {
             if (arrowPrefab == null)
@@ -82,10 +72,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         {
             if (meleeAttackEffectPrefab == null)
                 Debug.LogError($"Melee attack effect prefab is missing for {unitType} unit {gameObject.name}!");
-        }
-        else
-        {
-            Debug.LogWarning($"Unknown unit type {unitType} for {gameObject.name}");
         }
     }
 
@@ -103,7 +89,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
 
         nextAttackTime = Time.time + (1f / unit.GetAttackSpeed());
         
-        // Store target view ID before RPC
         int targetViewID = target.photonView.ViewID;
         photonView.RPC("RPCExecuteAttack", RpcTarget.All, targetViewID);
     }
@@ -114,7 +99,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         PhotonView targetView = PhotonView.Find(targetViewID);
         if (targetView == null)
         {
-            Debug.LogError($"Cannot find target with ViewID {targetViewID}");
             return;
         }
 
@@ -124,10 +108,8 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
             return;
         }
 
-        // Use the same approach for determining attack type as in ValidateReferences
         UnitType unitType = unit.GetUnitType();
         
-        // Add your new units to the existing conditionals
         if (unitType == UnitType.Knight || unitType == UnitType.Berserker || 
             unitType == UnitType.Barbarian || unitType == UnitType.PeasantMilitia || unitType == UnitType.Blacksmith)
         {
@@ -152,7 +134,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         BaseUnit target = targetView.GetComponent<BaseUnit>();
         if (target != null && target.GetCurrentState() != UnitState.Dead)
         {
-            // Directly call TakeDamage
             target.TakeDamage(damage);
         }
     }
@@ -163,11 +144,18 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         Vector3 targetPosition = target.transform.position;
         Vector3 attackDirection = (targetPosition - originalPosition).normalized;
 
+        // Update animation direction before performing the attack
+        BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetDirectionFromVector(new Vector2(attackDirection.x, attackDirection.y));
+            barbarianAnimator.SetAttacking(true);
+        }
+
         yield return StartCoroutine(PerformLunge(originalPosition, attackDirection));
 
         if (photonView.IsMine)
         {
-            // For melee effects, use PhotonNetwork.Instantiate
             if (meleeAttackEffectPrefab != null)
             {
                 GameObject meleeEffect = PhotonNetwork.Instantiate(
@@ -184,16 +172,20 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                         effect.SetupEffect(originalPosition, targetPosition);
                     }
                     
-                    // Destroy after delay - need to use PhotonNetwork.Destroy
                     StartCoroutine(DestroyAfterDelay(meleeEffect, 1f));
                 }
             }
             
-            // Apply damage with buffered RPC
             photonView.RPC("RPCApplyDamage", RpcTarget.AllBuffered, target.photonView.ViewID, unit.GetAttackDamage());
         }
 
         yield return StartCoroutine(PerformRecoil(originalPosition, attackDirection));
+        
+        // Turn off attacking animation when done
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetAttacking(false);
+        }
     }
 
     private IEnumerator DestroyAfterDelay(GameObject obj, float delay)
@@ -210,6 +202,16 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         if (target == null || target.GetCurrentState() == UnitState.Dead)
         {
             yield break;
+        }
+
+        // Update animation direction for ranged attack
+        Vector3 targetPos = target.transform.position;
+        Vector3 attackDirection = (targetPos - transform.position).normalized;
+        BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetDirectionFromVector(new Vector2(attackDirection.x, attackDirection.y));
+            barbarianAnimator.SetAttacking(true);
         }
 
         // Apply damage immediately
@@ -240,6 +242,15 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                 }
             }
         }
+        
+        // Wait for animation to finish
+        yield return new WaitForSeconds(attackAnimationDuration);
+        
+        // Turn off attacking animation
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetAttacking(false);
+        }
     }
 
     private IEnumerator PerformMageAttackSequence(BaseUnit target)
@@ -247,6 +258,16 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
         if (target == null || target.GetCurrentState() == UnitState.Dead)
         {
             yield break;
+        }
+        
+        // Update animation direction for mage attack
+        Vector3 targetPos = target.transform.position;
+        Vector3 attackDirection = (targetPos - transform.position).normalized;
+        BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetDirectionFromVector(new Vector2(attackDirection.x, attackDirection.y));
+            barbarianAnimator.SetAttacking(true);
         }
         
         yield return new WaitForSeconds(spellCastDelay);
@@ -272,6 +293,15 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
                     spell.MoveToTarget(target.transform.position, spellSpeed);
                 }
             }
+        }
+        
+        // Wait for animation to finish
+        yield return new WaitForSeconds(attackAnimationDuration);
+        
+        // Turn off attacking animation
+        if (barbarianAnimator != null)
+        {
+            barbarianAnimator.SetAttacking(false);
         }
     }
 
@@ -355,7 +385,6 @@ public class CombatSystem : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (stream.IsWriting)
         {
-            // Just send the attack timer
             stream.SendNext(nextAttackTime);
         }
         else

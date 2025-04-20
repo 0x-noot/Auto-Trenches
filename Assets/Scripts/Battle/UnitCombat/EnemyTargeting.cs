@@ -13,19 +13,16 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
     private Vector3 lastTargetPosition;
     private float attackRange;
     
-    [Header("Targeting Settings")]
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private float targetingRange = 100f;
     [SerializeField] private float updateInterval = 0.1f;
     
-    [Header("Combat Settings")]
     [SerializeField] private float positionVariance = 0.5f;
 
-    // Network optimization
     private float lastTargetUpdateTime = 0f;
-    private const float TARGET_UPDATE_INTERVAL = 0.5f; // Max 2 target changes per second
+    private const float TARGET_UPDATE_INTERVAL = 0.5f;
     private float lastPositionSyncTime = 0f;
-    private const float POSITION_SYNC_INTERVAL = 0.1f; // 10 position updates per second max
+    private const float POSITION_SYNC_INTERVAL = 0.1f;
 
     private void Awake()
     {
@@ -99,14 +96,21 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
 
         if (distanceToTarget <= targetingRange && currentTarget.gameObject.activeInHierarchy)
         {
+            // Update animation direction
+            Vector2 targetDirection = (targetPos - currentPos).normalized;
+            BarbarianAnimator barbarianAnimator = GetComponent<BarbarianAnimator>();
+            if (barbarianAnimator != null)
+            {
+                barbarianAnimator.SetDirectionFromVector(targetDirection);
+            }
+            
             if (distanceToTarget <= unit.GetAttackRange())
             {
                 movementSystem.StopMovement();
                 
-                // Only face if we need to
+                // Store the last target position for efficiency
                 if (Vector3.Distance(targetPos, lastTargetPosition) > 0.5f)
                 {
-                    photonView.RPC("RPCFaceTarget", RpcTarget.All, targetPos);
                     lastTargetPosition = targetPos;
                 }
                 
@@ -141,14 +145,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
-    [PunRPC]
-    private void RPCFaceTarget(Vector3 targetPos)
-    {
-        Vector2 direction = (targetPos - transform.position).normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.AngleAxis(angle - 90f, Vector3.forward);
-    }
-
     private Vector3 CalculateIdealPosition(Vector3 currentPos, Vector3 targetPos)
     {
         Vector3 directionToTarget = (targetPos - currentPos).normalized;
@@ -158,7 +154,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
         float targetDistance = unit.GetAttackRange() * 0.9f;
         Vector3 idealPos = targetPos - (randomizedDirection * targetDistance);
         
-        // Reduce variance to avoid too much random movement
         float variance = positionVariance * 0.5f;
         idealPos += new Vector3(
             Random.Range(-variance, variance),
@@ -173,7 +168,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!isTargeting || !photonView.IsMine) return;
         
-        // Throttle target updates to reduce network traffic
         if (Time.time - lastTargetUpdateTime < TARGET_UPDATE_INTERVAL)
             return;
             
@@ -185,7 +179,7 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
         float bestScore = float.MinValue;
         int bestTargetViewID = -1;
 
-        int maxEnemiesToCheck = Mathf.Min(hits.Length, 5); // Limit the number of enemies to check
+        int maxEnemiesToCheck = Mathf.Min(hits.Length, 5);
         for (int i = 0; i < maxEnemiesToCheck; i++)
         {
             var hit = hits[i];
@@ -199,7 +193,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
             float distance = Vector2.Distance(transform.position, hit.transform.position);
             float score = 100f - distance;
             
-            // Limit friendly checks to reduce physics operations - max 3 checks
             int maxFriendlyChecks = 3;
             Collider2D[] nearbyFriendlies = Physics2D.OverlapCircleAll(hit.transform.position, unit.GetAttackRange(), 1 << gameObject.layer);
             for (int j = 0; j < Mathf.Min(nearbyFriendlies.Length, maxFriendlyChecks); j++)
@@ -217,7 +210,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
 
         if (bestTarget != null)
         {
-            // Use buffered RPC to ensure consistency if connection issues occur
             photonView.RPC("RPCSetTarget", RpcTarget.AllBuffered, bestTargetViewID);
             Vector3 idealPosition = CalculateIdealPosition(transform.position, bestTarget.position);
             movementSystem.MoveTo(idealPosition);
@@ -251,7 +243,7 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     [PunRPC]
-    private void RPCStartTargeting()
+    public void RPCStartTargeting()
     {
         if (!isTargeting)
         {
@@ -269,7 +261,7 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
     }
 
     [PunRPC]
-    private void RPCStopTargeting()
+    public void RPCStopTargeting()
     {
         isTargeting = false;
         SetCurrentTarget(null);
@@ -285,19 +277,16 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
             {
                 UpdateTargeting();
                 
-                // Dynamic update interval based on distance to target and combat state
                 if (currentTarget != null)
                 {
                     float distance = Vector3.Distance(transform.position, currentTarget.position);
                     
-                    // Update more frequently when closer to target or in combat
                     if (unit.GetCurrentState() == UnitState.Attacking)
                     {
-                        waitTime = 0.05f; // Fast updates when attacking
+                        waitTime = 0.05f;
                     }
                     else
                     {
-                        // Distant targets need less frequent updates
                         waitTime = Mathf.Lerp(0.2f, 0.05f, Mathf.Clamp01(1f - (distance / targetingRange)));
                     }
                 }
@@ -321,7 +310,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
         {
             stream.SendNext(isTargeting);
             
-            // Only send ViewID rather than full transform
             int targetViewID = -1;
             if (currentTarget != null)
             {
@@ -336,7 +324,6 @@ public class EnemyTargeting : MonoBehaviourPunCallbacks, IPunObservable
             isTargeting = (bool)stream.ReceiveNext();
             int targetViewID = (int)stream.ReceiveNext();
             
-            // Only update target if it changed
             int currentTargetID = currentTarget?.GetComponent<PhotonView>()?.ViewID ?? -1;
             if (targetViewID != currentTargetID)
             {
