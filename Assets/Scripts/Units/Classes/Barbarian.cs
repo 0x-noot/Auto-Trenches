@@ -10,22 +10,24 @@ public class Barbarian : BaseUnit
 
     [Header("Primal Strike Ability Settings")]
     [SerializeField] private float stunDuration = 2.0f;
-    [SerializeField] private float damageBonus = 0.5f; // 50% damage bonus
+    [SerializeField] private float damageBonus = 0.5f;
     [SerializeField] private GameObject stunEffectPrefab;
     
     [Header("Visual Effects")]
     [SerializeField] private ParticleSystem strikeParticles;
-    [SerializeField] private Color primalStrikeColor = new Color(1f, 0.4f, 0.0f, 1f); // Orange-red color
-    [SerializeField] private int particlesSortingOrder = 10; // Added sorting order
+    [SerializeField] private Color primalStrikeColor = new Color(1f, 0.4f, 0.0f, 1f);
+    [SerializeField] private int particlesSortingOrder = 10;
     
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
     private BaseUnit currentStunnedTarget;
     private bool abilityStarted = false;
+    
+    private BarbarianAnimator barbarianAnimator;
+    private Vector3 lastPosition;
 
     protected override void Awake()
     {
-        // Set unit-specific properties BEFORE calling base.Awake()
         unitType = UnitType.Barbarian;
         orderType = OrderType.Wild;
         baseHealth = 850f;
@@ -35,10 +37,8 @@ public class Barbarian : BaseUnit
         attackRange = 3.5f;
         abilityChance = 0.08f;
         
-        // Now call base.Awake after setting type and order
         base.Awake();
         
-        // Set current stats equal to base stats initially
         maxHealth = baseHealth;
         attackDamage = baseDamage;
         attackSpeed = baseAttackSpeed;
@@ -56,7 +56,6 @@ public class Barbarian : BaseUnit
             strikeParticles = GetComponent<ParticleSystem>();
         }
         
-        // Set particle system sorting order
         if (strikeParticles != null)
         {
             var renderer = strikeParticles.GetComponent<Renderer>();
@@ -66,7 +65,68 @@ public class Barbarian : BaseUnit
             }
         }
         
-        Debug.Log($"Barbarian unit initialized with type: {unitType}, order: {orderType}");
+        barbarianAnimator = GetComponent<BarbarianAnimator>();
+        if (barbarianAnimator == null)
+        {
+            barbarianAnimator = gameObject.AddComponent<BarbarianAnimator>();
+        }
+        
+        lastPosition = transform.position;
+    }
+
+    protected override void Update()
+    {
+        base.Update();
+        
+        if (photonView.IsMine)
+        {
+            UpdateAnimations();
+            lastPosition = transform.position;
+        }
+    }
+    
+    private void UpdateAnimations()
+    {
+        switch (currentState)
+        {
+            case UnitState.Moving:
+                barbarianAnimator.SetMoving(true);
+                barbarianAnimator.SetAttacking(false);
+                
+                Vector3 moveDir = transform.position - lastPosition;
+                if (moveDir.magnitude > 0.01f)
+                {
+                    barbarianAnimator.SetDirectionFromVector(new Vector2(moveDir.x, moveDir.y));
+                }
+                break;
+                
+            case UnitState.Attacking:
+                barbarianAnimator.SetMoving(false);
+                barbarianAnimator.SetAttacking(true);
+                
+                EnemyTargeting targeting = GetComponent<EnemyTargeting>();
+                if (targeting != null)
+                {
+                    Transform targetTransform = targeting.GetCurrentTarget();
+                    if (targetTransform != null)
+                    {
+                        Vector3 targetDir = targetTransform.position - transform.position;
+                        barbarianAnimator.SetDirectionFromVector(new Vector2(targetDir.x, targetDir.y));
+                    }
+                }
+                break;
+                
+            case UnitState.Idle:
+                barbarianAnimator.SetMoving(false);
+                barbarianAnimator.SetAttacking(false);
+                break;
+                
+            case UnitState.Dead:
+                barbarianAnimator.SetMoving(false);
+                barbarianAnimator.SetAttacking(false);
+                barbarianAnimator.SetDirection(1);
+                break;
+        }
     }
 
     protected override void HandleGameStateChanged(GameState newState)
@@ -76,15 +136,10 @@ public class Barbarian : BaseUnit
         if (newState == GameState.BattleEnd || newState == GameState.PlayerAPlacement || 
             newState == GameState.GameOver)
         {
-            // Immediately cleanup any active abilities and effects
             if (isAbilityActive)
             {
-                Debug.Log("Game state changed - cleaning up stun effects");
                 StopAllCoroutines();
-                
-                // Clean up effects
                 CleanupAllEffects();
-                
                 isAbilityActive = false;
             }
         }
@@ -92,7 +147,6 @@ public class Barbarian : BaseUnit
 
     private void CleanupAllEffects()
     {
-        // Clean up stun effects created by this client
         if (photonView.IsMine)
         {
             try {
@@ -101,27 +155,20 @@ public class Barbarian : BaseUnit
                 foreach (GameObject effect in stunEffects)
                 {
                     PhotonView view = effect.GetComponent<PhotonView>();
-                    // Only destroy effects we own
                     if (view != null && view.IsMine)
                     {
                         PhotonNetwork.Destroy(view);
-                        Debug.Log($"Cleaned up owned stun effect: {effect.name}");
                     }
                 }
             }
-            catch (UnityException ex)
-            {
-                Debug.LogWarning($"StunEffect tag issue: {ex.Message}");
-            }
+            catch (UnityException ex) { }
         }
         
-        // Release any stunned target
         if (currentStunnedTarget != null && photonView.IsMine)
         {
             ReleaseStunnedTarget();
         }
         
-        // Reset state
         abilityStarted = false;
     }
 
@@ -142,13 +189,11 @@ public class Barbarian : BaseUnit
     {
         float damage = attackDamage;
         
-        // Check for critical strike
         if (Random.value < currentCriticalStrikeChance)
         {
             damage *= 1.5f;
         }
         
-        // Check if this is a Primal Strike hit
         if (isAbilityActive && currentStunnedTarget != null)
         {
             damage *= (1 + damageBonus);
@@ -161,11 +206,8 @@ public class Barbarian : BaseUnit
     {
         if (!photonView.IsMine) return;
         
-        Debug.Log($"Barbarian TryActivateAbility called. Current chance: {abilityChance}, isActive: {isAbilityActive}");
-        
         if (!isAbilityActive && UnityEngine.Random.value < abilityChance)
         {
-            Debug.Log("Activating Primal Strike ability!");
             photonView.RPC("RPCActivateAbility", RpcTarget.All);
         }
     }
@@ -174,12 +216,9 @@ public class Barbarian : BaseUnit
     protected override void RPCActivateAbility()
     {
         base.RPCActivateAbility();
-        Debug.Log("Barbarian RPCActivateAbility called");
         
-        // Immediately start the ability process (don't just set a flag)
         abilityStarted = true;
         
-        // Find the current target to stun right away
         if (photonView.IsMine)
         {
             EnemyTargeting targeting = GetComponent<EnemyTargeting>();
@@ -191,34 +230,21 @@ public class Barbarian : BaseUnit
                     BaseUnit targetUnit = targetTransform.GetComponent<BaseUnit>();
                     if (targetUnit != null && targetUnit.GetCurrentState() != UnitState.Dead)
                     {
-                        Debug.Log($"Found target to stun: {targetUnit.GetUnitType()}");
                         photonView.RPC("RPCStunTarget", RpcTarget.All, targetUnit.photonView.ViewID);
                     }
-                    else
-                    {
-                        Debug.LogWarning("Target unit is null or dead");
-                    }
                 }
-                else
-                {
-                    Debug.LogWarning("No target transform found");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("No targeting component found");
             }
         }
     }
 
     protected override void PerformAbilityActivation()
     {
-        Debug.Log("Barbarian PerformAbilityActivation called");
         if (!abilityStarted)
         {
             abilityStarted = true;
             
-            // Find the current target to stun
+            barbarianAnimator.SetAttacking(true);
+            
             if (photonView.IsMine)
             {
                 EnemyTargeting targeting = GetComponent<EnemyTargeting>();
@@ -230,7 +256,6 @@ public class Barbarian : BaseUnit
                         BaseUnit targetUnit = targetTransform.GetComponent<BaseUnit>();
                         if (targetUnit != null && targetUnit.GetCurrentState() != UnitState.Dead)
                         {
-                            Debug.Log($"Found target to stun: {targetUnit.GetUnitType()}");
                             photonView.RPC("RPCStunTarget", RpcTarget.All, targetUnit.photonView.ViewID);
                         }
                     }
@@ -248,21 +273,15 @@ public class Barbarian : BaseUnit
         BaseUnit target = targetView.GetComponent<BaseUnit>();
         if (target == null || target.GetCurrentState() == UnitState.Dead) return;
         
-        Debug.Log($"Stunning target: {target.GetUnitType()}");
-        
-        // Store the target
         currentStunnedTarget = target;
         
-        // Visual feedback
         if (spriteRenderer != null)
         {
             spriteRenderer.color = primalStrikeColor;
         }
         
-        // Play particles if any
         if (strikeParticles != null)
         {
-            // Ensure visible sorting order
             var renderer = strikeParticles.GetComponent<Renderer>();
             if (renderer != null)
             {
@@ -270,38 +289,29 @@ public class Barbarian : BaseUnit
             }
             
             strikeParticles.Play();
-            Debug.Log("Playing strike particles");
         }
         
-        // Stun the target
         StunUnit(target);
         
-        // Create stun effect
         if (stunEffectPrefab != null && photonView.IsMine)
         {
-            Debug.Log($"Creating stun effect at {target.transform.position}");
             GameObject stunEffect = PhotonNetwork.Instantiate(
                 stunEffectPrefab.name,
                 target.transform.position + Vector3.up * 0.5f,
                 Quaternion.identity
             );
             
-            
-            // Set sorting layer for the stun effect
             var stunRenderers = stunEffect.GetComponentsInChildren<Renderer>();
             foreach (var renderer in stunRenderers)
             {
                 renderer.sortingOrder = particlesSortingOrder;
             }
             
-            // Parent to the target
             stunEffect.transform.SetParent(target.transform);
             
-            // Auto-destroy
             StartCoroutine(DestroyAfterDelay(stunEffect, stunDuration + 0.2f));
         }
         
-        // Start timer to release the target
         if (photonView.IsMine)
         {
             StartCoroutine(ReleaseTargetAfterDelay(stunDuration));
@@ -310,45 +320,33 @@ public class Barbarian : BaseUnit
 
     private void StunUnit(BaseUnit unit)
     {
-        // Store the view ID for debugging
         int viewID = unit.photonView.ViewID;
-        Debug.Log($"Stunning unit with ViewID {viewID}");
         
-        // Disable ALL components that control unit actions
         MovementSystem movement = unit.GetComponent<MovementSystem>();
         if (movement != null)
         {
-            // Call RPC to ensure movement stops network-wide
             movement.photonView.RPC("RPCStopMovement", RpcTarget.All);
             movement.enabled = false;
-            Debug.Log($"Disabled MovementSystem on unit {viewID}");
         }
         
         EnemyTargeting targeting = unit.GetComponent<EnemyTargeting>();
         if (targeting != null)
         {
-            // Call RPC to ensure targeting stops network-wide
             targeting.photonView.RPC("RPCStopTargeting", RpcTarget.All);
             targeting.enabled = false;
-            Debug.Log($"Disabled EnemyTargeting on unit {viewID}");
         }
         
-        // Disable combat system to prevent attacks - critical!
         CombatSystem combat = unit.GetComponent<CombatSystem>();
         if (combat != null)
         {
             combat.enabled = false;
-            Debug.Log($"Disabled CombatSystem on unit {viewID}");
         }
         
-        // Use the unit's RPC to update state to ensure network synchronization
         unit.photonView.RPC("RPCUpdateState", RpcTarget.All, (int)UnitState.Idle);
         
-        // Add visual indicator for stunned state
         SpriteRenderer renderer = unit.GetComponent<SpriteRenderer>();
         if (renderer != null)
         {
-            // Add a slight blue tint to indicate stun
             renderer.color = new Color(0.7f, 0.7f, 1.0f);
         }
     }
@@ -358,14 +356,11 @@ public class Barbarian : BaseUnit
         if (unit == null) return;
         
         int viewID = unit.photonView.ViewID;
-        Debug.Log($"Unstunning unit with ViewID {viewID}");
         
-        // Re-enable all components
         MovementSystem movement = unit.GetComponent<MovementSystem>();
         if (movement != null)
         {
             movement.enabled = true;
-            Debug.Log($"Re-enabled MovementSystem on unit {viewID}");
         }
         
         EnemyTargeting targeting = unit.GetComponent<EnemyTargeting>();
@@ -373,24 +368,20 @@ public class Barbarian : BaseUnit
         {
             targeting.enabled = true;
             targeting.photonView.RPC("RPCStartTargeting", RpcTarget.All);
-            Debug.Log($"Re-enabled EnemyTargeting on unit {viewID}");
         }
         
         CombatSystem combat = unit.GetComponent<CombatSystem>();
         if (combat != null)
         {
             combat.enabled = true;
-            Debug.Log($"Re-enabled CombatSystem on unit {viewID}");
         }
         
-        // Reset sprite color
         SpriteRenderer renderer = unit.GetComponent<SpriteRenderer>();
         if (renderer != null)
         {
             renderer.color = Color.white;
         }
         
-        // Update unit state to reset its behavior
         unit.photonView.RPC("RPCUpdateState", RpcTarget.All, (int)UnitState.Idle);
     }
 
@@ -415,22 +406,17 @@ public class Barbarian : BaseUnit
     [PunRPC]
     private void RPCReleaseTarget()
     {
-        Debug.Log("Releasing stunned target");
-        
-        // Unstun the target
         if (currentStunnedTarget != null)
         {
             UnstunUnit(currentStunnedTarget);
             currentStunnedTarget = null;
         }
         
-        // Reset visual feedback
         if (spriteRenderer != null)
         {
             spriteRenderer.color = originalColor;
         }
         
-        // Stop particles if any
         if (strikeParticles != null)
         {
             strikeParticles.Stop();
@@ -467,5 +453,29 @@ public class Barbarian : BaseUnit
     public float GetAbilityCooldownRemaining()
     {
         return Mathf.Max(0, nextAbilityTime - Time.time);
+    }
+    
+    public override void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        base.OnPhotonSerializeView(stream, info);
+        
+        if (stream.IsWriting)
+        {
+            int currentDirection = 0;
+            if (barbarianAnimator != null && barbarianAnimator.GetComponent<Animator>() != null)
+            {
+                currentDirection = barbarianAnimator.GetComponent<Animator>().GetInteger("direction");
+            }
+            stream.SendNext(currentDirection);
+        }
+        else
+        {
+            int receivedDirection = (int)stream.ReceiveNext();
+            
+            if (!photonView.IsMine && barbarianAnimator != null)
+            {
+                barbarianAnimator.SetDirection(receivedDirection);
+            }
+        }
     }
 }

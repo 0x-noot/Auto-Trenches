@@ -700,7 +700,7 @@ public abstract class BaseUnit : MonoBehaviourPunCallbacks, IPunObservable
         return currentHealth < (maxHealth * 0.5f);
     }
 
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    public virtual void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         if (stream.IsWriting)
         {

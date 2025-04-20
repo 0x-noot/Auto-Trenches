@@ -1,0 +1,754 @@
+fileFormatVersion: 2
+guid: 2285e550b3c114c33a13c1379e966289
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2637196450385920214
+    second: Barb WALK-3x_0
+  - first:
+      213: 1370593529668397088
+    second: Barb WALK-3x_1
+  - first:
+      213: -7868021300104705019
+    second: Barb WALK-3x_2
+  - first:
+      213: -3574522444456411750
+    second: Barb WALK-3x_3
+  - first:
+      213: -7145411091875921608
+    second: Barb WALK-3x_4
+  - first:
+      213: -6605247260664913929
+    second: Barb WALK-3x_5
+  - first:
+      213: 1586323935885655937
+    second: Barb WALK-3x_6
+  - first:
+      213: -237781879757168714
+    second: Barb WALK-3x_7
+  - first:
+      213: 2862111143706657381
+    second: Barb WALK-3x_8
+  - first:
+      213: 8852612826707727072
+    second: Barb WALK-3x_9
+  - first:
+      213: 3559512157196816128
+    second: Barb WALK-3x_10
+  - first:
+      213: -5420851385550624727
+    second: Barb WALK-3x_11
+  - first:
+      213: -6012112079036482779
+    second: Barb WALK-3x_12
+  - first:
+      213: 7206884484612729861
+    second: Barb WALK-3x_13
+  - first:
+      213: 1388971952547021170
+    second: Barb WALK-3x_14
+  - first:
+      213: -8457932068235051969
+    second: Barb WALK-3x_15
+  - first:
+      213: -6039636040189633225
+    second: Barb WALK-3x_16
+  - first:
+      213: 3944841568502514348
+    second: Barb WALK-3x_17
+  - first:
+      213: 1699277873112557912
+    second: Barb WALK-3x_18
+  - first:
+      213: 6124108397972164999
+    second: Barb WALK-3x_19
+  - first:
+      213: -1574141451463256155
+    second: Barb WALK-3x_20
+  - first:
+      213: -3307028213485451035
+    second: Barb WALK-3x_21
+  - first:
+      213: 656391013516638309
+    second: Barb WALK-3x_22
+  - first:
+      213: -5487988922544481785
+    second: Barb WALK-3x_23
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Barb WALK-3x_0
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 744
+        width: 90
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e0582530c45854603961ae9d080c1619
+      internalID: 2063085485
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_1
+      rect:
+        serializedVersion: 2
+        x: 189
+        y: 756
+        width: 66
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aab3100b51a7b46eea81a1494bbf4aeb
+      internalID: -762317803
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_2
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 744
+        width: 54
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6c9b8db099b654e3692aba43063be0ae
+      internalID: -831348871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_3
+      rect:
+        serializedVersion: 2
+        x: 459
+        y: 738
+        width: 78
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 221c8f55c588d4430b5b74ae981ec676
+      internalID: 65325839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_4
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 597
+        width: 78
+        height: 105
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 10ff64c29d51b4b7188dfc7fc83fbc7e
+      internalID: -514683123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_5
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 612
+        width: 54
+        height: 90
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f4e09246d80bc4667939c462fea8ae55
+      internalID: 1217924034
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_6
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 600
+        width: 51
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 72e7f3917f4b041349aa41b8486f097f
+      internalID: -614072980
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_7
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 600
+        width: 78
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 30c246a2437e342ff8900c3cc5d13d87
+      internalID: -1260701628
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_8
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 465
+        width: 84
+        height: 99
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1e2ed046a666541b888472e3351f3cf5
+      internalID: 541936996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_9
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 468
+        width: 54
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 90eb93b3f5ed944f9acc18fe9bd0d37a
+      internalID: 1881878710
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_10
+      rect:
+        serializedVersion: 2
+        x: 300
+        y: 453
+        width: 54
+        height: 111
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 12fdd080407da4423986034f258f9f4d
+      internalID: 972838172
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_11
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 456
+        width: 78
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d0f6a74c7a2ee4369976fcbb38c5e638
+      internalID: -52851232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_12
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 324
+        width: 81
+        height: 111
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 78b0cd8a11ba148b4bb9729a1da4cfde
+      internalID: 1664811567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_13
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 324
+        width: 63
+        height: 111
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2464a6b9246244479b938790f006b440
+      internalID: 1450845698
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_14
+      rect:
+        serializedVersion: 2
+        x: 306
+        y: 324
+        width: 48
+        height: 120
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e6d8480b1ce644d6f9bce8fbffd6b412
+      internalID: -64873957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_15
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 327
+        width: 78
+        height: 117
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a69f7b3a9a2a843f29e423c29ee0828e
+      internalID: -149273136
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_16
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 177
+        width: 78
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b966194478ad24e5985ea3b8c9708e17
+      internalID: -1729843807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_17
+      rect:
+        serializedVersion: 2
+        x: 150
+        y: 180
+        width: 105
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 82d5276bc1ede4a7aa064b86e34ef232
+      internalID: 252098024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_18
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 180
+        width: 93
+        height: 108
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aded125b4699b42d3ababd58f70363c1
+      internalID: 1760454726
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_19
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 180
+        width: 72
+        height: 126
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cfc1077a4a77749819529a4633056d2e
+      internalID: 490716086
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_20
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 21
+        width: 75
+        height: 108
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ab1ec3a70b0704a0896fb5b518dfa94a
+      internalID: 1954922715
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_21
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 36
+        width: 84
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 76e6c7545b5674005bd6e2bf9bbe28ed
+      internalID: -1723119842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_22
+      rect:
+        serializedVersion: 2
+        x: 312
+        y: 33
+        width: 75
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b17d49640cc1343408179dcd5f17b173
+      internalID: -1691563774
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Barb WALK-3x_23
+      rect:
+        serializedVersion: 2
+        x: 462
+        y: 36
+        width: 81
+        height: 90
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: df0b4cac454084dfaacd6e27f5b9d191
+      internalID: 791268472
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 39e91d62af8394fc3ad65de14e4482ff
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Barb WALK-3x_0: 2063085485
+      Barb WALK-3x_1: -762317803
+      Barb WALK-3x_10: 972838172
+      Barb WALK-3x_11: -52851232
+      Barb WALK-3x_12: 1664811567
+      Barb WALK-3x_13: 1450845698
+      Barb WALK-3x_14: -64873957
+      Barb WALK-3x_15: -149273136
+      Barb WALK-3x_16: -1729843807
+      Barb WALK-3x_17: 252098024
+      Barb WALK-3x_18: 1760454726
+      Barb WALK-3x_19: 490716086
+      Barb WALK-3x_2: -831348871
+      Barb WALK-3x_20: 1954922715
+      Barb WALK-3x_21: -1723119842
+      Barb WALK-3x_22: -1691563774
+      Barb WALK-3x_23: 791268472
+      Barb WALK-3x_3: 65325839
+      Barb WALK-3x_4: -514683123
+      Barb WALK-3x_5: 1217924034
+      Barb WALK-3x_6: -614072980
+      Barb WALK-3x_7: -1260701628
+      Barb WALK-3x_8: 541936996
+      Barb WALK-3x_9: 1881878710
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
