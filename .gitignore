@@ -2,6 +2,9 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
+# macOS
+.DS_Store
+
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -61,8 +64,6 @@ sysinfo.txt
 *.unitypackage
 *.app
 
-# macOS
-.DS_Store
 
 # Crashlytics generated file
 crashlytics-build.properties
