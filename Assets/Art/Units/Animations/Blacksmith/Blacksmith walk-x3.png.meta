@@ -111,7 +111,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 60
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -176,10 +176,10 @@ TextureImporter:
       name: Blacksmith walk-x3_0
       rect:
         serializedVersion: 2
-        x: 17
-        y: 755
-        width: 74
-        height: 92
+        x: 18
+        y: 756
+        width: 72
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -198,10 +198,10 @@ TextureImporter:
       name: Blacksmith walk-x3_1
       rect:
         serializedVersion: 2
-        x: 194
-        y: 755
-        width: 62
-        height: 92
+        x: 195
+        y: 756
+        width: 60
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -220,10 +220,10 @@ TextureImporter:
       name: Blacksmith walk-x3_2
       rect:
         serializedVersion: 2
-        x: 332
-        y: 752
-        width: 50
-        height: 95
+        x: 333
+        y: 753
+        width: 48
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -242,10 +242,10 @@ TextureImporter:
       name: Blacksmith walk-x3_3
       rect:
         serializedVersion: 2
-        x: 470
-        y: 755
-        width: 80
-        height: 92
+        x: 471
+        y: 756
+        width: 78
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -264,10 +264,10 @@ TextureImporter:
       name: Blacksmith walk-x3_4
       rect:
         serializedVersion: 2
-        x: 17
-        y: 611
-        width: 68
-        height: 89
+        x: 18
+        y: 612
+        width: 66
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -286,10 +286,10 @@ TextureImporter:
       name: Blacksmith walk-x3_5
       rect:
         serializedVersion: 2
-        x: 197
-        y: 611
-        width: 56
-        height: 89
+        x: 198
+        y: 612
+        width: 54
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -308,10 +308,10 @@ TextureImporter:
       name: Blacksmith walk-x3_6
       rect:
         serializedVersion: 2
-        x: 335
-        y: 611
-        width: 53
-        height: 89
+        x: 336
+        y: 612
+        width: 51
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -330,10 +330,10 @@ TextureImporter:
       name: Blacksmith walk-x3_7
       rect:
         serializedVersion: 2
-        x: 479
-        y: 611
-        width: 74
-        height: 89
+        x: 480
+        y: 612
+        width: 72
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -352,10 +352,10 @@ TextureImporter:
       name: Blacksmith walk-x3_8
       rect:
         serializedVersion: 2
-        x: 20
-        y: 458
-        width: 71
-        height: 104
+        x: 21
+        y: 459
+        width: 69
+        height: 102
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -374,10 +374,10 @@ TextureImporter:
       name: Blacksmith walk-x3_9
       rect:
         serializedVersion: 2
-        x: 197
-        y: 467
-        width: 56
-        height: 95
+        x: 198
+        y: 468
+        width: 54
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -396,10 +396,10 @@ TextureImporter:
       name: Blacksmith walk-x3_10
       rect:
         serializedVersion: 2
-        x: 341
-        y: 467
-        width: 59
-        height: 95
+        x: 342
+        y: 468
+        width: 57
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -418,10 +418,10 @@ TextureImporter:
       name: Blacksmith walk-x3_11
       rect:
         serializedVersion: 2
-        x: 476
-        y: 467
-        width: 80
-        height: 95
+        x: 477
+        y: 468
+        width: 78
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -440,10 +440,10 @@ TextureImporter:
       name: Blacksmith walk-x3_12
       rect:
         serializedVersion: 2
-        x: 11
-        y: 323
-        width: 74
-        height: 89
+        x: 12
+        y: 324
+        width: 72
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -462,10 +462,10 @@ TextureImporter:
       name: Blacksmith walk-x3_13
       rect:
         serializedVersion: 2
-        x: 212
-        y: 323
-        width: 53
-        height: 95
+        x: 213
+        y: 324
+        width: 51
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -484,10 +484,10 @@ TextureImporter:
       name: Blacksmith walk-x3_14
       rect:
         serializedVersion: 2
-        x: 329
-        y: 323
-        width: 53
-        height: 95
+        x: 330
+        y: 324
+        width: 51
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -506,10 +506,10 @@ TextureImporter:
       name: Blacksmith walk-x3_15
       rect:
         serializedVersion: 2
-        x: 470
-        y: 323
-        width: 83
-        height: 95
+        x: 471
+        y: 324
+        width: 81
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -528,10 +528,10 @@ TextureImporter:
       name: Blacksmith walk-x3_16
       rect:
         serializedVersion: 2
-        x: 20
-        y: 164
-        width: 65
-        height: 104
+        x: 21
+        y: 165
+        width: 63
+        height: 102
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -550,10 +550,10 @@ TextureImporter:
       name: Blacksmith walk-x3_17
       rect:
         serializedVersion: 2
-        x: 197
-        y: 179
-        width: 50
-        height: 98
+        x: 198
+        y: 180
+        width: 48
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -572,10 +572,10 @@ TextureImporter:
       name: Blacksmith walk-x3_18
       rect:
         serializedVersion: 2
-        x: 350
-        y: 179
-        width: 50
-        height: 98
+        x: 351
+        y: 180
+        width: 48
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -594,10 +594,10 @@ TextureImporter:
       name: Blacksmith walk-x3_19
       rect:
         serializedVersion: 2
-        x: 470
-        y: 179
-        width: 71
-        height: 98
+        x: 471
+        y: 180
+        width: 69
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -616,10 +616,10 @@ TextureImporter:
       name: Blacksmith walk-x3_20
       rect:
         serializedVersion: 2
-        x: 8
-        y: 29
-        width: 89
-        height: 89
+        x: 9
+        y: 30
+        width: 87
+        height: 87
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -638,7 +638,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5dd4fe5e5e49c44999e3d08245bc2224
     internalID: 0
     vertices: []
     indices: 
@@ -647,7 +647,28 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Blacksmith walk-x3_0: -6132384197170367822
+      Blacksmith walk-x3_1: 2458370380093953581
+      Blacksmith walk-x3_10: -1967530697868688574
+      Blacksmith walk-x3_11: -8512804437999484765
+      Blacksmith walk-x3_12: 2719449100566093507
+      Blacksmith walk-x3_13: -692562844374013324
+      Blacksmith walk-x3_14: -5616168844480240019
+      Blacksmith walk-x3_15: -8845815001745036196
+      Blacksmith walk-x3_16: -7878406138046721165
+      Blacksmith walk-x3_17: 3366286284546124707
+      Blacksmith walk-x3_18: 7197694207300915729
+      Blacksmith walk-x3_19: -7544455090115769006
+      Blacksmith walk-x3_2: 827074252040126166
+      Blacksmith walk-x3_20: 4503990146299327502
+      Blacksmith walk-x3_3: -8399443503700900919
+      Blacksmith walk-x3_4: -5426986659431895498
+      Blacksmith walk-x3_5: -8295269509387261505
+      Blacksmith walk-x3_6: 3218714893591638719
+      Blacksmith walk-x3_7: 1121103787757794401
+      Blacksmith walk-x3_8: 466998915010105160
+      Blacksmith walk-x3_9: -6980962445112460784
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -108,7 +108,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 60
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -173,10 +173,10 @@ TextureImporter:
       name: Knight WALK-x3_0
       rect:
         serializedVersion: 2
-        x: 17
-        y: 752
-        width: 83
-        height: 98
+        x: 18
+        y: 753
+        width: 81
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -195,10 +195,10 @@ TextureImporter:
       name: Knight WALK-x3_1
       rect:
         serializedVersion: 2
-        x: 218
-        y: 755
-        width: 77
-        height: 95
+        x: 219
+        y: 756
+        width: 75
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -217,10 +217,10 @@ TextureImporter:
       name: Knight WALK-x3_2
       rect:
         serializedVersion: 2
-        x: 341
-        y: 755
-        width: 62
-        height: 95
+        x: 342
+        y: 756
+        width: 60
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -239,10 +239,10 @@ TextureImporter:
       name: Knight WALK-x3_3
       rect:
         serializedVersion: 2
-        x: 440
-        y: 758
-        width: 83
-        height: 92
+        x: 441
+        y: 759
+        width: 81
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -261,10 +261,10 @@ TextureImporter:
       name: Knight WALK-x3_4
       rect:
         serializedVersion: 2
-        x: 8
-        y: 611
-        width: 86
-        height: 92
+        x: 9
+        y: 612
+        width: 84
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -283,10 +283,10 @@ TextureImporter:
       name: Knight WALK-x3_5
       rect:
         serializedVersion: 2
-        x: 218
-        y: 611
-        width: 71
-        height: 92
+        x: 219
+        y: 612
+        width: 69
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -305,10 +305,10 @@ TextureImporter:
       name: Knight WALK-x3_6
       rect:
         serializedVersion: 2
-        x: 350
-        y: 611
-        width: 68
-        height: 92
+        x: 351
+        y: 612
+        width: 66
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -327,10 +327,10 @@ TextureImporter:
       name: Knight WALK-x3_7
       rect:
         serializedVersion: 2
-        x: 440
-        y: 611
-        width: 92
-        height: 92
+        x: 441
+        y: 612
+        width: 90
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -349,10 +349,10 @@ TextureImporter:
       name: Knight WALK-x3_8
       rect:
         serializedVersion: 2
-        x: 17
-        y: 467
-        width: 89
-        height: 95
+        x: 18
+        y: 468
+        width: 87
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -371,10 +371,10 @@ TextureImporter:
       name: Knight WALK-x3_9
       rect:
         serializedVersion: 2
-        x: 221
-        y: 467
-        width: 74
-        height: 98
+        x: 222
+        y: 468
+        width: 72
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -393,10 +393,10 @@ TextureImporter:
       name: Knight WALK-x3_10
       rect:
         serializedVersion: 2
-        x: 335
-        y: 467
-        width: 68
-        height: 98
+        x: 336
+        y: 468
+        width: 66
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -415,10 +415,10 @@ TextureImporter:
       name: Knight WALK-x3_11
       rect:
         serializedVersion: 2
-        x: 440
-        y: 467
-        width: 92
-        height: 92
+        x: 441
+        y: 468
+        width: 90
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -437,10 +437,10 @@ TextureImporter:
       name: Knight WALK-x3_12
       rect:
         serializedVersion: 2
-        x: 20
-        y: 275
-        width: 101
-        height: 134
+        x: 21
+        y: 276
+        width: 99
+        height: 132
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -459,10 +459,10 @@ TextureImporter:
       name: Knight WALK-x3_13
       rect:
         serializedVersion: 2
-        x: 194
-        y: 275
-        width: 68
-        height: 131
+        x: 195
+        y: 276
+        width: 66
+        height: 129
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -481,10 +481,10 @@ TextureImporter:
       name: Knight WALK-x3_14
       rect:
         serializedVersion: 2
-        x: 338
-        y: 275
-        width: 56
-        height: 131
+        x: 339
+        y: 276
+        width: 54
+        height: 129
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -503,10 +503,10 @@ TextureImporter:
       name: Knight WALK-x3_15
       rect:
         serializedVersion: 2
-        x: 443
-        y: 275
-        width: 101
-        height: 137
+        x: 444
+        y: 276
+        width: 99
+        height: 135
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -525,10 +525,10 @@ TextureImporter:
       name: Knight WALK-x3_16
       rect:
         serializedVersion: 2
-        x: 17
-        y: 125
-        width: 86
-        height: 116
+        x: 18
+        y: 126
+        width: 84
+        height: 114
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -547,10 +547,10 @@ TextureImporter:
       name: Knight WALK-x3_17
       rect:
         serializedVersion: 2
-        x: 185
-        y: 149
-        width: 77
-        height: 101
+        x: 186
+        y: 150
+        width: 75
+        height: 99
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -569,10 +569,10 @@ TextureImporter:
       name: Knight WALK-x3_18
       rect:
         serializedVersion: 2
-        x: 299
-        y: 155
-        width: 92
-        height: 95
+        x: 300
+        y: 156
+        width: 90
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -591,10 +591,10 @@ TextureImporter:
       name: Knight WALK-x3_19
       rect:
         serializedVersion: 2
-        x: 455
-        y: 137
-        width: 92
-        height: 95
+        x: 456
+        y: 138
+        width: 90
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -613,7 +613,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: dcaae9f2054aa4d4ea6a3dee10eb4aeb
     internalID: 0
     vertices: []
     indices: 
@@ -622,7 +622,27 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Knight WALK-x3_0: 7654746978722075639
+      Knight WALK-x3_1: -7675891141196291900
+      Knight WALK-x3_10: -6772761857237060939
+      Knight WALK-x3_11: -6968052574794997846
+      Knight WALK-x3_12: 8447231174252760979
+      Knight WALK-x3_13: -5754599267277636789
+      Knight WALK-x3_14: 3492075980147967418
+      Knight WALK-x3_15: -7657183537551427640
+      Knight WALK-x3_16: 6803363745352962228
+      Knight WALK-x3_17: -5584455486914365604
+      Knight WALK-x3_18: -2584917096683380274
+      Knight WALK-x3_19: -8925725436973584733
+      Knight WALK-x3_2: -2542144762696869593
+      Knight WALK-x3_3: 573811253842936359
+      Knight WALK-x3_4: 3689433920366325919
+      Knight WALK-x3_5: 644521294936922906
+      Knight WALK-x3_6: -8259720470324138389
+      Knight WALK-x3_7: 8092707191587771443
+      Knight WALK-x3_8: -2064794953609221619
+      Knight WALK-x3_9: -7308804918581503322
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

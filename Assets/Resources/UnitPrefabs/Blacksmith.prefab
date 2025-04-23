@@ -20,7 +20,9 @@ GameObject:
   - component: {fileID: 5807633682860703699}
   - component: {fileID: 2626831268089857765}
   - component: {fileID: 899896827671222470}
+  - component: {fileID: 4432001157114570358}
   - component: {fileID: 4916993750781084744}
+  - component: {fileID: 1531628950459427676}
   m_Layer: 0
   m_Name: Blacksmith
   m_TagString: Untagged
@@ -88,8 +90,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 15
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
+  m_Sprite: {fileID: -6132384197170367822, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -301,6 +303,7 @@ MonoBehaviour:
   - {fileID: 7995860363385367543}
   - {fileID: 1289171128313135695}
   - {fileID: 5807633682860703699}
+  - {fileID: 1531628950459427676}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -5085,6 +5088,28 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
+--- !u!95 &4432001157114570358
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8005210646273068072}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1ad1a707c0fd0447e99ee2a2c58643b1, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!199 &4916993750781084744
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -5162,6 +5187,18 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &1531628950459427676
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8005210646273068072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa74a85c8ae4199ae2dcf3ba33eb1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6134312120376347149
 PrefabInstance:
   m_ObjectHideFlags: 0
