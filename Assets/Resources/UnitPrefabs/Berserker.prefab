@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 4609681545036959117}
   - component: {fileID: 1648302430750897838}
   - component: {fileID: 8046160645993138282}
+  - component: {fileID: 8379418297252387071}
+  - component: {fileID: 4896714680299935512}
   m_Layer: 0
   m_Name: Berserker
   m_TagString: Untagged
@@ -88,8 +90,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 15
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.8584906, g: 0.44139376, b: 0.44139376, a: 1}
+  m_Sprite: {fileID: -826977092, guid: aac9b53fca7804959ba0f4c3f604a92f, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -133,8 +135,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
+  m_Offset: {x: 0.03415042, y: 0}
+  m_Radius: 0.5341504
 --- !u!114 &1032789433240727452
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5080,6 +5082,7 @@ MonoBehaviour:
   - {fileID: 6585370680212932942}
   - {fileID: 6266460163584166274}
   - {fileID: 8046160645993138282}
+  - {fileID: 4896714680299935512}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -5116,6 +5119,40 @@ MonoBehaviour:
     InterpolateOption: 0
     InterpolateMoveTowardsSpeed: 1
     InterpolateLerpSpeed: 0
+--- !u!95 &8379418297252387071
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 6f8eaedf9eb62437eb88890ab1a1d212, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4896714680299935512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5973173910556211883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa74a85c8ae4199ae2dcf3ba33eb1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &3225885712816217636
 PrefabInstance:
   m_ObjectHideFlags: 0

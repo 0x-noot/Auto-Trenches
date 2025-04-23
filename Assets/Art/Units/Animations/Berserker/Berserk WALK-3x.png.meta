@@ -120,7 +120,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 60
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -185,20 +185,20 @@ TextureImporter:
       name: Berserk WALK-3x_0
       rect:
         serializedVersion: 2
-        x: 35
-        y: 749
-        width: 80
-        height: 101
+        x: 36
+        y: 750
+        width: 78
+        height: 99
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 7da86ae3be5c02510800000000000000
-      internalID: 1522434288210315991
+      spriteID: 8d7eaa4884d184a52baf79606e8abc86
+      internalID: -826977092
       vertices: []
       indices: 
       edges: []
@@ -207,20 +207,20 @@ TextureImporter:
       name: Berserk WALK-3x_1
       rect:
         serializedVersion: 2
-        x: 194
-        y: 755
-        width: 71
-        height: 95
+        x: 195
+        y: 756
+        width: 69
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 1920ebe60abbe8780800000000000000
-      internalID: -8678793134169259375
+      spriteID: 1ab315e9897ec4769b8066e7fa381985
+      internalID: 992794695
       vertices: []
       indices: 
       edges: []
@@ -229,20 +229,20 @@ TextureImporter:
       name: Berserk WALK-3x_2
       rect:
         serializedVersion: 2
-        x: 341
-        y: 752
-        width: 62
-        height: 98
+        x: 342
+        y: 753
+        width: 60
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 234f3f9c6e47ccb20800000000000000
-      internalID: 3156025973459383346
+      spriteID: a4ac76a2731174b8bb330b40289fd08c
+      internalID: 163146816
       vertices: []
       indices: 
       edges: []
@@ -251,20 +251,20 @@ TextureImporter:
       name: Berserk WALK-3x_3
       rect:
         serializedVersion: 2
-        x: 476
-        y: 755
-        width: 80
-        height: 95
+        x: 477
+        y: 756
+        width: 78
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: f3df594b503fba880800000000000000
-      internalID: -8598511857703715521
+      spriteID: 956b03ae4d7f642a3ae4f1a94f079f4b
+      internalID: 791968594
       vertices: []
       indices: 
       edges: []
@@ -273,20 +273,20 @@ TextureImporter:
       name: Berserk WALK-3x_4
       rect:
         serializedVersion: 2
-        x: 29
-        y: 611
-        width: 80
-        height: 92
+        x: 30
+        y: 612
+        width: 78
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 47550c261056d6ef0800000000000000
-      internalID: -113323358988249740
+      spriteID: 74b61ea156b664507990e9cde3de4cf1
+      internalID: -745033597
       vertices: []
       indices: 
       edges: []
@@ -295,20 +295,20 @@ TextureImporter:
       name: Berserk WALK-3x_5
       rect:
         serializedVersion: 2
-        x: 200
-        y: 608
-        width: 68
-        height: 95
+        x: 201
+        y: 609
+        width: 66
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: a9641102a9297a600800000000000000
-      internalID: 479513075998869146
+      spriteID: d2d7e0f00aa9f43398a64d86ec714b15
+      internalID: -1660056222
       vertices: []
       indices: 
       edges: []
@@ -317,20 +317,20 @@ TextureImporter:
       name: Berserk WALK-3x_6
       rect:
         serializedVersion: 2
-        x: 335
-        y: 611
-        width: 59
-        height: 92
+        x: 336
+        y: 612
+        width: 57
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 19a00307877081080800000000000000
-      internalID: -9216608423554053487
+      spriteID: 4d28a581d11c64480a82621ddeb33bcc
+      internalID: 959993740
       vertices: []
       indices: 
       edges: []
@@ -339,20 +339,20 @@ TextureImporter:
       name: Berserk WALK-3x_7
       rect:
         serializedVersion: 2
-        x: 488
-        y: 608
-        width: 77
-        height: 101
+        x: 489
+        y: 609
+        width: 75
+        height: 99
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: ea626a968f716f2f0800000000000000
-      internalID: -939537116568344914
+      spriteID: 9e81db48bf1fd46a28cff80097ac40ef
+      internalID: 1971430717
       vertices: []
       indices: 
       edges: []
@@ -361,20 +361,20 @@ TextureImporter:
       name: Berserk WALK-3x_8
       rect:
         serializedVersion: 2
-        x: 29
-        y: 467
-        width: 80
-        height: 95
+        x: 30
+        y: 468
+        width: 78
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 15443ee711e802e70800000000000000
-      internalID: 9088420253828072529
+      spriteID: 0e67395a7d799410b8132fa767fca885
+      internalID: 737037366
       vertices: []
       indices: 
       edges: []
@@ -383,20 +383,20 @@ TextureImporter:
       name: Berserk WALK-3x_9
       rect:
         serializedVersion: 2
-        x: 206
-        y: 464
-        width: 71
-        height: 101
+        x: 207
+        y: 465
+        width: 69
+        height: 99
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 7f996256dcd575c60800000000000000
-      internalID: 7806811615816751607
+      spriteID: fdd45c2ace676441b923d282aad748e2
+      internalID: 1783854242
       vertices: []
       indices: 
       edges: []
@@ -405,20 +405,20 @@ TextureImporter:
       name: Berserk WALK-3x_10
       rect:
         serializedVersion: 2
-        x: 335
-        y: 464
-        width: 59
-        height: 101
+        x: 336
+        y: 465
+        width: 57
+        height: 99
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: c1e7822b66c9f5570800000000000000
-      internalID: 8457650590114676252
+      spriteID: de71192ebfa984229934b35a2672a3da
+      internalID: -2138640171
       vertices: []
       indices: 
       edges: []
@@ -427,20 +427,20 @@ TextureImporter:
       name: Berserk WALK-3x_11
       rect:
         serializedVersion: 2
-        x: 482
-        y: 467
-        width: 77
-        height: 92
+        x: 483
+        y: 468
+        width: 75
+        height: 90
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: fb26b3eebcb5c0f50800000000000000
-      internalID: 6848950064757039807
+      spriteID: cb6e8dfa9c37449f4a3c2746f6168f02
+      internalID: -1655616370
       vertices: []
       indices: 
       edges: []
@@ -449,20 +449,20 @@ TextureImporter:
       name: Berserk WALK-3x_12
       rect:
         serializedVersion: 2
-        x: 17
-        y: 323
-        width: 89
-        height: 125
+        x: 18
+        y: 324
+        width: 87
+        height: 123
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 3a7dbb6d08c9f3af0800000000000000
-      internalID: -414440563522414685
+      spriteID: 652c653188730430eb0054fc131d6f04
+      internalID: 662592209
       vertices: []
       indices: 
       edges: []
@@ -471,20 +471,20 @@ TextureImporter:
       name: Berserk WALK-3x_13
       rect:
         serializedVersion: 2
-        x: 197
-        y: 323
-        width: 65
-        height: 125
+        x: 198
+        y: 324
+        width: 63
+        height: 123
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: abc6a63c194e7cde0800000000000000
-      internalID: -1312829451655287622
+      spriteID: c9395d786c84e4c379b7ac1a91f28543
+      internalID: 106579368
       vertices: []
       indices: 
       edges: []
@@ -493,20 +493,20 @@ TextureImporter:
       name: Berserk WALK-3x_14
       rect:
         serializedVersion: 2
-        x: 311
-        y: 323
-        width: 59
-        height: 128
+        x: 312
+        y: 324
+        width: 57
+        height: 126
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: fbf692975321d92e0800000000000000
-      internalID: -2117516228918939713
+      spriteID: 66dbf5ba17a6b4fa9baf498bce91310e
+      internalID: -1998671602
       vertices: []
       indices: 
       edges: []
@@ -515,20 +515,20 @@ TextureImporter:
       name: Berserk WALK-3x_15
       rect:
         serializedVersion: 2
-        x: 479
-        y: 323
-        width: 74
-        height: 113
+        x: 480
+        y: 324
+        width: 72
+        height: 111
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: ad0c57a2c51e31a00800000000000000
-      internalID: 726171750902382810
+      spriteID: 44875d4fc94e44b2d8c7526ac12ee714
+      internalID: 982953245
       vertices: []
       indices: 
       edges: []
@@ -537,20 +537,20 @@ TextureImporter:
       name: Berserk WALK-3x_16
       rect:
         serializedVersion: 2
-        x: 20
-        y: 176
-        width: 89
-        height: 140
+        x: 21
+        y: 177
+        width: 87
+        height: 138
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 0696d6a337a336730800000000000000
-      internalID: 3991097961356290400
+      spriteID: f5f2b5d684593472a969d318348c82cc
+      internalID: 1117983042
       vertices: []
       indices: 
       edges: []
@@ -559,20 +559,20 @@ TextureImporter:
       name: Berserk WALK-3x_17
       rect:
         serializedVersion: 2
-        x: 161
-        y: 179
-        width: 107
-        height: 104
+        x: 162
+        y: 180
+        width: 105
+        height: 102
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: cbf483719ff66b9b0800000000000000
-      internalID: -5064737615304437828
+      spriteID: 71addac219b4241e1926d06e05a69faa
+      internalID: -1247725353
       vertices: []
       indices: 
       edges: []
@@ -581,20 +581,20 @@ TextureImporter:
       name: Berserk WALK-3x_18
       rect:
         serializedVersion: 2
-        x: 335
-        y: 179
-        width: 92
-        height: 104
+        x: 336
+        y: 180
+        width: 90
+        height: 102
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 654631d35e55bb620800000000000000
-      internalID: 2790918837146707030
+      spriteID: 32adbcf2f86314ffab4f73a2a6bf0fd0
+      internalID: -1167470336
       vertices: []
       indices: 
       edges: []
@@ -603,20 +603,20 @@ TextureImporter:
       name: Berserk WALK-3x_19
       rect:
         serializedVersion: 2
-        x: 479
-        y: 179
-        width: 74
-        height: 143
+        x: 480
+        y: 180
+        width: 72
+        height: 141
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 8fd063c9a81e930b0800000000000000
-      internalID: -5748315463919202824
+      spriteID: f4b1028b388db463ab385a36de0ff8e0
+      internalID: 1745004191
       vertices: []
       indices: 
       edges: []
@@ -625,20 +625,20 @@ TextureImporter:
       name: Berserk WALK-3x_20
       rect:
         serializedVersion: 2
-        x: 20
-        y: 32
-        width: 89
-        height: 98
+        x: 21
+        y: 33
+        width: 87
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: b570ef285c0d8df20800000000000000
-      internalID: 3447735061476935515
+      spriteID: 8bdff49ab882042a3baa3538e4e349e1
+      internalID: 177994234
       vertices: []
       indices: 
       edges: []
@@ -647,20 +647,20 @@ TextureImporter:
       name: Berserk WALK-3x_21
       rect:
         serializedVersion: 2
-        x: 179
-        y: 35
-        width: 83
-        height: 98
+        x: 180
+        y: 36
+        width: 81
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: f7b1905345e4d4ee0800000000000000
-      internalID: -1275276995901973633
+      spriteID: fb7826df3e90243e1bf79cfc5da2845e
+      internalID: 2097649912
       vertices: []
       indices: 
       edges: []
@@ -669,20 +669,20 @@ TextureImporter:
       name: Berserk WALK-3x_22
       rect:
         serializedVersion: 2
-        x: 329
-        y: 35
-        width: 86
-        height: 98
+        x: 330
+        y: 36
+        width: 84
+        height: 96
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 57d49e85b880665f0800000000000000
-      internalID: -763913692207559307
+      spriteID: 995c5e97fcd694e3393415d1c9794a32
+      internalID: -1140092607
       vertices: []
       indices: 
       edges: []
@@ -691,20 +691,20 @@ TextureImporter:
       name: Berserk WALK-3x_23
       rect:
         serializedVersion: 2
-        x: 479
-        y: 35
-        width: 80
-        height: 95
+        x: 480
+        y: 36
+        width: 78
+        height: 93
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 7e79d31ecab510590800000000000000
-      internalID: -7709780289010165785
+      spriteID: e7c9a22d7461e49aa9e0ca624bae64f1
+      internalID: 1130025855
       vertices: []
       indices: 
       edges: []
@@ -713,7 +713,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 1d893680bbe274f24b5259c34459dfa6
     internalID: 0
     vertices: []
     indices: 
@@ -722,7 +722,31 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Berserk WALK-3x_0: -826977092
+      Berserk WALK-3x_1: 992794695
+      Berserk WALK-3x_10: -2138640171
+      Berserk WALK-3x_11: -1655616370
+      Berserk WALK-3x_12: 662592209
+      Berserk WALK-3x_13: 106579368
+      Berserk WALK-3x_14: -1998671602
+      Berserk WALK-3x_15: 982953245
+      Berserk WALK-3x_16: 1117983042
+      Berserk WALK-3x_17: -1247725353
+      Berserk WALK-3x_18: -1167470336
+      Berserk WALK-3x_19: 1745004191
+      Berserk WALK-3x_2: 163146816
+      Berserk WALK-3x_20: 177994234
+      Berserk WALK-3x_21: 2097649912
+      Berserk WALK-3x_22: -1140092607
+      Berserk WALK-3x_23: 1130025855
+      Berserk WALK-3x_3: 791968594
+      Berserk WALK-3x_4: -745033597
+      Berserk WALK-3x_5: -1660056222
+      Berserk WALK-3x_6: 959993740
+      Berserk WALK-3x_7: 1971430717
+      Berserk WALK-3x_8: 737037366
+      Berserk WALK-3x_9: 1783854242
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
