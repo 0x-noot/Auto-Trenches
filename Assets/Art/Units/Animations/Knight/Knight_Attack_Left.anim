@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Blacksmith_Walk_Right
+  m_Name: Knight_Attack_Left
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,13 +21,9 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: 827074252040126166, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
+      value: {fileID: 3492075980147967418, guid: 85d7859b2f81047c1963058b7004fcdb, type: 3}
     - time: 0.16666667
-      value: {fileID: 3218714893591638719, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
-    - time: 0.33333334
-      value: {fileID: -1967530697868688574, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
-    - time: 0.5
-      value: {fileID: 3218714893591638719, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
+      value: {fileID: -2584917096683380274, guid: 85d7859b2f81047c1963058b7004fcdb, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
@@ -50,16 +46,14 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: 827074252040126166, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
-    - {fileID: 3218714893591638719, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
-    - {fileID: -1967530697868688574, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
-    - {fileID: 3218714893591638719, guid: 3dc03c264629e40b788782843fd1e223, type: 3}
+    - {fileID: 3492075980147967418, guid: 85d7859b2f81047c1963058b7004fcdb, type: 3}
+    - {fileID: -2584917096683380274, guid: 85d7859b2f81047c1963058b7004fcdb, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 0.5833333
+    m_StopTime: 0.25
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
