@@ -31,7 +31,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        // Set up Photon settings
         PhotonNetwork.AutomaticallySyncScene = true;
         ConnectToPhoton();
     }
@@ -46,33 +45,31 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void CreateRoom(string playerName)
+    public void CreateRoom(string walletAddress)
     {
         if (!PhotonNetwork.IsConnected) return;
 
-        PhotonNetwork.LocalPlayer.NickName = playerName;
+        PhotonNetwork.LocalPlayer.NickName = walletAddress;
         
-        // Create room options
         RoomOptions roomOptions = new RoomOptions
         {
             MaxPlayers = 2,
             PublishUserId = true
         };
         
-        // Add host name as a custom property
         ExitGames.Client.Photon.Hashtable customProps = new ExitGames.Client.Photon.Hashtable();
-        customProps.Add("HostName", playerName);
+        customProps.Add("HostName", walletAddress);
         roomOptions.CustomRoomProperties = customProps;
         roomOptions.CustomRoomPropertiesForLobby = new string[] { "HostName" };
 
-        PhotonNetwork.CreateRoom(null, roomOptions); // null for random room name
+        PhotonNetwork.CreateRoom(null, roomOptions);
     }
 
-    public void JoinRoom(string roomName, string playerName)
+    public void JoinRoom(string roomName, string walletAddress)
     {
         if (!PhotonNetwork.IsConnected) return;
 
-        PhotonNetwork.LocalPlayer.NickName = playerName;
+        PhotonNetwork.LocalPlayer.NickName = walletAddress;
         PhotonNetwork.JoinRoom(roomName);
     }
 
@@ -104,8 +101,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         if (PhotonNetwork.IsConnected && PhotonNetwork.InLobby)
         {
             Debug.Log("Refreshing room list");
-            // When in a lobby, OnRoomListUpdate is automatically called periodically
-            // We don't need to explicitly request updates
         }
         else if (PhotonNetwork.IsConnected && !PhotonNetwork.InLobby)
         {
@@ -141,12 +136,10 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         }
     }
     
-    // Add this new method to update host name in an existing room:
     private void UpdateRoomHostName()
     {
         if (!PhotonNetwork.IsMasterClient || PhotonNetwork.CurrentRoom == null) return;
         
-        // Update room properties with host name
         ExitGames.Client.Photon.Hashtable roomProps = new ExitGames.Client.Photon.Hashtable();
         roomProps.Add("HostName", PhotonNetwork.LocalPlayer.NickName);
         
@@ -167,8 +160,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("Joined Photon lobby");
         lobbyUI?.OnPhotonConnected();
-        
-        // This will automatically trigger OnRoomListUpdate with the current list of rooms
     }
 
     public override void OnDisconnected(DisconnectCause cause)
@@ -182,7 +173,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Joined Room: {PhotonNetwork.CurrentRoom.Name}");
         
-        // If this player is the host, make sure room has the host name property
         if (PhotonNetwork.IsMasterClient)
         {
             UpdateRoomHostName();
@@ -233,7 +223,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     public override void OnMasterClientSwitched(Player newMasterClient)
     {
-        // If the master client changes, update the room properties
         if (PhotonNetwork.LocalPlayer.ActorNumber == newMasterClient.ActorNumber)
         {
             UpdateRoomHostName();

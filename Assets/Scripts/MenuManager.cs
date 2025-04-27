@@ -170,7 +170,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         LobbyUI lobbyUI = FindFirstObjectByType<LobbyUI>();
         if (lobbyUI != null)
         {
-            lobbyUI.ShowUsernamePanel();
+            lobbyUI.ShowWalletPanel();
         }
         
         // Hide main menu
