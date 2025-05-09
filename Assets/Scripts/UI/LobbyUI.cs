@@ -3,19 +3,20 @@ using UnityEngine.UI;
 using TMPro;
 using Photon.Realtime;
 using System.Collections.Generic;
+using Photon.Pun;
 
 public class LobbyUI : MonoBehaviour
 {
     [Header("Panels")]
-    [SerializeField] private GameObject walletPanel;        // Renamed from usernamePanel
+    [SerializeField] private GameObject walletPanel;
     [SerializeField] private GameObject lobbyListPanel;
     [SerializeField] private GameObject matchLobbyPanel;
     [SerializeField] private GameObject connectingPanel;
 
-    [Header("Wallet Panel")]                                // Updated section
-    [SerializeField] private Button connectWalletButton;    // New
-    [SerializeField] private TextMeshProUGUI walletAddressText; // New
-    [SerializeField] private TextMeshProUGUI connectionStatusText; // New
+    [Header("Wallet Panel")]
+    [SerializeField] private Button connectWalletButton;
+    [SerializeField] private TextMeshProUGUI walletAddressText;
+    [SerializeField] private TextMeshProUGUI connectionStatusText;
 
     [Header("Lobby List Panel")]
     [SerializeField] private Transform lobbyListContent;
@@ -38,7 +39,6 @@ public class LobbyUI : MonoBehaviour
 
     private void Awake()
     {
-        // Always start with wallet panel visible if no wallet is connected
         if (!WalletManager.Instance.IsConnected)
         {
             walletPanel.SetActive(true);
@@ -62,23 +62,37 @@ public class LobbyUI : MonoBehaviour
         UpdateWalletUI();
         ShowConnectingPanel(true);
         
-        // Subscribe to wallet events
-    if (WalletManager.Instance == null)
-    {
-        Debug.LogError("WalletManager not found in scene!");
+        if (WalletManager.Instance == null)
+        {
+            Debug.LogError("WalletManager not found in scene!");
+        }
+        else
+        {
+            WalletManager.Instance.OnWalletConnected += HandleWalletConnected;
+            WalletManager.Instance.OnWalletDisconnected += HandleWalletDisconnected;
+            WalletManager.Instance.OnConnectionError += HandleConnectionError;
+        }
     }
-    else
+    
+    private void Update()
     {
-        // Subscribe to wallet events
-        WalletManager.Instance.OnWalletConnected += HandleWalletConnected;
-        WalletManager.Instance.OnWalletDisconnected += HandleWalletDisconnected;
-        WalletManager.Instance.OnConnectionError += HandleConnectionError;
-    }
+        if (connectionStatusText != null)
+        {
+            string status = "Unknown";
+            
+            if (!PhotonNetwork.IsConnected)
+                status = "Disconnected";
+            else if (!PhotonNetwork.InLobby)
+                status = "Connected, Not In Lobby";
+            else
+                status = $"Connected: {PhotonNetwork.CloudRegion}";
+                
+            connectionStatusText.text = $"Status: {status}";
+        }
     }
     
     private void OnDestroy()
     {
-        // Unsubscribe from wallet events
         if (WalletManager.Instance != null)
         {
             WalletManager.Instance.OnWalletConnected -= HandleWalletConnected;
@@ -96,7 +110,6 @@ public class LobbyUI : MonoBehaviour
         readyButton.onClick.AddListener(OnReadyClicked);
         leaveLobbyButton.onClick.AddListener(OnLeaveRoom);
 
-        // Initialize with appropriate panel visibility
         ShowWalletPanel();
     }
 
@@ -230,10 +243,8 @@ public class LobbyUI : MonoBehaviour
         walletAddressText.text = WalletManager.Instance.GetFormattedWalletAddress();
         connectWalletButton.interactable = true;
         
-        // Change this line to go back to the main menu instead of showing the lobby
         HideAllPanels();
         
-        // Find MenuManager and show the main menu
         MenuManager menuManager = FindFirstObjectByType<MenuManager>();
         if (menuManager != null)
         {
@@ -242,7 +253,7 @@ public class LobbyUI : MonoBehaviour
         else
         {
             Debug.LogError("MenuManager not found!");
-            ShowLobbyListPanel(); // Fallback if MenuManager not found
+            ShowLobbyListPanel();
         }
     }
     
@@ -301,7 +312,6 @@ public class LobbyUI : MonoBehaviour
         }
         else
         {
-            // Fallback
             if (isMasterClient)
             {
                 statusText.text = "Waiting for opponent...";
@@ -438,7 +448,6 @@ public class LobbyUI : MonoBehaviour
         hostStatsText.text = $"Wins: {wins} Losses: {losses}";
     }
     
-    // Helper method to format wallet addresses (for display)
     private string FormatWalletAddress(string address)
     {
         if (string.IsNullOrEmpty(address)) return "Unknown";

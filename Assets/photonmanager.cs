@@ -34,6 +34,23 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         PhotonNetwork.AutomaticallySyncScene = true;
         ConnectToPhoton();
     }
+    
+    private void Update()
+    {
+        if (Time.frameCount % 300 == 0)
+        {
+            Debug.Log($"Photon Diagnostics: Connected={PhotonNetwork.IsConnected}, " +
+                      $"Region={PhotonNetwork.CloudRegion}, " +
+                      $"Server={PhotonNetwork.Server}, " +
+                      $"InLobby={PhotonNetwork.InLobby}, " +
+                      $"AppVersion={PhotonNetwork.AppVersion}");
+                      
+            if (PhotonNetwork.InLobby)
+            {
+                Debug.Log($"In Lobby: {PhotonNetwork.CurrentLobby.Name}, Type: {PhotonNetwork.CurrentLobby.Type}");
+            }
+        }
+    }
 
     public void ConnectToPhoton()
     {
@@ -54,7 +71,9 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         RoomOptions roomOptions = new RoomOptions
         {
             MaxPlayers = 2,
-            PublishUserId = true
+            PublishUserId = true,
+            IsVisible = true,
+            IsOpen = true
         };
         
         ExitGames.Client.Photon.Hashtable customProps = new ExitGames.Client.Photon.Hashtable();
@@ -98,18 +117,28 @@ public class PhotonManager : MonoBehaviourPunCallbacks
 
     public void RefreshRoomList()
     {
-        if (PhotonNetwork.IsConnected && PhotonNetwork.InLobby)
+        Debug.Log($"RefreshRoomList called. Connected={PhotonNetwork.IsConnected}, InLobby={PhotonNetwork.InLobby}");
+        
+        if (PhotonNetwork.IsConnected)
         {
-            Debug.Log("Refreshing room list");
-        }
-        else if (PhotonNetwork.IsConnected && !PhotonNetwork.InLobby)
-        {
-            Debug.Log("Joining lobby to get room list");
-            PhotonNetwork.JoinLobby();
+            if (PhotonNetwork.InLobby)
+            {
+                Debug.Log("Already in lobby, triggering room list update");
+                TypedLobby currentLobby = PhotonNetwork.CurrentLobby;
+                PhotonNetwork.LeaveLobby();
+                PhotonNetwork.JoinLobby(currentLobby);
+            }
+            else
+            {
+                Debug.Log("Not in lobby, joining lobby");
+                TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+                PhotonNetwork.JoinLobby(mainLobby);
+            }
         }
         else
         {
             Debug.LogWarning("Cannot refresh room list: Not connected to Photon");
+            ConnectToPhoton();
         }
     }
 
@@ -152,13 +181,16 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("Connected to Master Server");
         isConnecting = false;
-        PhotonNetwork.JoinLobby();
+        
+        TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+        PhotonNetwork.JoinLobby(mainLobby);
+        
         lobbyUI?.OnPhotonConnected();
     }
 
     public override void OnJoinedLobby()
     {
-        Debug.Log("Joined Photon lobby");
+        Debug.Log($"Joined Photon lobby: {PhotonNetwork.CurrentLobby.Name}, Type: {PhotonNetwork.CurrentLobby.Type}");
         lobbyUI?.OnPhotonConnected();
     }
 
