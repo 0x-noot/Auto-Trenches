@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Solana.Unity.Wallet;
 using Solana.Unity.SDK;
+using Solana.Unity.Soar;
 using Solana.Unity.Soar.Accounts;
 using Solana.Unity.Soar.Program;
 using Solana.Unity.Soar.Types;
-using Solana.Unity.Soar;
 using Solana.Unity.Rpc.Types;
 using UnityEngine;
 
@@ -13,7 +13,7 @@ public class WalletManager : MonoBehaviour
 {
     public static WalletManager Instance { get; private set; }
     
-    [SerializeField] private SoarManager soarManager; // Reference to SoarManager
+    [SerializeField] private SoarManager soarManager;
     
     public bool IsConnected => Web3.Wallet?.Account != null;
     public string WalletPublicKey => Web3.Wallet?.Account?.PublicKey.ToString();
@@ -28,7 +28,6 @@ public class WalletManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            // Ensure Web3 is initialized
             if (Web3.Instance == null)
             {
                 Debug.LogError("Web3 instance is not initialized. Ensure a Web3 component is present in the scene with wallet adapter settings configured.");
@@ -107,19 +106,15 @@ public class WalletManager : MonoBehaviour
         PlayerPrefs.SetString("LastWalletAddress", account.PublicKey.ToString());
         PlayerPrefs.Save();
 
-        // Check if player is already registered
         bool isRegistered = await CheckPlayerRegistration(account);
         
         if (!isRegistered)
         {
-            // Show username panel only if not registered
             soarManager.ShowUsernamePanel(account);
         }
         else
         {
             Debug.Log("Player already registered, skipping username panel");
-            // You might want to trigger some event or action here for registered players
-            // For example, loading their profile or going directly to main menu
         }
     }
     
@@ -127,18 +122,24 @@ public class WalletManager : MonoBehaviour
     {
         try
         {
-            // Get the player PDA
             var playerAccountPda = SoarPda.PlayerPda(account.PublicKey);
-            
-            // Check if the account exists
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
             
-            // If account exists and has data, player is registered
-            bool isRegistered = accountData.Result?.Value != null && 
-                               accountData.Result.Value.Data?.Count > 0;
+            if (accountData.Result?.Value == null || accountData.Result.Value.Data?.Count == 0)
+            {
+                Debug.Log("Player account doesn't exist");
+                return false;
+            }
             
-            Debug.Log($"Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
-            return isRegistered;
+            var gameId = new PublicKey("HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC");
+            var playerScoresAccount = SoarPda.PlayerScoresPda(account.PublicKey, gameId);
+            var gameAccountData = await Web3.Rpc.GetAccountInfoAsync(playerScoresAccount, Commitment.Confirmed);
+            
+            bool isFullyRegistered = gameAccountData.Result?.Value != null && 
+                                    gameAccountData.Result.Value.Data?.Count > 0;
+            
+            Debug.Log($"Player registration check - Player account: exists, Game registration: {(isFullyRegistered ? "exists" : "missing")}");
+            return isFullyRegistered;
         }
         catch (Exception ex)
         {

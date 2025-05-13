@@ -17,17 +17,16 @@ using TMPro;
 
 public class SoarManager : MonoBehaviour
 {
-    [SerializeField] private GameObject usernamePanel; // UI panel for username input
-    [SerializeField] private TMP_InputField usernameInput; // Input field for username
-    [SerializeField] private TextMeshProUGUI statusText; // Text for success/error messages
-    [SerializeField] private UnityEngine.UI.Button submitButton; // Submit button
+    [SerializeField] private GameObject usernamePanel;
+    [SerializeField] private TMP_InputField usernameInput;
+    [SerializeField] private TextMeshProUGUI statusText;
+    [SerializeField] private UnityEngine.UI.Button submitButton;
 
     private PublicKey gameId = new PublicKey("HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC");
     private Account currentAccount;
 
     private void Awake()
     {
-        // Hide panel by default
         usernamePanel.SetActive(false);
     }
 
@@ -40,7 +39,6 @@ public class SoarManager : MonoBehaviour
         submitButton.interactable = true;
     }
 
-    // Called by Submit button's OnClick event
     public async void OnSubmitUsername()
     {
         string username = usernameInput.text.Trim();
@@ -49,7 +47,7 @@ public class SoarManager : MonoBehaviour
             statusText.text = "Username cannot be empty";
             return;
         }
-        if (username.Length > 32) // Placeholder max length
+        if (username.Length > 32)
         {
             statusText.text = "Username too long (max 32 characters)";
             return;
@@ -66,17 +64,21 @@ public class SoarManager : MonoBehaviour
         {
             Debug.Log("Starting player registration...");
 
-            // Double-check if player is already registered before attempting registration
             var playerAccount = SoarPda.PlayerPda(account.PublicKey);
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccount, Commitment.Confirmed);
             
-            if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
+            var playerScoresAccount = SoarPda.PlayerScoresPda(account.PublicKey, gameId);
+            var gameSpecificData = await Web3.Rpc.GetAccountInfoAsync(playerScoresAccount, Commitment.Confirmed);
+            
+            bool isPlayerInitialized = accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0;
+            bool isGameRegistered = gameSpecificData.Result?.Value != null && gameSpecificData.Result.Value.Data?.Count > 0;
+            
+            if (isPlayerInitialized && isGameRegistered)
             {
                 statusText.text = "Already registered!";
                 submitButton.interactable = true;
                 Debug.Log("Player already registered - aborting registration");
                 
-                // Hide the panel after a short delay
                 await Task.Delay(1500);
                 usernamePanel.SetActive(false);
                 return;
@@ -89,24 +91,47 @@ public class SoarManager : MonoBehaviour
                 RecentBlockHash = await Web3.BlockHash()
             };
 
-            var accountsInitUser = new InitializePlayerAccounts()
+            if (!isPlayerInitialized)
             {
-                Payer = account,
-                User = account,
-                PlayerAccount = playerAccount,
-                SystemProgram = SystemProgram.ProgramIdKey
-            };
+                var accountsInitUser = new InitializePlayerAccounts()
+                {
+                    Payer = account,
+                    User = account,
+                    PlayerAccount = playerAccount,
+                    SystemProgram = SystemProgram.ProgramIdKey
+                };
+                
+                var initPlayerIx = SoarProgram.InitializePlayer(
+                    accounts: accountsInitUser,
+                    username: username,
+                    nftMeta: new PublicKey("BaxBPhbNxqR13QcYPvoTzE9LQZGs71Mu6euywyKHoprc"),
+                    programId: SoarProgram.ProgramIdKey
+                );
+                
+                tx.Add(initPlayerIx);
+            }
             
-            var initPlayerIx = SoarProgram.InitializePlayer(
-                accounts: accountsInitUser,
-                username: username,
-                nftMeta: new PublicKey("BaxBPhbNxqR13QcYPvoTzE9LQZGs71Mu6euywyKHoprc"),
-                programId: SoarProgram.ProgramIdKey
-            );
+            if (!isGameRegistered)
+            {
+                var registerPlayerAccounts = new RegisterPlayerAccounts()
+                {
+                    Payer = account,
+                    User = account,
+                    PlayerAccount = playerAccount,
+                    Game = gameId,
+                    Leaderboard = SoarPda.LeaderboardPda(gameId),
+                    NewList = playerScoresAccount,
+                    SystemProgram = SystemProgram.ProgramIdKey
+                };
+                
+                var registerPlayerIx = SoarProgram.RegisterPlayer(
+                    accounts: registerPlayerAccounts,
+                    programId: SoarProgram.ProgramIdKey
+                );
+                
+                tx.Add(registerPlayerIx);
+            }
             
-            tx.Add(initPlayerIx);
-            
-            // Sign and send transaction
             Debug.Log("Signing and sending transaction...");
             var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
             
@@ -118,7 +143,6 @@ public class SoarManager : MonoBehaviour
             string txSignature = result.Result;
             Debug.Log($"Transaction sent, signature: {txSignature}");
 
-            // Confirm transaction
             Debug.Log("Confirming transaction...");
             var confirmTask = Web3.Rpc.ConfirmTransaction(txSignature, Commitment.Confirmed);
             var confirmResult = await Task.WhenAny(confirmTask, Task.Delay(TimeSpan.FromSeconds(30)));
@@ -134,9 +158,6 @@ public class SoarManager : MonoBehaviour
                 statusText.text = "Registration successful!";
                 usernamePanel.SetActive(false);
                 Debug.Log("Player registration confirmed");
-                
-                // You might want to trigger some event here for successful registration
-                // For example, loading the player's profile or navigating to the main menu
             }
             else
             {
