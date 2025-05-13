@@ -67,13 +67,7 @@ public class SoarManager : MonoBehaviour
             var playerAccount = SoarPda.PlayerPda(account.PublicKey);
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccount, Commitment.Confirmed);
             
-            var playerScoresAccount = SoarPda.PlayerScoresPda(account.PublicKey, gameId);
-            var gameSpecificData = await Web3.Rpc.GetAccountInfoAsync(playerScoresAccount, Commitment.Confirmed);
-            
-            bool isPlayerInitialized = accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0;
-            bool isGameRegistered = gameSpecificData.Result?.Value != null && gameSpecificData.Result.Value.Data?.Count > 0;
-            
-            if (isPlayerInitialized && isGameRegistered)
+            if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
             {
                 statusText.text = "Already registered!";
                 submitButton.interactable = true;
@@ -91,46 +85,22 @@ public class SoarManager : MonoBehaviour
                 RecentBlockHash = await Web3.BlockHash()
             };
 
-            if (!isPlayerInitialized)
+            var accountsInitUser = new InitializePlayerAccounts()
             {
-                var accountsInitUser = new InitializePlayerAccounts()
-                {
-                    Payer = account,
-                    User = account,
-                    PlayerAccount = playerAccount,
-                    SystemProgram = SystemProgram.ProgramIdKey
-                };
-                
-                var initPlayerIx = SoarProgram.InitializePlayer(
-                    accounts: accountsInitUser,
-                    username: username,
-                    nftMeta: new PublicKey("BaxBPhbNxqR13QcYPvoTzE9LQZGs71Mu6euywyKHoprc"),
-                    programId: SoarProgram.ProgramIdKey
-                );
-                
-                tx.Add(initPlayerIx);
-            }
+                Payer = account,
+                User = account,
+                PlayerAccount = playerAccount,
+                SystemProgram = SystemProgram.ProgramIdKey
+            };
             
-            if (!isGameRegistered)
-            {
-                var registerPlayerAccounts = new RegisterPlayerAccounts()
-                {
-                    Payer = account,
-                    User = account,
-                    PlayerAccount = playerAccount,
-                    Game = gameId,
-                    Leaderboard = SoarPda.LeaderboardPda(gameId),
-                    NewList = playerScoresAccount,
-                    SystemProgram = SystemProgram.ProgramIdKey
-                };
-                
-                var registerPlayerIx = SoarProgram.RegisterPlayer(
-                    accounts: registerPlayerAccounts,
-                    programId: SoarProgram.ProgramIdKey
-                );
-                
-                tx.Add(registerPlayerIx);
-            }
+            var initPlayerIx = SoarProgram.InitializePlayer(
+                accounts: accountsInitUser,
+                username: username,
+                nftMeta: new PublicKey("BaxBPhbNxqR13QcYPvoTzE9LQZGs71Mu6euywyKHoprc"),
+                programId: SoarProgram.ProgramIdKey
+            );
+            
+            tx.Add(initPlayerIx);
             
             Debug.Log("Signing and sending transaction...");
             var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);

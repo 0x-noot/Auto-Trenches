@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Solana.Unity.Wallet;
 using Solana.Unity.SDK;
-using Solana.Unity.Soar;
 using Solana.Unity.Soar.Accounts;
 using Solana.Unity.Soar.Program;
 using Solana.Unity.Soar.Types;
+using Solana.Unity.Soar;
 using Solana.Unity.Rpc.Types;
 using UnityEngine;
 
@@ -125,21 +125,11 @@ public class WalletManager : MonoBehaviour
             var playerAccountPda = SoarPda.PlayerPda(account.PublicKey);
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
             
-            if (accountData.Result?.Value == null || accountData.Result.Value.Data?.Count == 0)
-            {
-                Debug.Log("Player account doesn't exist");
-                return false;
-            }
+            bool isRegistered = accountData.Result?.Value != null && 
+                               accountData.Result.Value.Data?.Count > 0;
             
-            var gameId = new PublicKey("HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC");
-            var playerScoresAccount = SoarPda.PlayerScoresPda(account.PublicKey, gameId);
-            var gameAccountData = await Web3.Rpc.GetAccountInfoAsync(playerScoresAccount, Commitment.Confirmed);
-            
-            bool isFullyRegistered = gameAccountData.Result?.Value != null && 
-                                    gameAccountData.Result.Value.Data?.Count > 0;
-            
-            Debug.Log($"Player registration check - Player account: exists, Game registration: {(isFullyRegistered ? "exists" : "missing")}");
-            return isFullyRegistered;
+            Debug.Log($"Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
+            return isRegistered;
         }
         catch (Exception ex)
         {
