@@ -211,7 +211,7 @@ public class LobbyUI : MonoBehaviour
         MenuManager menuManager = FindFirstObjectByType<MenuManager>();
         if (menuManager != null)
         {
-            menuManager.ShowMainMenu();
+            menuManager.ShowModeSelection();
         }
         else
         {
@@ -353,23 +353,32 @@ public class LobbyUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        Debug.Log($"Displaying {cachedRoomList.Count} rooms in UI");
+        string currentModeString = GameModeManager.Instance.CurrentMode.ToString();
+        
+        Debug.Log($"Displaying rooms for mode: {currentModeString}");
         foreach (RoomInfo room in cachedRoomList.Values)
         {
             if (room.IsOpen && room.IsVisible && room.PlayerCount < room.MaxPlayers)
             {
-                GameObject entryObj = Instantiate(lobbyEntryPrefab, lobbyListContent);
-                var entryUI = entryObj.GetComponent<LobbyEntryUI>();
-                if (entryUI != null)
+                if (room.CustomProperties.TryGetValue("GameMode", out object gameMode))
                 {
-                    string hostWalletAddress = "Unknown";
-                    if (room.CustomProperties.TryGetValue("HostName", out object hostNameObj))
+                    if (gameMode.ToString() == currentModeString)
                     {
-                        hostWalletAddress = hostNameObj.ToString();
+                        GameObject entryObj = Instantiate(lobbyEntryPrefab, lobbyListContent);
+                        var entryUI = entryObj.GetComponent<LobbyEntryUI>();
+                        if (entryUI != null)
+                        {
+                            string hostWalletAddress = "Unknown";
+                            if (room.CustomProperties.TryGetValue("HostName", out object hostNameObj))
+                            {
+                                hostWalletAddress = hostNameObj.ToString();
+                            }
+                            
+                            string formattedHostAddress = FormatWalletAddress(hostWalletAddress);
+                            string displayName = $"[{gameMode}] {formattedHostAddress}";
+                            entryUI.Initialize(room.Name, displayName, () => OnJoinRoomClicked(room.Name));
+                        }
                     }
-                    
-                    string formattedHostAddress = FormatWalletAddress(hostWalletAddress);
-                    entryUI.Initialize(room.Name, formattedHostAddress, () => OnJoinRoomClicked(room.Name));
                 }
             }
         }

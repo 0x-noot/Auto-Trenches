@@ -14,7 +14,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject infoPanel;
     [SerializeField] private GameObject lobbyPanel;
-
+    [SerializeField] private GameObject modeSelectionPanel;
+    
+    private ModeSelectionUI modeSelectionUI;
     private bool isInitialized = false;
 
     private void Awake()
@@ -33,6 +35,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         }
 
         ValidatePanelReferences();
+        modeSelectionUI = GetComponent<ModeSelectionUI>() ?? GetComponentInChildren<ModeSelectionUI>();
     }
 
     private void ValidatePanelReferences()
@@ -46,6 +49,8 @@ public class MenuManager : MonoBehaviourPunCallbacks
             Debug.LogError("InfoPanel reference is missing in MenuManager!");
         if (lobbyPanel == null)
             Debug.LogError("LobbyPanel reference is missing in MenuManager!");
+        if (modeSelectionPanel == null)
+            Debug.LogError("ModeSelectionPanel reference is missing in MenuManager!");
     }
 
     private void Start()
@@ -83,6 +88,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         settingsPanel?.SetActive(false);
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
+        modeSelectionPanel?.SetActive(false);
         
         isInitialized = true;
         Debug.Log("MenuManager: Panels initialized");
@@ -95,6 +101,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         settingsPanel?.SetActive(false);
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
+        modeSelectionPanel?.SetActive(false);
     }
 
     public void ShowMainMenu()
@@ -116,6 +123,13 @@ public class MenuManager : MonoBehaviourPunCallbacks
         Debug.Log("MenuManager: ShowInfo called");
         DisableAllPanels();
         infoPanel?.SetActive(true);
+    }
+
+    public void ShowModeSelection()
+    {
+        Debug.Log("MenuManager: ShowModeSelection called");
+        DisableAllPanels();
+        modeSelectionPanel?.SetActive(true);
     }
 
     public void ShowLobby()

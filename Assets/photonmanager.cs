@@ -78,8 +78,9 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         
         ExitGames.Client.Photon.Hashtable customProps = new ExitGames.Client.Photon.Hashtable();
         customProps.Add("HostName", walletAddress);
+        customProps.Add("GameMode", GameModeManager.Instance.CurrentMode.ToString());
         roomOptions.CustomRoomProperties = customProps;
-        roomOptions.CustomRoomPropertiesForLobby = new string[] { "HostName" };
+        roomOptions.CustomRoomPropertiesForLobby = new string[] { "HostName", "GameMode" };
 
         PhotonNetwork.CreateRoom(null, roomOptions);
     }
