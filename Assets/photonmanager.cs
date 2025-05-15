@@ -13,6 +13,7 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     [SerializeField] private LobbyUI lobbyUI;
     
     private bool isConnecting = false;
+    private bool isReconnecting = false;
     private Dictionary<string, bool> playerReadyStatus = new Dictionary<string, bool>();
 
     private void Awake()
@@ -59,6 +60,87 @@ public class PhotonManager : MonoBehaviourPunCallbacks
             isConnecting = true;
             PhotonNetwork.GameVersion = gameVersion;
             PhotonNetwork.ConnectUsingSettings();
+        }
+    }
+
+    public void EnsureConnected()
+    {
+        if (!PhotonNetwork.IsConnected && !isConnecting && !isReconnecting)
+        {
+            Debug.Log("[PhotonManager] EnsureConnected called - not connected, connecting now");
+            isReconnecting = true;
+            StartCoroutine(ReconnectWithDelay());
+        }
+        else if (PhotonNetwork.IsConnected && !PhotonNetwork.InLobby)
+        {
+            Debug.Log("[PhotonManager] EnsureConnected called - connected but not in lobby, joining lobby");
+            TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+            PhotonNetwork.JoinLobby(mainLobby);
+        }
+        else
+        {
+            Debug.Log("[PhotonManager] EnsureConnected called - already connected and in lobby");
+        }
+    }
+
+    public void ForceRefreshRoomList()
+    {
+        Debug.Log("[PhotonManager] ForceRefreshRoomList called");
+        
+        if (!PhotonNetwork.IsConnected)
+        {
+            Debug.Log("[PhotonManager] Not connected, connecting first");
+            ConnectToPhoton();
+            return;
+        }
+        
+        if (PhotonNetwork.InLobby)
+        {
+            Debug.Log("[PhotonManager] In lobby, leaving and rejoining for fresh room list");
+            StartCoroutine(LeaveAndRejoinLobby());
+        }
+        else
+        {
+            Debug.Log("[PhotonManager] Not in lobby, joining");
+            TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+            PhotonNetwork.JoinLobby(mainLobby);
+        }
+    }
+
+    private IEnumerator ReconnectWithDelay()
+    {
+        yield return new WaitForSeconds(0.5f);
+        
+        Debug.Log("[PhotonManager] Attempting to reconnect to Photon");
+        ConnectToPhoton();
+        
+        yield return new WaitForSeconds(1.0f);
+        isReconnecting = false;
+    }
+
+    private IEnumerator LeaveAndRejoinLobby()
+    {
+        PhotonNetwork.LeaveLobby();
+        
+        yield return new WaitForSeconds(0.5f);
+        
+        TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+        PhotonNetwork.JoinLobby(mainLobby);
+        
+        Debug.Log("[PhotonManager] Left and rejoined lobby to refresh room list");
+    }
+
+    private IEnumerator RequestRoomListDelayed()
+    {
+        yield return new WaitForSeconds(0.5f);
+        
+        if (PhotonNetwork.InLobby)
+        {
+            Debug.Log("[PhotonManager] Requesting room list update after joining lobby");
+            TypedLobby currentLobby = PhotonNetwork.CurrentLobby;
+            PhotonNetwork.LeaveLobby();
+            yield return new WaitForSeconds(0.2f);
+            PhotonNetwork.JoinLobby(currentLobby);
         }
     }
 
@@ -193,6 +275,8 @@ public class PhotonManager : MonoBehaviourPunCallbacks
     {
         Debug.Log($"Joined Photon lobby: {PhotonNetwork.CurrentLobby.Name}, Type: {PhotonNetwork.CurrentLobby.Type}");
         lobbyUI?.OnPhotonConnected();
+        
+        StartCoroutine(RequestRoomListDelayed());
     }
 
     public override void OnDisconnected(DisconnectCause cause)

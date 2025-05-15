@@ -90,7 +90,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         if (BattleRoundManager.Instance == null || GameManager.Instance == null) return;
         
-        // Don't process round end if we're already in match end
         if (isMatchEnd) return;
 
         bool isVictory = resultText == "Victory!";
@@ -113,20 +112,16 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         Debug.Log("BattleResultsUI: Match end received with result: " + resultText);
         isMatchEnd = true;
         
-        // Store match result for score submission
         wonMatch = resultText == "Victory!";
         
-        // Check if this is a ranked match
         if (GameModeManager.Instance != null && 
             GameModeManager.Instance.CurrentMode == GameMode.Ranked)
         {
             pendingScoreSubmission = true;
-            // Calculate ELO change
             CalculatePendingEloChange();
         }
         else
         {
-            // Make sure it's false for Practice mode
             pendingScoreSubmission = false;
         }
         
@@ -156,7 +151,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
         
-        // Hide the continue button for round results - we automatically continue
         continueButton.gameObject.SetActive(false);
         
         yield return StartCoroutine(FadeInPanel());
@@ -176,10 +170,8 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         battleStatsText.text = GenerateMatchStats();
         
-        // Show continue button for match end
         continueButton.gameObject.SetActive(true);
         
-        // Set button text based on whether we need to submit score
         if (pendingScoreSubmission)
         {
             continueButtonText.text = "Submit Score & Continue";
@@ -197,27 +189,23 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         if (isTransitioning) return;
         
-        // Disable button to prevent double clicks
         continueButton.interactable = false;
         
         if (pendingScoreSubmission && !transactionSubmitted)
         {
-            // Start the async submission process
             SubmitScoreAndReturnAsync();
         }
         else
         {
-            // CRITICAL FIX: Leave the room before transitioning
+            SetReturnToMenuPrefs();
+            
             if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
             {
                 Debug.Log("Leaving Photon room before transitioning to main menu");
-                // Set flags first so they're saved even if disconnect happens
-                SetReturnToMenuPrefs();
                 PhotonNetwork.LeaveRoom();
             }
             else
             {
-                // Not in a room, just transition directly
                 StartCoroutine(TransitionToMainMenu());
             }
         }
@@ -227,11 +215,9 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         Debug.Log("Setting return to menu preferences");
         PlayerPrefs.SetInt("ShowMainMenu", 1);
-        
-        // Ensure wallet connection is maintained across scene transitions
         PlayerPrefs.SetInt("KeepWalletConnected", 1);
+        PlayerPrefs.SetInt("ReturningFromGame", 1);
         
-        // Log the current wallet connection state
         if (WalletManager.Instance != null)
         {
             Debug.Log($"Current wallet connection state: {WalletManager.Instance.IsConnected}");
@@ -249,7 +235,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         isTransitioning = true;
         continueButtonText.text = "Submitting Score...";
         
-        // Submit the score
         bool success = await SubmitScore();
         transactionSubmitted = true;
         transactionSuccess = success;
@@ -265,22 +250,19 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             await System.Threading.Tasks.Task.Delay(2000);
         }
         
-        // CRITICAL FIX: Leave the room before transitioning
+        SetReturnToMenuPrefs();
+        
         if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
         {
             Debug.Log("Leaving Photon room before transitioning to main menu");
-            // Set flags first so they're saved even if disconnect happens
-            SetReturnToMenuPrefs();
             PhotonNetwork.LeaveRoom();
         }
         else
         {
-            // Not in a room, just transition directly
             StartCoroutine(TransitionToMainMenu());
         }
     }
 
-    // Implement the OnLeftRoom callback
     public override void OnLeftRoom()
     {
         Debug.Log("Successfully left room, transitioning to main menu");
@@ -382,7 +364,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
                $"Player B: {BattleRoundManager.Instance.GetPlayerBHP():F0}\n" +
                $"Total Rounds: {BattleRoundManager.Instance.GetCurrentRound()}";
                
-        // Add ELO change info for ranked matches
         if (pendingScoreSubmission && pendingEloChange != 0)
         {
             stats += $"\n\nELO Change: {pendingEloChange:+#;-#;0}";

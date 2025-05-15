@@ -297,14 +297,31 @@ public class MenuManager : MonoBehaviourPunCallbacks
 
         if (!PhotonNetwork.IsConnected)
         {
+            Debug.Log("MenuManager: Not connected to Photon, connecting now");
             PhotonManager photonManager = FindFirstObjectByType<PhotonManager>();
             if (photonManager != null)
             {
-                photonManager.ConnectToPhoton();
+                // Call the enhanced method to ensure Photon is connected
+                photonManager.EnsureConnected();
             }
             else
             {
                 Debug.LogError("PhotonManager not found!");
+            }
+        }
+        else if (!PhotonNetwork.InLobby)
+        {
+            Debug.Log("MenuManager: Connected but not in lobby, joining lobby");
+            PhotonNetwork.JoinLobby();
+        }
+        else
+        {
+            Debug.Log("MenuManager: Already connected and in lobby, refreshing room list");
+            // Force a refresh of the room list
+            PhotonManager photonManager = FindFirstObjectByType<PhotonManager>();
+            if (photonManager != null)
+            {
+                photonManager.ForceRefreshRoomList();
             }
         }
         
@@ -312,6 +329,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
         if (lobbyUI != null)
         {
             lobbyUI.ShowLobbyListPanel();
+            
+            // Force a refresh of the room list through the lobby UI
+            lobbyUI.ForceRefreshRoomList();
         }
     }
 

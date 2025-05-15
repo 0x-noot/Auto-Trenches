@@ -11,9 +11,11 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     [SerializeField] private PlayerHP playerAHP;
     [SerializeField] private PlayerHP playerBHP;
     [SerializeField] private PlacementManager placementManager;
+    [SerializeField] private float endGameDelay = 2f;
 
     private int currentRound = 1;
     private bool isRoundActive = false;
+    private bool isMatchEndTriggered = false;
 
     public event Action<int> OnRoundStart;
     public event Action<string, int> OnRoundEnd;
@@ -78,7 +80,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             if (!PhotonNetwork.IsMasterClient) return;
             
             string winner = playerAHP.GetCurrentHP() > playerBHP.GetCurrentHP() ? "player" : "enemy";
-            photonView.RPC("RPCTriggerMatchEnd", RpcTarget.All, winner);
+            TriggerMatchEnd(winner);
         }
     }
 
@@ -86,12 +88,23 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         if (!PhotonNetwork.IsMasterClient) return;
         
+        TriggerMatchEnd(winner);
+    }
+
+    private void TriggerMatchEnd(string winner)
+    {
+        if (isMatchEndTriggered) return;
+        isMatchEndTriggered = true;
+        
         photonView.RPC("RPCTriggerMatchEnd", RpcTarget.All, winner);
     }
 
     [PunRPC]
     private void RPCTriggerMatchEnd(string winner)
     {
+        if (isMatchEndTriggered) return;
+        isMatchEndTriggered = true;
+
         string localResultText;
         
         if (PhotonNetwork.IsMasterClient)
@@ -104,6 +117,36 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         }
         
         OnMatchEnd?.Invoke(localResultText);
+
+        // Add a delay to make sure all clients see the results before any scene transitions
+        if (PhotonNetwork.IsMasterClient)
+        {
+            StartCoroutine(DelayedEndMatch(endGameDelay));
+        }
+    }
+
+    private System.Collections.IEnumerator DelayedEndMatch(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Add a flag to ensure both clients get back to the main menu
+        photonView.RPC("RPCPrepareForMainMenu", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPCPrepareForMainMenu()
+    {
+        // Set the flag for returning to main menu
+        PlayerPrefs.SetInt("ReturningFromGame", 1);
+        PlayerPrefs.SetInt("ShowMainMenu", 1);
+        PlayerPrefs.SetInt("KeepWalletConnected", 1);
+        PlayerPrefs.Save();
+        
+        // If we're in a room, leave it
+        if (PhotonNetwork.InRoom)
+        {
+            PhotonNetwork.LeaveRoom();
+        }
     }
 
     public void StartNewRound()
@@ -198,7 +241,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             
             if (isMatchEnd || playerBHP.IsDead())
             {
-                OnMatchEnd?.Invoke(localResultText);
+                TriggerMatchEnd(winner);
                 return;
             }
         }
@@ -210,7 +253,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             
             if (isMatchEnd || playerAHP.IsDead())
             {
-                OnMatchEnd?.Invoke(localResultText);
+                TriggerMatchEnd(winner);
                 return;
             }
         }
@@ -287,11 +330,13 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         {
             stream.SendNext(currentRound);
             stream.SendNext(isRoundActive);
+            stream.SendNext(isMatchEndTriggered);
         }
         else
         {
             this.currentRound = (int)stream.ReceiveNext();
             this.isRoundActive = (bool)stream.ReceiveNext();
+            this.isMatchEndTriggered = (bool)stream.ReceiveNext();
         }
     }
 }

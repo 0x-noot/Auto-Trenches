@@ -390,6 +390,27 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
+    public bool IsLobbyListActive()
+    {
+        return lobbyListPanel != null && lobbyListPanel.activeSelf;
+    }
+    
+    public void ForceRefreshRoomList()
+    {
+        if (lobbyListContent != null)
+        {
+            foreach (Transform child in lobbyListContent)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+        
+        if (PhotonManager.Instance != null)
+        {
+            PhotonManager.Instance.RefreshRoomList();
+        }
+    }
+
     private void OnJoinRoomClicked(string roomName)
     {
         if (!WalletManager.Instance.IsConnected)
