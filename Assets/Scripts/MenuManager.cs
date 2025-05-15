@@ -121,18 +121,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
         bool showMainMenu = PlayerPrefs.GetInt("ShowMainMenu", 0) == 1;
         bool keepWalletConnected = PlayerPrefs.GetInt("KeepWalletConnected", 0) == 1;
         string savedUsername = PlayerPrefs.GetString("PlayerUsername", "");
+        bool returningFromGame = PlayerPrefs.GetInt("ReturningFromGame", 0) == 1;
         
-        Debug.Log($"Flags: ShowMainMenu={showMainMenu}, KeepWalletConnected={keepWalletConnected}, HasUsername={!string.IsNullOrEmpty(savedUsername)}");
+        Debug.Log($"Flags: ShowMainMenu={showMainMenu}, KeepWalletConnected={keepWalletConnected}, HasUsername={!string.IsNullOrEmpty(savedUsername)}, ReturningFromGame={returningFromGame}");
         
-        // CRITICAL FIX: Reset the flags immediately to prevent reprocessing
-        PlayerPrefs.SetInt("ShowMainMenu", 0);
-        // NOTE: We don't reset KeepWalletConnected here - it should persist
-        PlayerPrefs.Save();
-        
-        // Mark as processed
+        // Set processedStartupFlags to true before any early returns to prevent future reprocessing
         processedStartupFlags = true;
         
-        // CRITICAL FIX: Check if wallet is connected first, since this should take priority
+        // FIRST PRIORITY: Check if wallet is connected
         if (WalletManager.Instance != null)
         {
             Debug.Log($"WalletManager exists, IsConnected = {WalletManager.Instance.IsConnected}");
@@ -148,14 +144,27 @@ public class MenuManager : MonoBehaviourPunCallbacks
             Debug.LogWarning("WalletManager.Instance is null! Checking other conditions...");
         }
         
-        // Other conditions for showing main menu
-        if (keepWalletConnected || !string.IsNullOrEmpty(savedUsername))
+        // SECOND PRIORITY: Check if returning from game
+        if (returningFromGame)
         {
-            Debug.Log("KeepWalletConnected or username exists, showing main menu");
+            // Reset flag
+            PlayerPrefs.SetInt("ReturningFromGame", 0);
+            PlayerPrefs.Save();
+            
+            Debug.Log("Returning from game, showing main menu");
             ShowMainMenu();
             return;
         }
         
+        // THIRD PRIORITY: Check for saved username and keepWalletConnected
+        if (keepWalletConnected && !string.IsNullOrEmpty(savedUsername))
+        {
+            Debug.Log("KeepWalletConnected and username exists, showing main menu");
+            ShowMainMenu();
+            return;
+        }
+        
+        // FOURTH PRIORITY: Check showMainMenu flag
         if (showMainMenu)
         {
             Debug.Log("ShowMainMenu flag set, showing main menu");
@@ -163,8 +172,11 @@ public class MenuManager : MonoBehaviourPunCallbacks
             return;
         }
         
-        // If none of the above conditions is met, show wallet panel
-        Debug.Log("No flags set, showing wallet panel");
+        // DEFAULT: If none of the above conditions are met, show wallet panel for new sessions
+        Debug.Log("No flags set for showing main menu, showing wallet panel");
+        PlayerPrefs.SetInt("ShowMainMenu", 0);
+        PlayerPrefs.SetInt("ReturningFromGame", 0);
+        PlayerPrefs.Save();
         ShowWalletPanel();
     }
 
@@ -197,23 +209,47 @@ public class MenuManager : MonoBehaviourPunCallbacks
         lobbyPanel?.SetActive(false);
         modeSelectionPanel?.SetActive(false);
         profilePanel?.SetActive(false);
+        
+        // CRITICAL: Always disable the wallet panel when switching to another panel
         if (walletPanel != null)
+        {
+            Debug.Log("MenuManager: Forcibly disabling wallet panel");
             walletPanel.SetActive(false);
+        }
     }
 
     public void ShowMainMenu()
     {
         Debug.Log("MenuManager: ShowMainMenu called");
         DisableAllPanels();
-        mainMenuPanel?.SetActive(true);
+        
+        // CRITICAL: Forcibly disable wallet panel again just to be sure
+        if (walletPanel != null)
+        {
+            walletPanel.SetActive(false);
+        }
+        
+        // Enable main menu
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(true);
+        }
     }
     
     public void ShowWalletPanel()
     {
         Debug.Log("MenuManager: ShowWalletPanel called");
         DisableAllPanels();
+        
         if (walletPanel != null)
+        {
+            Debug.Log("MenuManager: Enabling wallet panel");
             walletPanel.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError("MenuManager: WalletPanel reference is null!");
+        }
     }
 
     public void ShowSettings()
