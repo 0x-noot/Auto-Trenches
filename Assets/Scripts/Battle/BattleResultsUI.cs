@@ -13,6 +13,8 @@ public class BattleResultsUI : MonoBehaviour
     [SerializeField] private GameObject resultsPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
     [SerializeField] private TextMeshProUGUI battleStatsText;
+    [SerializeField] private Button continueButton; // Main button for returning/submitting
+    [SerializeField] private TextMeshProUGUI continueButtonText;
     
     [Header("Animation Settings")]
     [SerializeField] private float panelFadeInDuration = 1f;
@@ -22,6 +24,10 @@ public class BattleResultsUI : MonoBehaviour
     
     private CanvasGroup panelCanvasGroup;
     private bool isTransitioning = false;
+    private bool pendingScoreSubmission = false;
+    private bool wonMatch = false;
+    private int pendingEloChange = 0;
+    private int newElo = 0;
 
     private void Awake()
     {
@@ -31,6 +37,12 @@ public class BattleResultsUI : MonoBehaviour
 
         HidePanel();
         ValidateReferences();
+        
+        // Setup button listener
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(OnContinueClicked);
+        }
     }
 
     private void ValidateReferences()
@@ -38,6 +50,8 @@ public class BattleResultsUI : MonoBehaviour
         if (resultsPanel == null) Debug.LogError("resultsPanel is null!");
         if (winnerText == null) Debug.LogError("winnerText is null!");
         if (battleStatsText == null) Debug.LogError("battleStatsText is null!");
+        if (continueButton == null) Debug.LogError("continueButton is null!");
+        if (continueButtonText == null) Debug.LogError("continueButtonText is null!");
     }
 
     private void Start()
@@ -76,8 +90,6 @@ public class BattleResultsUI : MonoBehaviour
     {
         if (BattleRoundManager.Instance == null || GameManager.Instance == null) return;
 
-        // Since resultText is now directly "Victory!" or "Defeat!" from BattleRoundManager
-        // we can use it directly to determine if the local player won
         bool isVictory = resultText == "Victory!";
         
         List<BaseUnit> losingTeamUnits = isVictory 
@@ -88,7 +100,6 @@ public class BattleResultsUI : MonoBehaviour
             u != null && 
             u.GetCurrentState() != UnitState.Dead);
 
-        // Use the current losing team unit count or fall back to original surviving units
         int unitsToDisplay = losingTeamUnitCount > 0 ? losingTeamUnitCount : originalSurvivingUnits;
 
         StartCoroutine(ShowRoundResults(resultText, unitsToDisplay));
@@ -96,7 +107,33 @@ public class BattleResultsUI : MonoBehaviour
 
     private void HandleMatchEnd(string resultText)
     {
+        // Store match result for score submission
+        wonMatch = resultText == "Victory!";
+        
+        // Check if this is a ranked match
+        if (GameModeManager.Instance != null && 
+            GameModeManager.Instance.CurrentMode == GameMode.Ranked)
+        {
+            pendingScoreSubmission = true;
+            // Calculate ELO change
+            CalculatePendingEloChange();
+        }
+        
         StartCoroutine(ShowMatchResults(resultText));
+    }
+
+    private void CalculatePendingEloChange()
+    {
+        if (ProfileManager.Instance == null || ELOManager.Instance == null) return;
+        
+        var currentProfile = ProfileManager.Instance.GetCurrentProfile();
+        if (currentProfile == null) return;
+        
+        int currentELO = currentProfile.eloRating;
+        int opponentELO = currentELO; // Assume same ELO for now
+        
+        pendingEloChange = ELOManager.Instance.CalculateELOChange(currentELO, opponentELO, wonMatch);
+        newElo = ELOManager.Instance.GetNewELO(currentELO, pendingEloChange);
     }
 
     private IEnumerator ShowRoundResults(string resultText, int survivingUnits)
@@ -107,6 +144,10 @@ public class BattleResultsUI : MonoBehaviour
         winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         
         battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
+        
+        // Set button text for round end
+        continueButtonText.text = "Continue";
+        continueButton.interactable = true;
         
         yield return StartCoroutine(FadeInPanel());
         yield return new WaitForSeconds(transitionDelay);
@@ -125,9 +166,83 @@ public class BattleResultsUI : MonoBehaviour
         
         battleStatsText.text = GenerateMatchStats();
         
+        // Set button text based on whether we need to submit score
+        if (pendingScoreSubmission)
+        {
+            continueButtonText.text = "Submit Score & Continue";
+        }
+        else
+        {
+            continueButtonText.text = "Return to Menu";
+        }
+        continueButton.interactable = true;
+        
         yield return StartCoroutine(FadeInPanel());
-        yield return new WaitForSeconds(transitionDelay);
+    }
+
+    private void OnContinueClicked()
+    {
+        if (isTransitioning) return;
+        
+        // Disable button to prevent double clicks
+        continueButton.interactable = false;
+        
+        if (pendingScoreSubmission)
+        {
+            // Start the async submission process
+            SubmitScoreAndReturnAsync();
+        }
+        else
+        {
+            StartCoroutine(TransitionToMainMenu());
+        }
+    }
+
+    // Separate async method to handle the score submission
+    private async void SubmitScoreAndReturnAsync()
+    {
+        isTransitioning = true;
+        continueButtonText.text = "Submitting Score...";
+        
+        // Submit the score
+        bool success = await SubmitScore();
+        
+        if (success)
+        {
+            continueButtonText.text = "Score Submitted!";
+            await System.Threading.Tasks.Task.Delay(1000);
+        }
+        else
+        {
+            continueButtonText.text = "Submission Failed - Returning...";
+            await System.Threading.Tasks.Task.Delay(2000);
+        }
+        
+        // Return to main menu using coroutine
         StartCoroutine(TransitionToMainMenu());
+    }
+
+    private async System.Threading.Tasks.Task<bool> SubmitScore()
+    {
+        try
+        {
+            var soarManager = FindFirstObjectByType<SoarManager>();
+            if (soarManager != null && newElo > 0)
+            {
+                bool success = await soarManager.SubmitScoreToLeaderboard((ulong)newElo);
+                if (success)
+                {
+                    Debug.Log($"ELO submitted successfully: {newElo} (change: {pendingEloChange:+#;-#;0})");
+                }
+                return success;
+            }
+            return false;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"Error submitting score: {ex.Message}");
+            return false;
+        }
     }
 
     private IEnumerator FadeInPanel()
@@ -169,7 +284,7 @@ public class BattleResultsUI : MonoBehaviour
     private string GenerateRoundStats(string resultText, int survivingUnits)
     {
         bool isVictory = resultText == "Victory!";
-        float damage = 8f + (1.5f * survivingUnits);  // Match the new formula
+        float damage = 8f + (1.5f * survivingUnits);
         string enemyUnits = isVictory ? 
             "Enemy Units Remaining: 0" : 
             $"Enemy Units Remaining: {survivingUnits}";
@@ -181,10 +296,23 @@ public class BattleResultsUI : MonoBehaviour
 
     private string GenerateMatchStats()
     {
-        return $"Match Complete!\n" +
+        string stats = $"Match Complete!\n" +
                $"Final HP:\n" +
                $"Player A: {BattleRoundManager.Instance.GetPlayerAHP():F0}\n" +
                $"Player B: {BattleRoundManager.Instance.GetPlayerBHP():F0}\n" +
                $"Total Rounds: {BattleRoundManager.Instance.GetCurrentRound()}";
+               
+        // Add ELO change info for ranked matches
+        if (pendingScoreSubmission && pendingEloChange != 0)
+        {
+            stats += $"\n\nELO Change: {pendingEloChange:+#;-#;0}";
+            var currentProfile = ProfileManager.Instance.GetCurrentProfile();
+            if (currentProfile != null)
+            {
+                stats += $"\n{currentProfile.eloRating} → {newElo}";
+            }
+        }
+        
+        return stats;
     }
 }

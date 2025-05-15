@@ -40,7 +40,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            //DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -114,6 +114,8 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        Debug.Log($"GameManager: Scene loaded - {scene.name}");
+        
         // Clear existing units and reset state
         CleanupUnits();
         
@@ -128,6 +130,13 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         // Wait a frame for everything to setup
         yield return null;
+        
+        // Re-acquire placement manager reference
+        placementManager = FindFirstObjectByType<PlacementManager>();
+        if (placementManager == null)
+        {
+            Debug.LogError("GameManager: Could not find PlacementManager in scene!");
+        }
 
         // Enable message queue if it was disabled
         if (!PhotonNetwork.IsMessageQueueRunning)
@@ -509,8 +518,20 @@ public class GameManager : MonoBehaviourPunCallbacks
         UpdateGameState(GameState.BattleEnd);
         DisableAllUnits();
         CleanupAllEffects();
+        
+        // Only record match result locally - no automatic submission
+        if (ProfileManager.Instance != null)
+        {
+            bool localPlayerWon = (PhotonNetwork.IsMasterClient && winner == "player") || 
+                            (!PhotonNetwork.IsMasterClient && winner == "enemy");
+            
+            // Record match result locally
+            ProfileManager.Instance.RecordMatch(localPlayerWon);
+        }
+        
         OnGameOver?.Invoke(winner);
     }
+
 
     private void DisableAllUnits()
     {

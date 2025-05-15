@@ -106,15 +106,27 @@ public class WalletManager : MonoBehaviour
         PlayerPrefs.SetString("LastWalletAddress", account.PublicKey.ToString());
         PlayerPrefs.Save();
 
+        // Add a delay to ensure the RPC connection is ready
+        await Task.Delay(500);
+
         bool isRegistered = await CheckPlayerRegistration(account);
         
         if (!isRegistered)
         {
-            soarManager.ShowUsernamePanel(account);
+            if (soarManager != null)
+            {
+                soarManager.ShowUsernamePanel(account);
+            }
+            else
+            {
+                Debug.LogError("SoarManager reference is missing!");
+            }
         }
         else
         {
             Debug.Log("Player already registered, skipping username panel");
+            // Force refresh the main menu in case UI is stuck
+            MenuManager.Instance?.ShowMainMenu();
         }
     }
     
@@ -126,14 +138,19 @@ public class WalletManager : MonoBehaviour
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
             
             bool isRegistered = accountData.Result?.Value != null && 
-                               accountData.Result.Value.Data?.Count > 0;
+                            accountData.Result.Value.Data != null &&
+                            accountData.Result.Value.Data.Count > 0;
             
             Debug.Log($"Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
+            Debug.Log($"Account data exists: {accountData.Result?.Value != null}");
+            Debug.Log($"Data length: {accountData.Result?.Value?.Data?.Count ?? 0}");
+            
             return isRegistered;
         }
         catch (Exception ex)
         {
             Debug.LogError($"Error checking player registration: {ex.Message}");
+            // If we can't check, assume they're not registered to be safe
             return false;
         }
     }

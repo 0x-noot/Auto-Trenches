@@ -15,7 +15,10 @@ public class MenuManager : MonoBehaviourPunCallbacks
     [SerializeField] private GameObject infoPanel;
     [SerializeField] private GameObject lobbyPanel;
     [SerializeField] private GameObject modeSelectionPanel;
+    [SerializeField] private GameObject profilePanel;
     
+    [Header("Profile")]
+    [SerializeField] private UnityEngine.UI.Button profileButton; 
     private ModeSelectionUI modeSelectionUI;
     private bool isInitialized = false;
 
@@ -51,6 +54,8 @@ public class MenuManager : MonoBehaviourPunCallbacks
             Debug.LogError("LobbyPanel reference is missing in MenuManager!");
         if (modeSelectionPanel == null)
             Debug.LogError("ModeSelectionPanel reference is missing in MenuManager!");
+        if (profilePanel == null)
+            Debug.LogWarning("ProfilePanel reference is missing in MenuManager!"); 
     }
 
     private void Start()
@@ -61,17 +66,19 @@ public class MenuManager : MonoBehaviourPunCallbacks
             InitializePanels();
         }
         
-        // Check if username exists
+        if (profileButton != null)
+        {
+            profileButton.onClick.AddListener(ShowProfile);
+        }
+        
         string savedUsername = PlayerPrefs.GetString("PlayerUsername", "");
         
         if (string.IsNullOrEmpty(savedUsername))
         {
-            // If no username, hide main menu and let LobbyUI handle showing username panel
             DisableAllPanels();
         }
         else
         {
-            // Otherwise show main menu
             ShowMainMenu();
         }
     }
@@ -83,12 +90,12 @@ public class MenuManager : MonoBehaviourPunCallbacks
         Debug.Log("MenuManager: Initializing panels");
         ValidatePanelReferences();
 
-        // Make sure all panels are initially hidden
         mainMenuPanel?.SetActive(false);
         settingsPanel?.SetActive(false);
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
         modeSelectionPanel?.SetActive(false);
+        profilePanel?.SetActive(false); 
         
         isInitialized = true;
         Debug.Log("MenuManager: Panels initialized");
@@ -102,6 +109,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
         modeSelectionPanel?.SetActive(false);
+        profilePanel?.SetActive(false); 
     }
 
     public void ShowMainMenu()
@@ -132,13 +140,28 @@ public class MenuManager : MonoBehaviourPunCallbacks
         modeSelectionPanel?.SetActive(true);
     }
 
+    public void ShowProfile()
+    {
+        Debug.Log("MenuManager: ShowProfile called");
+        DisableAllPanels();
+        profilePanel?.SetActive(true);
+        
+        if (ProfileManager.Instance != null)
+        {
+            ProfileManager.Instance.ShowProfile();
+        }
+        else
+        {
+            Debug.LogError("ProfileManager instance not found!");
+        }
+    }
+
     public void ShowLobby()
     {
         Debug.Log("MenuManager: ShowLobby called");
         DisableAllPanels();
         lobbyPanel?.SetActive(true);
 
-        // Connect to Photon if not already connected
         if (!PhotonNetwork.IsConnected)
         {
             PhotonManager photonManager = FindFirstObjectByType<PhotonManager>();
@@ -152,7 +175,6 @@ public class MenuManager : MonoBehaviourPunCallbacks
             }
         }
         
-        // Find LobbyUI and tell it to show lobby list panel
         LobbyUI lobbyUI = FindFirstObjectByType<LobbyUI>();
         if (lobbyUI != null)
         {
@@ -163,7 +185,6 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void QuitGame()
     {
         Debug.Log("MenuManager: QuitGame called");
-        // Disconnect from Photon if connected
         if (PhotonNetwork.IsConnected)
         {
             PhotonNetwork.Disconnect();
@@ -180,28 +201,24 @@ public class MenuManager : MonoBehaviourPunCallbacks
     {
         PlayerPrefs.DeleteKey("PlayerUsername");
         
-        // Find LobbyUI and show username panel
         LobbyUI lobbyUI = FindFirstObjectByType<LobbyUI>();
         if (lobbyUI != null)
         {
             lobbyUI.ShowWalletPanel();
         }
         
-        // Hide main menu
         DisableAllPanels();
     }
 
     public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
     {
         Debug.Log($"MenuManager: Disconnected from Photon with cause: {cause}");
-        // Return to main menu if disconnected
         ShowMainMenu();
     }
 
     public override void OnLeftRoom()
     {
         Debug.Log("MenuManager: Left room, returning to lobby");
-        // Return to lobby when leaving a room
         ShowLobby();
     }
 }

@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 4108768984313371858}
   - component: {fileID: 3668296887065870118}
   - component: {fileID: 5121141988179948861}
+  - component: {fileID: 2286614882835520094}
   m_Layer: 0
   m_Name: Cleric
   m_TagString: Untagged
@@ -86,8 +87,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 15
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.60305756, g: 0.6886792, b: 0.21764861, a: 1}
+  m_Sprite: {fileID: 3250733561202989743, guid: 95f8c5a5171c348999990c26d03ce8eb, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -269,7 +270,7 @@ MonoBehaviour:
   healRadius: 5
   divineHealDuration: 1.5
   healEffectPrefab: {fileID: 7945593705165758255, guid: 7f431781bc1409b49850b70606367da1, type: 3}
-  healColor: {r: 0.5, g: 1, b: 0.5, a: 1}
+  healColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &5121141988179948861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -297,6 +298,28 @@ MonoBehaviour:
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
+--- !u!95 &2286614882835520094
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1896498469237918707}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: ceab3fbb364c4495987089e35b8842d3, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &6601199593067039798
 PrefabInstance:
   m_ObjectHideFlags: 0

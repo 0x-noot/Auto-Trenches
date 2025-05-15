@@ -61,6 +61,16 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
     private void Start()
     {
         gameManager = GameManager.Instance;
+        if (gameManager == null)
+        {
+            Debug.LogError("PlacementManager: Could not find GameManager instance!");
+            // Try finding it directly
+            gameManager = FindFirstObjectByType<GameManager>();
+            if (gameManager == null)
+            {
+                Debug.LogError("PlacementManager: Still could not find GameManager!");
+            }
+        }
         validPlacement = FindFirstObjectByType<ValidPlacementSystem>();
 
         if (playerAUnitsParent == null) playerAUnitsParent = transform;
@@ -186,10 +196,14 @@ public class PlacementManager : MonoBehaviourPunCallbacks, IPunObservable
 
     public void PlaceUnit(Vector3 position)
     {
-        // Generate a unique timestamp for this placement request
+        Debug.Log($"PlaceUnit called at position: {position}");
+        Debug.Log($"Can place unit: {CanPlaceUnit()}");
+        Debug.Log($"Current team: {currentTeam}");
+        Debug.Log($"Is processing placement: {isProcessingPlacement}");
+        Debug.Log($"Current state: {gameManager?.GetCurrentState()}");
+        
         long requestTimestamp = DateTime.Now.Ticks;
         
-        // Check if we're already processing a placement
         if (isProcessingPlacement)
         {
             LogDebug($"[{(PhotonNetwork.IsMasterClient ? "HOST" : "CLIENT")}] Placement already in progress, please wait. isProcessingPlacement={isProcessingPlacement}, pendingTimestamps={pendingPlacementTimestamps.Count}");

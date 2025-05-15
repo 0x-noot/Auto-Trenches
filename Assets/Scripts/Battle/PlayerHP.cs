@@ -7,6 +7,15 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
     private float currentHP;
     public int winStreak { get; private set; } = 0;
     private bool isFirstRound = true;
+    private int roundNumber = 0;
+
+    // Damage formula constants - adjusted for shorter games
+    [Header("Damage Settings")]
+    [SerializeField] private float baseDamage = 10f;            // Increased from 7f
+    [SerializeField] private float damagePerUnit = 1.5f;        // Increased from 1.25f
+    [SerializeField] private float winStreakBonus = 1.5f;       // Increased from 1f
+    [SerializeField] private float roundProgressiveBonus = 0.15f; // 15% more damage per round
+    [SerializeField] private float minDamage = 12f;             // Minimum damage per round
 
     public event System.Action OnHPChanged;
 
@@ -24,7 +33,22 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
             isFirstRound = false;
         }
 
-        float damage = 7f + (1.25f * survivingUnits) + winStreak;
+        roundNumber++;
+
+        // Base formula with increased values
+        float damage = baseDamage + (damagePerUnit * survivingUnits) + (winStreakBonus * winStreak);
+        
+        // Progressive damage increase - damage increases by 15% each round
+        float roundMultiplier = 1f + (roundNumber * roundProgressiveBonus);
+        damage *= roundMultiplier;
+        
+        // Ensure minimum damage
+        damage = Mathf.Max(damage, minDamage);
+        
+        Debug.Log($"Round {roundNumber} Damage: Base {baseDamage} + ({damagePerUnit} × {survivingUnits} units) " +
+                  $"+ ({winStreakBonus} × {winStreak} streak) = {damage/roundMultiplier:F1} " +
+                  $"× {roundMultiplier:F2} (round bonus) = {damage:F1} total");
+        
         photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
     }
 
@@ -65,6 +89,16 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
         winStreak = 0;
     }
 
+    // Add method to reset round counter when starting new match
+    public void ResetForNewMatch()
+    {
+        roundNumber = 0;
+        winStreak = 0;
+        isFirstRound = true;
+        currentHP = maxHP;
+        TriggerHPChanged();
+    }
+
     public float GetCurrentHP() => currentHP;
     public bool IsDead() => currentHP <= 0;
 
@@ -81,6 +115,7 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
             stream.SendNext(currentHP);
             stream.SendNext(winStreak);
             stream.SendNext(isFirstRound);
+            stream.SendNext(roundNumber);
         }
         else
         {
@@ -88,6 +123,7 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
             this.currentHP = (float)stream.ReceiveNext();
             this.winStreak = (int)stream.ReceiveNext();
             this.isFirstRound = (bool)stream.ReceiveNext();
+            this.roundNumber = (int)stream.ReceiveNext();
         }
     }
 }

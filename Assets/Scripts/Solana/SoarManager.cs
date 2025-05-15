@@ -23,10 +23,24 @@ public class SoarManager : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button submitButton;
 
     private PublicKey gameId = new PublicKey("HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC");
+    private PublicKey leaderboardPda = new PublicKey("3nVK66juaCJ7p2AzqGzjhkkwSHjXokPPSPrJqSZY19ge");
     private Account currentAccount;
 
+    public static SoarManager Instance { get; private set; }
+    
     private void Awake()
     {
+        if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+        else
+            {
+                Destroy(gameObject);
+                return;
+            }
+        
         usernamePanel.SetActive(false);
     }
 
@@ -54,9 +68,25 @@ public class SoarManager : MonoBehaviour
         }
 
         submitButton.interactable = false;
+        statusText.text = "Checking registration...";
+        
+        // Double-check if already registered before attempting registration
+        var playerAccount = SoarPda.PlayerPda(currentAccount.PublicKey);
+        var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccount, Commitment.Confirmed);
+        
+        if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
+        {
+            statusText.text = "Already registered!";
+            await Task.Delay(1500);
+            usernamePanel.SetActive(false);
+            MenuManager.Instance?.ShowMainMenu();
+            return;
+        }
+        
         statusText.text = "Registering...";
         await RegisterPlayer(currentAccount, username);
     }
+
 
     private async Task RegisterPlayer(Account account, string username)
     {
@@ -78,11 +108,18 @@ public class SoarManager : MonoBehaviour
                 return;
             }
 
+            // Get fresh blockhash
+            var blockHash = await Web3.Rpc.GetLatestBlockHashAsync();
+            if (blockHash == null || blockHash.Result == null)
+            {
+                throw new Exception("Failed to get block hash");
+            }
+
             var tx = new Transaction()
             {
                 FeePayer = account.PublicKey,
                 Instructions = new List<TransactionInstruction>(),
-                RecentBlockHash = await Web3.BlockHash()
+                RecentBlockHash = blockHash.Result.Value.Blockhash // Use the fresh blockhash
             };
 
             var accountsInitUser = new InitializePlayerAccounts()
@@ -128,6 +165,9 @@ public class SoarManager : MonoBehaviour
                 statusText.text = "Registration successful!";
                 usernamePanel.SetActive(false);
                 Debug.Log("Player registration confirmed");
+                
+                // Navigate to main menu after registration
+                MenuManager.Instance?.ShowMainMenu();
             }
             else
             {
@@ -141,6 +181,95 @@ public class SoarManager : MonoBehaviour
             Debug.LogError($"Error registering player: {ex.Message}");
             statusText.text = $"Error: {ex.Message}";
             submitButton.interactable = true;
+        }
+    }
+
+    public async Task<bool> SubmitScoreToLeaderboard(ulong score)
+    {
+        try
+        {
+            if (Web3.Wallet == null || Web3.Wallet.Account == null)
+            {
+                Debug.LogError("Wallet not connected");
+                return false;
+            }
+
+            var playerAddress = Web3.Wallet.Account.PublicKey;
+            var playerAccountPda = SoarPda.PlayerPda(playerAddress);
+            
+            var tx = new Transaction()
+            {
+                FeePayer = playerAddress,
+                Instructions = new List<TransactionInstruction>(),
+                RecentBlockHash = await Web3.BlockHash()
+            };
+
+            var accounts = new SubmitScoreAccounts()
+            {
+                Payer = playerAddress,
+                Authority = playerAddress,
+                PlayerAccount = playerAccountPda,
+                Leaderboard = leaderboardPda,
+                PlayerScores = SoarPda.PlayerScoresPda(playerAccountPda, leaderboardPda),
+                SystemProgram = SystemProgram.ProgramIdKey
+            };
+
+            var submitScoreIx = SoarProgram.SubmitScore(
+                accounts: accounts,
+                score: score,
+                programId: SoarProgram.ProgramIdKey
+            );
+
+            tx.Add(submitScoreIx);
+
+            // Send transaction
+            var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
+            
+            if (!result.WasSuccessful)
+            {
+                Debug.LogError($"Failed to submit score: {result.Reason}");
+                return false;
+            }
+
+            Debug.Log($"Score submitted successfully. Transaction: {result.Result}");
+            
+            // Wait for confirmation
+            await Web3.Rpc.ConfirmTransaction(result.Result, Commitment.Confirmed);
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error submitting score: {ex.Message}");
+            return false;
+        }
+    }
+
+    // Method to fetch current score
+    public async Task<ulong> GetPlayerScore(PublicKey playerPublicKey)
+    {
+        try
+        {
+            var playerScoresPda = SoarPda.PlayerScoresPda(SoarPda.PlayerPda(playerPublicKey), leaderboardPda);
+            var accountData = await Web3.Rpc.GetAccountInfoAsync(playerScoresPda, Commitment.Confirmed);
+            
+            if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
+            {
+                // Note: You'll need to deserialize the account data to get the actual score
+                // This is a placeholder - the actual implementation depends on your SOAR version
+                Debug.Log("Player scores account found, but deserialization not implemented");
+                return 1200; // Default ELO
+            }
+            else
+            {
+                Debug.Log("No scores found for player");
+                return 1200; // Default ELO
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error fetching player score: {ex.Message}");
+            return 1200; // Default ELO
         }
     }
 }
