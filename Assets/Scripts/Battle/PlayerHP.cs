@@ -46,8 +46,8 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
         damage = Mathf.Max(damage, minDamage);
         
         Debug.Log($"Round {roundNumber} Damage: Base {baseDamage} + ({damagePerUnit} × {survivingUnits} units) " +
-                  $"+ ({winStreakBonus} × {winStreak} streak) = {damage/roundMultiplier:F1} " +
-                  $"× {roundMultiplier:F2} (round bonus) = {damage:F1} total");
+                $"+ ({winStreakBonus} × {winStreak} streak) = {damage/roundMultiplier:F1} " +
+                $"× {roundMultiplier:F2} (round bonus) = {damage:F1} total, Current HP: {currentHP}, New HP: {currentHP - damage}");
         
         photonView.RPC("RPCTakeDamage", RpcTarget.All, damage);
     }
@@ -55,7 +55,9 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
     [PunRPC]
     private void RPCTakeDamage(float damage)
     {
+        float previousHP = currentHP;
         currentHP = Mathf.Max(0, currentHP - damage);
+        Debug.Log($"HP changed from {previousHP} to {currentHP} (damage: {damage})");
         StartCoroutine(TriggerHPChangedNextFrame());
     }
 

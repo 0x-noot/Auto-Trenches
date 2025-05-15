@@ -40,7 +40,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
-            //DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -58,7 +57,6 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         
-        // Clear all pending RPCs and network messages
         if (PhotonNetwork.IsMessageQueueRunning)
             PhotonNetwork.IsMessageQueueRunning = false;
     }
@@ -90,11 +88,9 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (!PhotonNetwork.IsConnected)
         {
-            Debug.LogError("Not connected to Photon Network!");
             return;
         }
 
-        // Make sure message queue is running
         if (!PhotonNetwork.IsMessageQueueRunning)
         {
             PhotonNetwork.IsMessageQueueRunning = true;
@@ -104,32 +100,24 @@ public class GameManager : MonoBehaviourPunCallbacks
         
         if (placementManager == null)
         {
-            Debug.LogError("GameManager: Missing placement manager reference!");
             return;
         }
 
-        // Short delay before transitioning to placement
         StartCoroutine(TransitionToPlacement());
     }
     
     private IEnumerator TransitionToPlacement()
     {
-        // Wait a short moment to ensure everything is ready
         yield return new WaitForSeconds(0.5f);
         
-        // Transition to placement phase
         UpdateGameState(GameState.PlayerAPlacement);
         isInitialized = true;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"GameManager: Scene loaded - {scene.name}");
-        
-        // Clear existing units and reset state
         CleanupUnits();
         
-        // Initialize for battle scene
         if (scene.name == "BattleScene")
         {
             StartCoroutine(InitializeAfterSceneLoad());
@@ -138,29 +126,20 @@ public class GameManager : MonoBehaviourPunCallbacks
     
     private IEnumerator InitializeAfterSceneLoad()
     {
-        // Wait a frame for everything to setup
         yield return null;
         
-        // Re-acquire placement manager reference
         placementManager = FindFirstObjectByType<PlacementManager>();
-        if (placementManager == null)
-        {
-            Debug.LogError("GameManager: Could not find PlacementManager in scene!");
-        }
 
-        // Enable message queue if it was disabled
         if (!PhotonNetwork.IsMessageQueueRunning)
         {
             PhotonNetwork.IsMessageQueueRunning = true;
         }
 
-        // Wait until message queue is running
         while (!PhotonNetwork.IsMessageQueueRunning)
         {
             yield return null;
         }
 
-        // Now initialize
         Initialize();
     }
 
@@ -186,18 +165,15 @@ public class GameManager : MonoBehaviourPunCallbacks
         pendingDeaths.Clear();
         isBattleEnding = false;
         
-        // Reset death times
         lastDeathTime["player"] = 0f;
         lastDeathTime["enemy"] = 0f;
     }
 
     private void CleanupProjectiles()
     {
-        // Find all active projectiles
         ArrowProjectile[] arrows = FindObjectsOfType<ArrowProjectile>();
         MagicProjectile[] spells = FindObjectsOfType<MagicProjectile>();
         
-        // Clean up arrows
         foreach (var arrow in arrows)
         {
             if (arrow != null && arrow.gameObject.activeInHierarchy)
@@ -206,7 +182,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             }
         }
         
-        // Clean up spells
         foreach (var spell in spells)
         {
             if (spell != null && spell.gameObject.activeInHierarchy)
@@ -220,10 +195,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
-        // Clean up any leftover projectiles
         CleanupProjectiles();
         
-        // Reset death times for the next round
         lastDeathTime["player"] = 0f;
         lastDeathTime["enemy"] = 0f;
         
@@ -233,20 +206,15 @@ public class GameManager : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPCPrepareNextRound()
     {
-        Debug.Log("Executing round preparation");
-        
-        // Reset death times on all clients
         lastDeathTime["player"] = 0f;
         lastDeathTime["enemy"] = 0f;
         
-        // Clean up any orphaned health bars
         var orphanedHealthSystems = FindObjectsOfType<HealthSystem>()
             .Where(hs => hs.transform.parent == null)
             .ToArray();
 
         foreach (var healthSystem in orphanedHealthSystems)
         {
-            Debug.Log($"Cleaning up orphaned health bar: {healthSystem.gameObject.name}");
             Destroy(healthSystem.gameObject);
         }
 
@@ -285,8 +253,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void HandleMatchEnd(string result)
     {
-        Debug.Log($"GameManager received match end notification: {result}");
-        
         UpdateGameState(GameState.GameOver);
     }
 
@@ -305,10 +271,8 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             pendingDeaths[unit] = true;
             
-            // Track the time of death for this team
             string team = playerUnits.Contains(unit) ? "player" : "enemy";
             lastDeathTime[team] = Time.time;
-            Debug.Log($"Unit death recorded for team {team} at time {lastDeathTime[team]}");
             
             StartCoroutine(HandleDeathAfterAnimation(unit));
         }
@@ -332,7 +296,6 @@ public class GameManager : MonoBehaviourPunCallbacks
             pendingDeaths.Remove(unit);
         }
 
-        // Clean up null references
         playerUnits.RemoveAll(u => u == null);
         enemyUnits.RemoveAll(u => u == null);
 
@@ -347,7 +310,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private int CountAliveUnits(List<BaseUnit> units)
     {
-        // Remove null references first - more efficient than filtering during counting
         units.RemoveAll(u => u == null);
 
         int count = 0;
@@ -375,9 +337,20 @@ public class GameManager : MonoBehaviourPunCallbacks
         return units.Count(u => pendingDeaths.ContainsKey(u)) > 0;
     }
 
+    private void HandleRoundFinished(string winner)
+    {
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.HandleRoundEnd(winner);
+        }
+        else
+        {
+            EndBattle(winner);
+        }
+    }
+
     private void CheckBattleEnd()
     {
-        // Wait for all pending deaths to finish
         if (HasPendingDeaths(playerUnits) || HasPendingDeaths(enemyUnits))
         {
             return;
@@ -386,44 +359,40 @@ public class GameManager : MonoBehaviourPunCallbacks
         int alivePlayers = CountAliveUnits(playerUnits);
         int aliveEnemies = CountAliveUnits(enemyUnits);
 
-        Debug.Log($"CheckBattleEnd: Alive players: {alivePlayers}, Alive enemies: {aliveEnemies}");
-
-        if (alivePlayers == 0 && aliveEnemies == 0)
+        if (alivePlayers == 0 || aliveEnemies == 0)
         {
-            // Both teams were eliminated - use time of death to determine winner
-            // Team whose last unit died later loses (other team wins)
-            float playerLastDeath = lastDeathTime["player"];
-            float enemyLastDeath = lastDeathTime["enemy"];
+            string roundWinner;
             
-            Debug.Log($"All units eliminated. Player last death: {playerLastDeath}, Enemy last death: {enemyLastDeath}");
-            
-            if (Mathf.Approximately(playerLastDeath, enemyLastDeath))
+            if (alivePlayers == 0 && aliveEnemies == 0)
             {
-                // If deaths occurred at exactly the same time (very unlikely)
-                // Default to player (host) winning
-                Debug.Log("Death times identical - player wins by default");
-                EndBattle("player");
+                float playerLastDeath = lastDeathTime["player"];
+                float enemyLastDeath = lastDeathTime["enemy"];
+                
+                if (Mathf.Approximately(playerLastDeath, enemyLastDeath))
+                {
+                    roundWinner = "player";
+                }
+                else if (playerLastDeath > enemyLastDeath)
+                {
+                    roundWinner = "enemy";
+                }
+                else
+                {
+                    roundWinner = "player";
+                }
             }
-            else if (playerLastDeath > enemyLastDeath)
+            else if (alivePlayers == 0 && aliveEnemies > 0)
             {
-                // Player's last unit died after enemy's last unit - enemy wins
-                Debug.Log("Player's units died last - enemy wins");
-                EndBattle("enemy");
+                roundWinner = "enemy";
             }
             else
             {
-                // Enemy's last unit died after player's last unit - player wins
-                Debug.Log("Enemy's units died last - player wins");
-                EndBattle("player");
+                roundWinner = "player";
             }
-        }
-        else if (alivePlayers == 0 && aliveEnemies > 0)
-        {
-            EndBattle("enemy");
-        }
-        else if (aliveEnemies == 0 && alivePlayers > 0)
-        {
-            EndBattle("player");
+            
+            HandleRoundFinished(roundWinner);
+            
+            isBattleEnding = true;
         }
     }
 
@@ -457,7 +426,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         {
             if (unit != null && unit.gameObject != null && unit.gameObject.activeInHierarchy)
             {
-                // Initialize unit with default stats (no upgrades)
                 if (unit.photonView.IsMine)
                 {
                     unit.ApplyDefaultStats();
@@ -482,7 +450,6 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     private void CleanupAllEffects()
     {
-        // Try to find and destroy all effect objects by their tags
         string[] effectTags = { "StunEffect", "HealEffect", "StrengthEffect" };
         
         foreach (string tag in effectTags)
@@ -496,18 +463,15 @@ public class GameManager : MonoBehaviourPunCallbacks
                     if (view != null && PhotonNetwork.IsMasterClient)
                     {
                         PhotonNetwork.Destroy(effect);
-                        Debug.Log($"Master cleaning up orphaned {tag}: {effect.name}");
                     }
                     else if (view != null && view.IsMine)
                     {
                         PhotonNetwork.Destroy(effect);
-                        Debug.Log($"Client cleaning up owned {tag}: {effect.name}");
                     }
                 }
             }
             catch (UnityException)
             {
-                Debug.LogWarning($"Tag '{tag}' not defined. Skipping tag-based cleanup.");
             }
         }
     }
@@ -521,10 +485,8 @@ public class GameManager : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Clean up any projectiles before ending
         CleanupProjectiles();
         CleanupAllEffects();
-        // Use AllBuffered to ensure all clients get the end battle message
         photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
     }
 
@@ -536,13 +498,11 @@ public class GameManager : MonoBehaviourPunCallbacks
         DisableAllUnits();
         CleanupAllEffects();
         
-        // Only record match result locally - no automatic submission
         if (ProfileManager.Instance != null)
         {
             bool localPlayerWon = (PhotonNetwork.IsMasterClient && winner == "player") || 
                             (!PhotonNetwork.IsMasterClient && winner == "enemy");
             
-            // Record match result locally
             ProfileManager.Instance.RecordMatch(localPlayerWon);
         }
         
@@ -578,8 +538,7 @@ public class GameManager : MonoBehaviourPunCallbacks
             !PhotonNetwork.IsMessageQueueRunning) 
             return;
             
-        // Throttle battle end checks to reduce CPU usage
-        if (Time.frameCount % 10 != 0) return; // Only check every 10 frames
+        if (Time.frameCount % 10 != 0) return;
             
         CheckBattleEnd();
     }
@@ -605,10 +564,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     {
         base.OnDisconnected(cause);
         
-        // Clean up all units
         CleanupUnits();
         
-        // Clean up projectiles when disconnecting
         CleanupProjectiles();
     }
 
