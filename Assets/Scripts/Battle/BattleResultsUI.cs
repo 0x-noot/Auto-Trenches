@@ -30,6 +30,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     private bool transactionSuccess = false;
     private bool isMatchEnd = false;
     private bool hasShownMatchResults = false;
+    private float lastMatchEndCheckTime = 0f;
 
     private void Awake()
     {
@@ -90,35 +91,52 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
                 float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
                 float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
                 
-                // If either player has 0 HP, it's match end
-                if ((playerAHP <= 0 || playerBHP <= 0) && !isMatchEnd && !hasShownMatchResults)
+                // Check more frequently as the game progresses
+                if (Time.time - lastMatchEndCheckTime >= 0.5f)
                 {
-                    // Determine winner based on HP
-                    bool localPlayerWon;
-                    if (PhotonNetwork.IsMasterClient)
+                    lastMatchEndCheckTime = Time.time;
+                    
+                    // If either player has 0 HP, it's match end
+                    if ((playerAHP <= 0 || playerBHP <= 0) && !isMatchEnd && !hasShownMatchResults)
                     {
-                        localPlayerWon = playerAHP > playerBHP;
-                    }
-                    else
-                    {
-                        localPlayerWon = playerBHP > playerAHP;
+                        // Determine winner based on HP
+                        bool localPlayerWon;
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            localPlayerWon = playerAHP > playerBHP;
+                        }
+                        else
+                        {
+                            localPlayerWon = playerBHP > playerAHP;
+                        }
+                        
+                        string resultText = localPlayerWon ? "Victory!" : "Defeat!";
+                        
+                        // If we're the MasterClient, initiate match end for everyone
+                        if (PhotonNetwork.IsMasterClient)
+                        {
+                            string winner = localPlayerWon ? "player" : "enemy";
+                            if (GameManager.Instance != null)
+                            {
+                                GameManager.Instance.UpdateGameState(GameState.BattleEnd);
+                                GameManager.Instance.photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
+                            }
+                        }
+                        
+                        // Force match end through RPC
+                        photonView.RPC("RPCEmergencyMatchEnd", RpcTarget.AllBuffered, resultText);
                     }
                     
-                    string resultText = localPlayerWon ? "Victory!" : "Defeat!";
-                    
-                    // Force match end through RPC
-                    photonView.RPC("RPCEmergencyMatchEnd", RpcTarget.All, resultText);
-                }
-                
-                // If match has ended but results aren't showing
-                if (isMatchEnd && !hasShownMatchResults && !resultsPanel.activeSelf)
-                {
-                    string resultText = wonMatch ? "Victory!" : "Defeat!";
-                    ForceShowMatchResults(resultText);
+                    // If match has ended but results aren't showing
+                    if (isMatchEnd && !hasShownMatchResults && !resultsPanel.activeSelf)
+                    {
+                        string resultText = wonMatch ? "Victory!" : "Defeat!";
+                        ForceShowMatchResults(resultText);
+                    }
                 }
             }
             
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
@@ -186,7 +204,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         string resultText = localPlayerWon ? "Victory!" : "Defeat!";
         
         // Ensure both clients show results
-        photonView.RPC("RPCShowMatchEnd", RpcTarget.All, resultText);
+        photonView.RPC("RPCShowMatchEnd", RpcTarget.AllBuffered, resultText);
     }
 
     private void HandleMatchEnd(string resultText)
@@ -199,7 +217,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         wonMatch = resultText == "Victory!";
         
         // Ensure both clients show results
-        photonView.RPC("RPCShowMatchEnd", RpcTarget.All, resultText);
+        photonView.RPC("RPCShowMatchEnd", RpcTarget.AllBuffered, resultText);
     }
     
     [PunRPC]

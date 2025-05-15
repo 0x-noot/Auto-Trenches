@@ -83,30 +83,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         }
     }
 
-    public void ForceRefreshRoomList()
-    {
-        Debug.Log("[PhotonManager] ForceRefreshRoomList called");
-        
-        if (!PhotonNetwork.IsConnected)
-        {
-            Debug.Log("[PhotonManager] Not connected, connecting first");
-            ConnectToPhoton();
-            return;
-        }
-        
-        if (PhotonNetwork.InLobby)
-        {
-            Debug.Log("[PhotonManager] In lobby, leaving and rejoining for fresh room list");
-            StartCoroutine(LeaveAndRejoinLobby());
-        }
-        else
-        {
-            Debug.Log("[PhotonManager] Not in lobby, joining");
-            TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
-            PhotonNetwork.JoinLobby(mainLobby);
-        }
-    }
-
     private IEnumerator ReconnectWithDelay()
     {
         yield return new WaitForSeconds(0.5f);
@@ -116,32 +92,6 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         
         yield return new WaitForSeconds(1.0f);
         isReconnecting = false;
-    }
-
-    private IEnumerator LeaveAndRejoinLobby()
-    {
-        PhotonNetwork.LeaveLobby();
-        
-        yield return new WaitForSeconds(0.5f);
-        
-        TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
-        PhotonNetwork.JoinLobby(mainLobby);
-        
-        Debug.Log("[PhotonManager] Left and rejoined lobby to refresh room list");
-    }
-
-    private IEnumerator RequestRoomListDelayed()
-    {
-        yield return new WaitForSeconds(0.5f);
-        
-        if (PhotonNetwork.InLobby)
-        {
-            Debug.Log("[PhotonManager] Requesting room list update after joining lobby");
-            TypedLobby currentLobby = PhotonNetwork.CurrentLobby;
-            PhotonNetwork.LeaveLobby();
-            yield return new WaitForSeconds(0.2f);
-            PhotonNetwork.JoinLobby(currentLobby);
-        }
     }
 
     public void CreateRoom(string walletAddress)
@@ -198,31 +148,46 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         }
     }
 
+    // This is the main method to refresh room lists - only called manually
     public void RefreshRoomList()
     {
         Debug.Log($"RefreshRoomList called. Connected={PhotonNetwork.IsConnected}, InLobby={PhotonNetwork.InLobby}");
         
-        if (PhotonNetwork.IsConnected)
-        {
-            if (PhotonNetwork.InLobby)
-            {
-                Debug.Log("Already in lobby, triggering room list update");
-                TypedLobby currentLobby = PhotonNetwork.CurrentLobby;
-                PhotonNetwork.LeaveLobby();
-                PhotonNetwork.JoinLobby(currentLobby);
-            }
-            else
-            {
-                Debug.Log("Not in lobby, joining lobby");
-                TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
-                PhotonNetwork.JoinLobby(mainLobby);
-            }
-        }
-        else
+        if (!PhotonNetwork.IsConnected)
         {
             Debug.LogWarning("Cannot refresh room list: Not connected to Photon");
             ConnectToPhoton();
+            return;
         }
+        
+        if (PhotonNetwork.InLobby)
+        {
+            Debug.Log("In lobby, forcing direct room list update with LeaveLobby/JoinLobby");
+            StartCoroutine(ForceLobbyRefresh());
+        }
+        else
+        {
+            Debug.Log("Not in lobby, joining lobby to get room list");
+            TypedLobby mainLobby = new TypedLobby("MainLobby", LobbyType.Default);
+            PhotonNetwork.JoinLobby(mainLobby);
+        }
+    }
+    
+    private IEnumerator ForceLobbyRefresh()
+    {
+        // Store current lobby before leaving
+        TypedLobby currentLobby = PhotonNetwork.CurrentLobby;
+        
+        // Leave the lobby
+        PhotonNetwork.LeaveLobby();
+        
+        // Wait a bit to ensure the leave operation completes
+        yield return new WaitForSeconds(0.3f);
+        
+        // Join the same lobby again
+        PhotonNetwork.JoinLobby(currentLobby);
+        
+        Debug.Log("Forced lobby refresh with leave/join sequence");
     }
 
     private bool CheckAllPlayersReady()
@@ -276,7 +241,11 @@ public class PhotonManager : MonoBehaviourPunCallbacks
         Debug.Log($"Joined Photon lobby: {PhotonNetwork.CurrentLobby.Name}, Type: {PhotonNetwork.CurrentLobby.Type}");
         lobbyUI?.OnPhotonConnected();
         
-        StartCoroutine(RequestRoomListDelayed());
+        // Just update the UI when joining a lobby
+        if (lobbyUI != null)
+        {
+            lobbyUI.ForceRefreshRoomList();
+        }
     }
 
     public override void OnDisconnected(DisconnectCause cause)

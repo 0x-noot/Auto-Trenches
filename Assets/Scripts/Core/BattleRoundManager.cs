@@ -16,6 +16,8 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     private int currentRound = 1;
     private bool isRoundActive = false;
     private bool isMatchEndTriggered = false;
+    private float lastHpCheckTime = 0f;
+    private const float HP_CHECK_INTERVAL = 0.5f;
 
     public event Action<int> OnRoundStart;
     public event Action<string, int> OnRoundEnd;
@@ -62,6 +64,33 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    private void Update()
+    {
+        // Regularly check HP values for match end condition
+        if (PhotonNetwork.IsMasterClient && Time.time - lastHpCheckTime >= HP_CHECK_INTERVAL)
+        {
+            lastHpCheckTime = Time.time;
+            CheckMatchEndHpCondition();
+        }
+    }
+
+    private void CheckMatchEndHpCondition()
+    {
+        if (isMatchEndTriggered) return;
+        
+        if (playerAHP != null && playerBHP != null)
+        {
+            float playerAHpValue = playerAHP.GetCurrentHP();
+            float playerBHpValue = playerBHP.GetCurrentHP();
+            
+            if (playerAHpValue <= 0 || playerBHpValue <= 0)
+            {
+                string winner = playerAHpValue > playerBHpValue ? "player" : "enemy";
+                TriggerMatchEnd(winner);
+            }
+        }
+    }
+
     private void OnDestroy()
     {
         if (GameManager.Instance != null)
@@ -96,7 +125,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         if (isMatchEndTriggered) return;
         isMatchEndTriggered = true;
         
-        photonView.RPC("RPCTriggerMatchEnd", RpcTarget.All, winner);
+        photonView.RPC("RPCTriggerMatchEnd", RpcTarget.AllBuffered, winner);
     }
 
     [PunRPC]
@@ -177,6 +206,16 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     public void HandleRoundEnd(string winner)
     {
         if (!PhotonNetwork.IsMasterClient) return;
+        
+        // Check for a match-ending condition
+        if (playerAHP != null && playerBHP != null)
+        {
+            if (playerAHP.GetCurrentHP() <= 0 || playerBHP.GetCurrentHP() <= 0)
+            {
+                TriggerMatchEnd(winner);
+                return;
+            }
+        }
 
         int survivingUnits = CountSurvivingUnits(winner);
         
@@ -323,6 +362,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     public int GetCurrentRound() => currentRound;
     public float GetPlayerAHP() => playerAHP != null ? playerAHP.GetCurrentHP() : 0f;
     public float GetPlayerBHP() => playerBHP != null ? playerBHP.GetCurrentHP() : 0f;
+    public bool IsMatchEndTriggered() => isMatchEndTriggered;
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {

@@ -321,7 +321,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
             PhotonManager photonManager = FindFirstObjectByType<PhotonManager>();
             if (photonManager != null)
             {
-                photonManager.ForceRefreshRoomList();
+                photonManager.RefreshRoomList();
             }
         }
         

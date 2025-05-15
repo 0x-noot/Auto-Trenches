@@ -476,7 +476,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
-    private void EndBattle(string winner)
+    public void EndBattle(string winner)
     {
         if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
 
@@ -491,7 +491,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void RPCEndBattle(string winner)
+    public void RPCEndBattle(string winner)
     {
         isBattleEnding = true;
         UpdateGameState(GameState.BattleEnd);
@@ -508,7 +508,6 @@ public class GameManager : MonoBehaviourPunCallbacks
         
         OnGameOver?.Invoke(winner);
     }
-
 
     private void DisableAllUnits()
     {
