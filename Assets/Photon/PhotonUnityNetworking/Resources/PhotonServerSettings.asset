@@ -128,6 +128,10 @@ MonoBehaviour:
   - RPCPrepareForLevelLoad
   - RPCTriggerMatchEnd
   - RPCPrepareForMainMenu
+  - RPCShowMatchResults
+  - RPCShowFinalMatchResults
+  - RPCEmergencyMatchEnd
+  - RPCShowMatchEnd
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
