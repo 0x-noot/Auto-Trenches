@@ -476,6 +476,108 @@ public class GameManager : MonoBehaviourPunCallbacks
         }
     }
 
+    private void CleanupAllNetworkObjects()
+    {
+        if (!PhotonNetwork.IsMasterClient) return;
+        
+        var arrows = FindObjectsOfType<ArrowProjectile>();
+        foreach (var arrow in arrows)
+        {
+            if (arrow != null && arrow.photonView != null && arrow.photonView.IsMine)
+            {
+                PhotonNetwork.Destroy(arrow.gameObject);
+            }
+        }
+        
+        var spells = FindObjectsOfType<MagicProjectile>();
+        foreach (var spell in spells)
+        {
+            if (spell != null && spell.photonView != null && spell.photonView.IsMine)
+            {
+                PhotonNetwork.Destroy(spell.gameObject);
+            }
+        }
+        
+        string[] effectTags = { "StunEffect", "HealEffect", "StrengthEffect", "ShieldEffect", "ExplosionEffect" };
+        foreach (string tag in effectTags)
+        {
+            try
+            {
+                GameObject[] effects = GameObject.FindGameObjectsWithTag(tag);
+                foreach (GameObject effect in effects)
+                {
+                    PhotonView view = effect.GetComponent<PhotonView>();
+                    if (view != null && view.IsMine)
+                    {
+                        PhotonNetwork.Destroy(effect);
+                    }
+                }
+            }
+            catch (System.Exception) { }
+        }
+    }
+
+    private void CleanupNetworkObjects()
+    {
+        Debug.Log("[GameManager] Cleaning up network objects");
+        
+        // Find and destroy arrow projectiles
+        ArrowProjectile[] arrows = FindObjectsOfType<ArrowProjectile>();
+        foreach (var arrow in arrows)
+        {
+            if (arrow != null && arrow.gameObject != null)
+            {
+                PhotonView view = arrow.GetComponent<PhotonView>();
+                if (view != null && view.IsMine)
+                {
+                    Debug.Log($"[GameManager] Destroying arrow: {arrow.gameObject.name}");
+                    PhotonNetwork.Destroy(arrow.gameObject);
+                }
+            }
+        }
+        
+        // Find and destroy magic projectiles
+        MagicProjectile[] spells = FindObjectsOfType<MagicProjectile>();
+        foreach (var spell in spells)
+        {
+            if (spell != null && spell.gameObject != null)
+            {
+                PhotonView view = spell.GetComponent<PhotonView>();
+                if (view != null && view.IsMine)
+                {
+                    Debug.Log($"[GameManager] Destroying spell: {spell.gameObject.name}");
+                    PhotonNetwork.Destroy(spell.gameObject);
+                }
+            }
+        }
+        
+        // Find and destroy effects
+        string[] effectTags = { "StunEffect", "HealEffect", "StrengthEffect", "ShieldEffect", "ExplosionEffect" };
+        foreach (string tag in effectTags)
+        {
+            try
+            {
+                GameObject[] effects = GameObject.FindGameObjectsWithTag(tag);
+                foreach (GameObject effect in effects)
+                {
+                    if (effect != null)
+                    {
+                        PhotonView view = effect.GetComponent<PhotonView>();
+                        if (view != null && view.IsMine)
+                        {
+                            Debug.Log($"[GameManager] Destroying effect: {effect.name}");
+                            PhotonNetwork.Destroy(effect);
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[GameManager] Error cleaning up {tag}: {ex.Message}");
+            }
+        }
+    }
+
     public void EndBattle(string winner)
     {
         if (!PhotonNetwork.IsMasterClient || !PhotonNetwork.IsMessageQueueRunning) return;
@@ -485,14 +587,34 @@ public class GameManager : MonoBehaviourPunCallbacks
             return;
         }
 
+        isBattleEnding = true;
+        
+        // Clean up projectiles and effects
         CleanupProjectiles();
         CleanupAllEffects();
-        photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
+        CleanupAllNetworkObjects(); // Add this method from previous example
+        
+        // Get the battle results UI
+        BattleResultsUI resultsUI = FindFirstObjectByType<BattleResultsUI>();
+        if (resultsUI != null)
+        {
+            // Show victory on host if player won
+            string hostResult = winner == "player" ? "Victory!" : "Defeat!";
+            resultsUI.RPCShowMatchResults(hostResult);
+            
+            // Show defeat on client if player won (meaning client lost)
+            resultsUI.photonView.RPC("RPCShowMatchResults", RpcTarget.Others, 
+                winner == "player" ? "Defeat!" : "Victory!");
+        }
+        
+        photonView.RPC("RPCEndBattle", RpcTarget.All, winner);
     }
 
     [PunRPC]
     public void RPCEndBattle(string winner)
     {
+        if (isBattleEnding) return;
+        
         isBattleEnding = true;
         UpdateGameState(GameState.BattleEnd);
         DisableAllUnits();
@@ -501,9 +623,19 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (ProfileManager.Instance != null)
         {
             bool localPlayerWon = (PhotonNetwork.IsMasterClient && winner == "player") || 
-                            (!PhotonNetwork.IsMasterClient && winner == "enemy");
+                                (!PhotonNetwork.IsMasterClient && winner == "enemy");
             
             ProfileManager.Instance.RecordMatch(localPlayerWon);
+        }
+        
+        BattleResultsUI resultsUI = FindFirstObjectByType<BattleResultsUI>();
+        if (resultsUI != null)
+        {
+            string resultText = (PhotonNetwork.IsMasterClient && winner == "player") || 
+                                (!PhotonNetwork.IsMasterClient && winner == "enemy") ? 
+                                "Victory!" : "Defeat!";
+            
+            resultsUI.RPCShowMatchResults(resultText);
         }
         
         OnGameOver?.Invoke(winner);

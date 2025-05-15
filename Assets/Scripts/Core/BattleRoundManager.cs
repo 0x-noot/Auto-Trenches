@@ -66,11 +66,17 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Update()
     {
-        // Regularly check HP values for match end condition
-        if (PhotonNetwork.IsMasterClient && Time.time - lastHpCheckTime >= HP_CHECK_INTERVAL)
+        if (!PhotonNetwork.IsMasterClient) return;
+        
+        // Existing time check code
+        if (Time.time - lastHpCheckTime >= HP_CHECK_INTERVAL)
         {
             lastHpCheckTime = Time.time;
             CheckMatchEndHpCondition();
+            
+            // Also force PlayerHP objects to check their condition
+            if (playerAHP != null) playerAHP.CheckDeathCondition();
+            if (playerBHP != null) playerBHP.CheckDeathCondition();
         }
     }
 
@@ -85,12 +91,45 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             
             if (playerAHpValue <= 0 || playerBHpValue <= 0)
             {
+                // Determine the winner based on HP values
                 string winner = playerAHpValue > playerBHpValue ? "player" : "enemy";
-                TriggerMatchEnd(winner);
+                
+                // Flag that we've triggered match end
+                isMatchEndTriggered = true;
+                
+                // End the battle through GameManager
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.EndBattle(winner);
+                }
+                
+                // Also show results directly to ensure both clients see them
+                BattleResultsUI resultsUI = FindFirstObjectByType<BattleResultsUI>();
+                if (resultsUI != null)
+                {
+                    // Show appropriate results to each player
+                    if (PhotonNetwork.IsMasterClient)
+                    {
+                        // This is the host
+                        string localResult = winner == "player" ? "Victory!" : "Defeat!";
+                        resultsUI.RPCShowMatchResults(localResult);
+                        
+                        // Also tell the client what to show
+                        resultsUI.photonView.RPC("RPCShowMatchResults", RpcTarget.Others, 
+                            winner == "player" ? "Defeat!" : "Victory!"); 
+                    }
+                }
             }
         }
     }
 
+    [PunRPC]
+    public void RPCForceMatchEnd()
+    {
+        if (isMatchEndTriggered) return;
+        
+        CheckMatchEndHpCondition();
+    }
     private void OnDestroy()
     {
         if (GameManager.Instance != null)
@@ -147,10 +186,16 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         
         OnMatchEnd?.Invoke(localResultText);
 
-        // Add a delay to make sure all clients see the results before any scene transitions
+        // Force the BattleResultsUI to show results
+        BattleResultsUI resultsUI = FindFirstObjectByType<BattleResultsUI>();
+        if (resultsUI != null)
+        {
+            resultsUI.photonView.RPC("RPCShowMatchResults", RpcTarget.All, localResultText);
+        }
+
         if (PhotonNetwork.IsMasterClient)
         {
-            StartCoroutine(DelayedEndMatch(endGameDelay));
+            StartCoroutine(DelayedEndMatch(5f));
         }
     }
 

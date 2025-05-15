@@ -2,8 +2,6 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
-using System.Linq;
-using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
 
@@ -16,8 +14,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     [SerializeField] private TextMeshProUGUI continueButtonText;
     
     [SerializeField] private float panelFadeInDuration = 1f;
-    [SerializeField] private float statsRevealDelay = 0.5f;
-    [SerializeField] private float transitionDelay = 3f;
     [SerializeField] private string mainMenuScene = "MainMenu";
     
     private CanvasGroup panelCanvasGroup;
@@ -27,10 +23,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     private int pendingEloChange = 0;
     private int newElo = 0;
     private bool transactionSubmitted = false;
-    private bool transactionSuccess = false;
-    private bool isMatchEnd = false;
     private bool hasShownMatchResults = false;
-    private float lastMatchEndCheckTime = 0f;
 
     private void Awake()
     {
@@ -39,7 +32,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             panelCanvasGroup = resultsPanel.AddComponent<CanvasGroup>();
 
         HidePanel();
-        ValidateReferences();
         
         if (continueButton != null)
         {
@@ -48,112 +40,65 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         }
     }
 
-    private void ValidateReferences()
-    {
-        if (resultsPanel == null) Debug.LogError("resultsPanel is null!");
-        if (winnerText == null) Debug.LogError("winnerText is null!");
-        if (battleStatsText == null) Debug.LogError("battleStatsText is null!");
-        if (continueButton == null) Debug.LogError("continueButton is null!");
-        if (continueButtonText == null) Debug.LogError("continueButtonText is null!");
-    }
-
     private void Start()
     {
-        // Subscribe to events
-        if (BattleRoundManager.Instance != null)
-        {
-            // Unsubscribe first to prevent duplicates
-            BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
-            BattleRoundManager.Instance.OnMatchEnd -= HandleMatchEnd;
-            
-            BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
-            BattleRoundManager.Instance.OnMatchEnd += HandleMatchEnd;
-        }
-        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameOver -= HandleGameOver;
             GameManager.Instance.OnGameOver += HandleGameOver;
         }
         
-        // Start match end detection
-        StartCoroutine(CheckMatchEndCondition());
-    }
-    
-    private IEnumerator CheckMatchEndCondition()
-    {
-        yield return new WaitForSeconds(2f); // Initial delay
-        
-        while (true)
-        {
-            if (BattleRoundManager.Instance != null)
-            {
-                float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
-                float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
-                
-                // Check more frequently as the game progresses
-                if (Time.time - lastMatchEndCheckTime >= 0.5f)
-                {
-                    lastMatchEndCheckTime = Time.time;
-                    
-                    // If either player has 0 HP, it's match end
-                    if ((playerAHP <= 0 || playerBHP <= 0) && !isMatchEnd && !hasShownMatchResults)
-                    {
-                        // Determine winner based on HP
-                        bool localPlayerWon;
-                        if (PhotonNetwork.IsMasterClient)
-                        {
-                            localPlayerWon = playerAHP > playerBHP;
-                        }
-                        else
-                        {
-                            localPlayerWon = playerBHP > playerAHP;
-                        }
-                        
-                        string resultText = localPlayerWon ? "Victory!" : "Defeat!";
-                        
-                        // If we're the MasterClient, initiate match end for everyone
-                        if (PhotonNetwork.IsMasterClient)
-                        {
-                            string winner = localPlayerWon ? "player" : "enemy";
-                            if (GameManager.Instance != null)
-                            {
-                                GameManager.Instance.UpdateGameState(GameState.BattleEnd);
-                                GameManager.Instance.photonView.RPC("RPCEndBattle", RpcTarget.AllBuffered, winner);
-                            }
-                        }
-                        
-                        // Force match end through RPC
-                        photonView.RPC("RPCEmergencyMatchEnd", RpcTarget.AllBuffered, resultText);
-                    }
-                    
-                    // If match has ended but results aren't showing
-                    if (isMatchEnd && !hasShownMatchResults && !resultsPanel.activeSelf)
-                    {
-                        string resultText = wonMatch ? "Victory!" : "Defeat!";
-                        ForceShowMatchResults(resultText);
-                    }
-                }
-            }
-            
-            yield return new WaitForSeconds(0.1f);
-        }
+        InvokeRepeating("CheckPlayerHP", 2f, 0.25f);
     }
 
     private void OnDestroy()
     {
-        if (BattleRoundManager.Instance != null)
-        {
-            BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
-            BattleRoundManager.Instance.OnMatchEnd -= HandleMatchEnd;
-        }
-        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameOver -= HandleGameOver;
         }
         
+        CancelInvoke();
         StopAllCoroutines();
+    }
+
+    private void CheckPlayerHP()
+    {
+        if (hasShownMatchResults) return;
+        
+        if (BattleRoundManager.Instance != null)
+        {
+            float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
+            float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
+            
+            if (playerAHP <= 0 || playerBHP <= 0)
+            {
+                bool localPlayerWon;
+                
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    localPlayerWon = playerAHP > playerBHP;
+                }
+                else
+                {
+                    localPlayerWon = playerBHP > playerAHP;
+                }
+                
+                string resultText = localPlayerWon ? "Victory!" : "Defeat!";
+                
+                // If we're MasterClient, inform GameManager to properly end the battle
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    string winner = playerAHP > playerBHP ? "player" : "enemy";
+                    if (GameManager.Instance != null)
+                    {
+                        GameManager.Instance.EndBattle(winner);
+                    }
+                }
+                
+                ShowMatchResults(resultText);
+            }
+        }
     }
 
     private void HidePanel()
@@ -170,26 +115,11 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             resultsPanel.SetActive(false);
         }
     }
-
-    private void HandleRoundEnd(string resultText, int originalSurvivingUnits)
-    {
-        // Skip if match has ended
-        if (isMatchEnd) return;
-
-        StopAllCoroutines();
-        StartCoroutine(ShowRoundResults(resultText, originalSurvivingUnits));
-        StartCoroutine(CheckMatchEndCondition());
-    }
     
     private void HandleGameOver(string winner)
     {
-        // Skip if already handled
-        if (isMatchEnd) return;
+        if (hasShownMatchResults) return;
         
-        // Mark match as ended
-        isMatchEnd = true;
-        
-        // Convert winner to local perspective
         bool localPlayerWon;
         if (PhotonNetwork.IsMasterClient)
         {
@@ -200,83 +130,35 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             localPlayerWon = winner == "enemy";
         }
         
-        wonMatch = localPlayerWon;
         string resultText = localPlayerWon ? "Victory!" : "Defeat!";
-        
-        // Ensure both clients show results
-        photonView.RPC("RPCShowMatchEnd", RpcTarget.AllBuffered, resultText);
+        ShowMatchResults(resultText);
     }
 
-    private void HandleMatchEnd(string resultText)
+    [PunRPC]
+    public void RPCShowMatchResults(string resultText)
     {
-        // Skip if already handled
-        if (isMatchEnd) return;
-        
-        // Mark match as ended
-        isMatchEnd = true;
-        wonMatch = resultText == "Victory!";
-        
-        // Ensure both clients show results
-        photonView.RPC("RPCShowMatchEnd", RpcTarget.AllBuffered, resultText);
+        ShowMatchResults(resultText);
     }
     
-    [PunRPC]
-    private void RPCEmergencyMatchEnd(string resultText)
+    private void ShowMatchResults(string resultText)
     {
-        // Mark match as ended unconditionally
-        isMatchEnd = true;
-        wonMatch = resultText == "Victory!";
+        if (hasShownMatchResults) return;
         
-        // Handle ranked mode ELO
-        HandleRankedMode();
-        
-        // Force show results
-        ForceShowMatchResults(resultText);
-    }
-    
-    [PunRPC]
-    private void RPCShowMatchEnd(string resultText)
-    {
-        // Mark match as ended unconditionally
-        isMatchEnd = true;
-        wonMatch = resultText == "Victory!";
-        
-        // Handle ranked mode ELO
-        HandleRankedMode();
-        
-        // Stop any existing coroutines
         StopAllCoroutines();
+        CancelInvoke();
         
-        // Force show match results
-        ForceShowMatchResults(resultText);
+        hasShownMatchResults = true;
+        wonMatch = resultText == "Victory!";
         
-        // Start failsafe checker
-        StartCoroutine(CheckMatchEndCondition());
-    }
-    
-    private void HandleRankedMode()
-    {
         if (GameModeManager.Instance != null && 
             GameModeManager.Instance.CurrentMode == GameMode.Ranked)
         {
             pendingScoreSubmission = true;
             CalculatePendingEloChange();
         }
-        else
-        {
-            pendingScoreSubmission = false;
-        }
-    }
-    
-    private void ForceShowMatchResults(string resultText)
-    {
-        // Forcefully cancel any fades and make panel fully visible
-        StopAllCoroutines();
         
-        // Ensure panel components are set up
         resultsPanel.SetActive(true);
         
-        // Configure canvas group - ensure full visibility
         if (panelCanvasGroup != null)
         {
             panelCanvasGroup.alpha = 1f;
@@ -284,12 +166,10 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             panelCanvasGroup.blocksRaycasts = true;
         }
         
-        // Configure texts
         winnerText.text = $"Match {resultText}";
         winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         battleStatsText.text = GenerateMatchStats();
         
-        // Show continue button
         continueButton.gameObject.SetActive(true);
         continueButton.interactable = true;
         
@@ -299,8 +179,11 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
                 "Submit Score & Continue" : "Return to Menu";
         }
         
-        // Mark that we've shown match results
-        hasShownMatchResults = true;
+        // Make sure the other player also sees their result
+        if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
+        {
+            photonView.RPC("RPCShowMatchResults", RpcTarget.Others, resultText == "Victory!" ? "Defeat!" : "Victory!");
+        }
     }
 
     private void CalculatePendingEloChange()
@@ -315,56 +198,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         pendingEloChange = ELOManager.Instance.CalculateELOChange(currentELO, opponentELO, wonMatch);
         newElo = ELOManager.Instance.GetNewELO(currentELO, pendingEloChange);
-    }
-
-    private IEnumerator ShowRoundResults(string resultText, int survivingUnits)
-    {
-        // Ensure we're not showing match end
-        if (isMatchEnd)
-        {
-            string matchResult = wonMatch ? "Victory!" : "Defeat!";
-            ForceShowMatchResults(matchResult);
-            yield break;
-        }
-        
-        resultsPanel.SetActive(true);
-        
-        winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {resultText}";
-        winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
-        
-        battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
-        
-        continueButton.gameObject.SetActive(false);
-        
-        yield return StartCoroutine(FadeInPanel());
-        
-        // Check for match end again
-        if (isMatchEnd)
-        {
-            string matchResult = wonMatch ? "Victory!" : "Defeat!";
-            ForceShowMatchResults(matchResult);
-            yield break;
-        }
-        
-        yield return new WaitForSeconds(transitionDelay);
-        
-        // Check for match end again
-        if (isMatchEnd)
-        {
-            string matchResult = wonMatch ? "Victory!" : "Defeat!";
-            ForceShowMatchResults(matchResult);
-            yield break;
-        }
-        
-        // Continue with round end
-        yield return StartCoroutine(FadeOutPanel());
-        
-        resultsPanel.SetActive(false);
-        
-        if (BattleRoundManager.Instance != null)
-        {
-            BattleRoundManager.Instance.StartNewRound();
-        }
     }
 
     private void OnContinueClicked()
@@ -410,7 +243,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         bool success = await SubmitScore();
         transactionSubmitted = true;
-        transactionSuccess = success;
         
         if (continueButtonText != null)
         {
@@ -470,87 +302,11 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         }
     }
 
-    private IEnumerator FadeInPanel()
-    {
-        if (panelCanvasGroup == null) yield break;
-        
-        panelCanvasGroup.interactable = true;
-        panelCanvasGroup.blocksRaycasts = true;
-
-        float elapsedTime = 0f;
-        float duration = panelFadeInDuration;
-        
-        while (elapsedTime < duration)
-        {
-            // Check if match has ended during fade
-            if (isMatchEnd)
-            {
-                panelCanvasGroup.alpha = 1f;
-                yield break;
-            }
-            
-            elapsedTime += Time.deltaTime;
-            panelCanvasGroup.alpha = Mathf.Clamp01(elapsedTime / duration);
-            yield return null;
-        }
-        
-        panelCanvasGroup.alpha = 1f;
-    }
-
-    private IEnumerator FadeOutPanel()
-    {
-        if (panelCanvasGroup == null) yield break;
-        
-        // Don't fade out if match has ended
-        if (isMatchEnd)
-        {
-            panelCanvasGroup.alpha = 1f;
-            yield break;
-        }
-        
-        float elapsedTime = 0f;
-        float duration = panelFadeInDuration;
-        
-        float startAlpha = panelCanvasGroup.alpha;
-        
-        while (elapsedTime < duration)
-        {
-            // Check if match has ended during fade
-            if (isMatchEnd)
-            {
-                panelCanvasGroup.alpha = 1f;
-                yield break;
-            }
-            
-            elapsedTime += Time.deltaTime;
-            panelCanvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsedTime / duration);
-            yield return null;
-        }
-        
-        panelCanvasGroup.alpha = 0f;
-        panelCanvasGroup.interactable = false;
-        panelCanvasGroup.blocksRaycasts = false;
-    }
-
     private IEnumerator TransitionToMainMenu()
     {
-        // Skip fade out for faster transition
-        yield return null; // Wait one frame
+        yield return null;
         SceneManager.LoadScene(mainMenuScene);
         isTransitioning = false;
-    }
-
-    private string GenerateRoundStats(string resultText, int survivingUnits)
-    {
-        bool isVictory = resultText == "Victory!";
-        float damage = 8f + (1.5f * survivingUnits);
-        string enemyUnits = isVictory ? 
-            "Enemy Units Remaining: 0" : 
-            $"Enemy Units Remaining: {survivingUnits}";
-                
-        return $"Round Results:\n" +
-            $"{enemyUnits}\n" +
-            $"Damage Dealt: {damage:F1}";
     }
 
     private string GenerateMatchStats()

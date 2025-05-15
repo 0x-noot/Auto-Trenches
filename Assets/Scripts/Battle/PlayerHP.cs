@@ -61,6 +61,19 @@ public class PlayerHP : MonoBehaviourPunCallbacks, IPunObservable
         StartCoroutine(TriggerHPChangedNextFrame());
     }
 
+    public void CheckDeathCondition()
+    {
+        if (currentHP <= 0 && !IsDead())
+        {
+            // Force a match end
+            if (BattleRoundManager.Instance != null)
+            {
+                // BattleRoundManager will determine the winner
+                BattleRoundManager.Instance.photonView.RPC("RPCForceMatchEnd", RpcTarget.All);
+            }
+        }
+    }
+
     private System.Collections.IEnumerator TriggerHPChangedNextFrame()
     {
         yield return null;

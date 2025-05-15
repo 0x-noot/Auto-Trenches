@@ -132,6 +132,7 @@ MonoBehaviour:
   - RPCShowFinalMatchResults
   - RPCEmergencyMatchEnd
   - RPCShowMatchEnd
+  - RPCForceMatchEnd
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
