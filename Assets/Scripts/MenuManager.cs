@@ -19,6 +19,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
     [SerializeField] private UnityEngine.UI.Button profileButton; 
     private ModeSelectionUI modeSelectionUI;
     private bool isInitialized = false;
+    private bool processedStartupFlags = false;
 
     private void Awake()
     {
@@ -72,28 +73,79 @@ public class MenuManager : MonoBehaviourPunCallbacks
             profileButton.onClick.AddListener(ShowProfile);
         }
         
-        bool showMainMenu = PlayerPrefs.GetInt("ShowMainMenu", 0) == 1;
-        PlayerPrefs.SetInt("ShowMainMenu", 0);
-        PlayerPrefs.Save();
+        // Only process startup flags once to avoid duplicate processing
+        if (!processedStartupFlags)
+        {
+            ProcessStartupFlags();
+        }
+    }
+    
+    private void OnEnable()
+    {
+        // Subscribe to scene loaded event to handle reloading of main menu
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    private void OnDisable()
+    {
+        // Unsubscribe to prevent memory leaks
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"MenuManager: Scene loaded: {scene.name}");
         
+        // If we loaded the main menu scene again, process startup flags
+        if (scene.name == "MainMenu" && !processedStartupFlags)
+        {
+            ProcessStartupFlags();
+        }
+    }
+    
+    private void ProcessStartupFlags()
+    {
+        Debug.Log("MenuManager: Processing startup flags");
+        
+        bool showMainMenu = PlayerPrefs.GetInt("ShowMainMenu", 0) == 1;
+        bool keepWalletConnected = PlayerPrefs.GetInt("KeepWalletConnected", 0) == 1;
         string savedUsername = PlayerPrefs.GetString("PlayerUsername", "");
         
-        if (string.IsNullOrEmpty(savedUsername) && !showMainMenu)
+        Debug.Log($"Flags: ShowMainMenu={showMainMenu}, KeepWalletConnected={keepWalletConnected}, HasUsername={!string.IsNullOrEmpty(savedUsername)}");
+        
+        // CRITICAL FIX: Reset the flags immediately to prevent reprocessing
+        PlayerPrefs.SetInt("ShowMainMenu", 0);
+        // NOTE: We don't reset KeepWalletConnected here - it should persist
+        PlayerPrefs.Save();
+        
+        // Mark as processed
+        processedStartupFlags = true;
+        
+        // CRITICAL FIX: Check if player has connected wallet or username is saved
+        if (WalletManager.Instance != null && WalletManager.Instance.IsConnected)
         {
-            DisableAllPanels();
-            if (WalletManager.Instance != null && WalletManager.Instance.IsConnected)
-            {
-                ShowMainMenu();
-            }
-            else
-            {
-                ShowWalletPanel();
-            }
-        }
-        else
-        {
+            Debug.Log("WalletManager is connected, showing main menu");
             ShowMainMenu();
+            return;
         }
+        
+        if (keepWalletConnected || !string.IsNullOrEmpty(savedUsername))
+        {
+            Debug.Log("KeepWalletConnected or username exists, showing main menu");
+            ShowMainMenu();
+            return;
+        }
+        
+        if (showMainMenu)
+        {
+            Debug.Log("ShowMainMenu flag set, showing main menu");
+            ShowMainMenu();
+            return;
+        }
+        
+        // If none of the above conditions is met, show wallet panel
+        Debug.Log("No flags set, showing wallet panel");
+        ShowWalletPanel();
     }
 
     private void InitializePanels()

@@ -207,11 +207,30 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         }
         else
         {
-            StartCoroutine(TransitionToMainMenu());
+            // CRITICAL FIX: Leave the room before transitioning
+            if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
+            {
+                Debug.Log("Leaving Photon room before transitioning to main menu");
+                // Set flags first so they're saved even if disconnect happens
+                SetReturnToMenuPrefs();
+                PhotonNetwork.LeaveRoom();
+            }
+            else
+            {
+                // Not in a room, just transition directly
+                StartCoroutine(TransitionToMainMenu());
+            }
         }
     }
 
-    // Separate async method to handle the score submission
+    private void SetReturnToMenuPrefs()
+    {
+        Debug.Log("Setting return to menu preferences");
+        PlayerPrefs.SetInt("ShowMainMenu", 1);
+        PlayerPrefs.SetInt("KeepWalletConnected", 1);
+        PlayerPrefs.Save();
+    }
+
     private async void SubmitScoreAndReturnAsync()
     {
         isTransitioning = true;
@@ -233,7 +252,25 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             await System.Threading.Tasks.Task.Delay(2000);
         }
         
-        // Return to main menu using coroutine
+        // CRITICAL FIX: Leave the room before transitioning
+        if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
+        {
+            Debug.Log("Leaving Photon room before transitioning to main menu");
+            // Set flags first so they're saved even if disconnect happens
+            SetReturnToMenuPrefs();
+            PhotonNetwork.LeaveRoom();
+        }
+        else
+        {
+            // Not in a room, just transition directly
+            StartCoroutine(TransitionToMainMenu());
+        }
+    }
+
+    // Implement the OnLeftRoom callback
+    public override void OnLeftRoom()
+    {
+        Debug.Log("Successfully left room, transitioning to main menu");
         StartCoroutine(TransitionToMainMenu());
     }
 
@@ -306,9 +343,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         yield return StartCoroutine(FadeOutPanel());
         
-        PlayerPrefs.SetInt("ShowMainMenu", 1);
-        PlayerPrefs.Save();
-        
+        Debug.Log("Loading main menu scene");
         SceneManager.LoadScene(mainMenuScene);
         isTransitioning = false;
     }
