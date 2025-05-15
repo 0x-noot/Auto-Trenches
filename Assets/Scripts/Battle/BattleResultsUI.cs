@@ -24,6 +24,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     private int newElo = 0;
     private bool transactionSubmitted = false;
     private bool hasShownMatchResults = false;
+    private bool isShowingRoundResults = false;
 
     private void Awake()
     {
@@ -42,6 +43,12 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
+            BattleRoundManager.Instance.OnRoundEnd += HandleRoundEnd;
+        }
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameOver -= HandleGameOver;
@@ -53,6 +60,11 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
 
     private void OnDestroy()
     {
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnRoundEnd -= HandleRoundEnd;
+        }
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameOver -= HandleGameOver;
@@ -64,7 +76,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
 
     private void CheckPlayerHP()
     {
-        if (hasShownMatchResults) return;
+        if (hasShownMatchResults || isShowingRoundResults) return;
         
         if (BattleRoundManager.Instance != null)
         {
@@ -116,6 +128,26 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         }
     }
     
+    private void HandleRoundEnd(string resultText, int survivingUnits)
+    {
+        if (hasShownMatchResults) return;
+        
+        // Don't show round results if health is zero (it's a match end)
+        if (BattleRoundManager.Instance != null)
+        {
+            float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
+            float playerBHP = BattleRoundManager.Instance.GetPlayerBHP();
+            
+            if (playerAHP <= 0 || playerBHP <= 0)
+            {
+                return; // Skip round results, go straight to match results
+            }
+        }
+        
+        StopAllCoroutines();
+        StartCoroutine(ShowRoundResults(resultText, survivingUnits));
+    }
+    
     private void HandleGameOver(string winner)
     {
         if (hasShownMatchResults) return;
@@ -140,9 +172,24 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         ShowMatchResults(resultText);
     }
     
+    [PunRPC]
+    public void RPCShowRoundResults(string resultText, int survivingUnits)
+    {
+        if (hasShownMatchResults) return;
+        
+        StartCoroutine(ShowRoundResults(resultText, survivingUnits));
+    }
+    
     private void ShowMatchResults(string resultText)
     {
         if (hasShownMatchResults) return;
+        
+        // Cancel round results if they're showing
+        if (isShowingRoundResults)
+        {
+            StopAllCoroutines();
+            isShowingRoundResults = false;
+        }
         
         StopAllCoroutines();
         CancelInvoke();
@@ -198,6 +245,65 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         pendingEloChange = ELOManager.Instance.CalculateELOChange(currentELO, opponentELO, wonMatch);
         newElo = ELOManager.Instance.GetNewELO(currentELO, pendingEloChange);
+    }
+    
+    private IEnumerator ShowRoundResults(string resultText, int survivingUnits)
+    {
+        // Set flag to prevent other displays
+        isShowingRoundResults = true;
+        
+        // Don't show round results if match has ended
+        if (hasShownMatchResults)
+        {
+            isShowingRoundResults = false;
+            yield break;
+        }
+        
+        // Setup panel
+        resultsPanel.SetActive(true);
+        
+        if (BattleRoundManager.Instance != null)
+        {
+            winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {resultText}";
+            winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
+        }
+        else
+        {
+            winnerText.text = $"Round: {resultText}";
+            winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
+        }
+        
+        battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
+        
+        continueButton.gameObject.SetActive(false);
+        
+        // Fade in
+        yield return StartCoroutine(FadeInPanel());
+        
+        // Wait a moment
+        yield return new WaitForSeconds(3f);
+        
+        // Check if match has ended while showing round results
+        if (hasShownMatchResults)
+        {
+            isShowingRoundResults = false;
+            yield break;
+        }
+        
+        // Fade out
+        yield return StartCoroutine(FadeOutPanel());
+        
+        // Hide panel
+        resultsPanel.SetActive(false);
+        
+        // Clear flag
+        isShowingRoundResults = false;
+        
+        // Start next round if appropriate
+        if (!hasShownMatchResults && BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.StartNewRound();
+        }
     }
 
     private void OnContinueClicked()
@@ -302,11 +408,65 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         }
     }
 
+    private IEnumerator FadeInPanel()
+    {
+        if (panelCanvasGroup == null) yield break;
+        
+        panelCanvasGroup.interactable = true;
+        panelCanvasGroup.blocksRaycasts = true;
+
+        float elapsedTime = 0f;
+        float duration = panelFadeInDuration;
+        
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            panelCanvasGroup.alpha = Mathf.Clamp01(elapsedTime / duration);
+            yield return null;
+        }
+        
+        panelCanvasGroup.alpha = 1f;
+    }
+
+    private IEnumerator FadeOutPanel()
+    {
+        if (panelCanvasGroup == null) yield break;
+        
+        float elapsedTime = 0f;
+        float duration = panelFadeInDuration;
+        
+        float startAlpha = panelCanvasGroup.alpha;
+        
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            panelCanvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsedTime / duration);
+            yield return null;
+        }
+        
+        panelCanvasGroup.alpha = 0f;
+        panelCanvasGroup.interactable = false;
+        panelCanvasGroup.blocksRaycasts = false;
+    }
+
     private IEnumerator TransitionToMainMenu()
     {
         yield return null;
         SceneManager.LoadScene(mainMenuScene);
         isTransitioning = false;
+    }
+
+    private string GenerateRoundStats(string resultText, int survivingUnits)
+    {
+        bool isVictory = resultText == "Victory!";
+        float damage = 8f + (1.5f * survivingUnits);
+        string enemyUnits = isVictory ? 
+            "Enemy Units Remaining: 0" : 
+            $"Enemy Units Remaining: {survivingUnits}";
+                
+        return $"Round Results:\n" +
+            $"{enemyUnits}\n" +
+            $"Damage Dealt: {damage:F1}";
     }
 
     private string GenerateMatchStats()

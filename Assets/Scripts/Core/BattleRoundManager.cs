@@ -279,6 +279,19 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         }
         
         photonView.RPC("RPCHandleRoundEnd", RpcTarget.All, winner, survivingUnits, isMatchEnd);
+        
+        // Find the BattleResultsUI and show round results on both clients
+        BattleResultsUI resultsUI = FindFirstObjectByType<BattleResultsUI>();
+        if (resultsUI != null)
+        {
+            // Show appropriate result to host
+            string hostResult = winner == "player" ? "Victory!" : "Defeat!";
+            resultsUI.RPCShowRoundResults(hostResult, survivingUnits);
+            
+            // Show appropriate result to client
+            string clientResult = winner == "player" ? "Defeat!" : "Victory!";
+            resultsUI.photonView.RPC("RPCShowRoundResults", RpcTarget.Others, clientResult, survivingUnits);
+        }
     }
 
     private float CalculateDamage(int survivingUnits)
