@@ -28,13 +28,20 @@ public class WalletManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Debug.Log("[WalletManager] Instance created and set to DontDestroyOnLoad");
+            
             if (Web3.Instance == null)
             {
-                Debug.LogError("Web3 instance is not initialized. Ensure a Web3 component is present in the scene with wallet adapter settings configured.");
+                Debug.LogError("[WalletManager] Web3 instance is not initialized. Ensure a Web3 component is present in the scene with wallet adapter settings configured.");
+            }
+            else
+            {
+                Debug.Log("[WalletManager] Web3 instance found during Awake");
             }
         }
         else
         {
+            Debug.Log("[WalletManager] Instance already exists, destroying duplicate");
             Destroy(gameObject);
         }
     }
@@ -45,6 +52,11 @@ public class WalletManager : MonoBehaviour
         {
             Web3.OnLogin += HandleWalletConnected;
             Web3.OnLogout += HandleWalletDisconnected;
+            Debug.Log($"[WalletManager] Start - Is connected: {IsConnected}");
+            if (IsConnected)
+            {
+                Debug.Log($"[WalletManager] Already connected to wallet: {WalletPublicKey}");
+            }
         }
     }
     
@@ -61,20 +73,33 @@ public class WalletManager : MonoBehaviour
     {
         try
         {
+            Debug.Log("[WalletManager] ConnectWallet called");
+            
             if (Web3.Instance == null || Web3.Wallet == null)
             {
                 throw new Exception("Web3 or Wallet is not initialized. Check Web3 component setup.");
             }
+            
+            if (IsConnected)
+            {
+                Debug.Log("[WalletManager] Already connected, returning true");
+                // Notify any subscribers that might have missed initial connection event
+                OnWalletConnected?.Invoke(WalletPublicKey);
+                return true;
+            }
+            
             var account = await Web3.Instance.LoginWalletAdapter();
             if (account == null)
             {
                 throw new Exception("Failed to connect wallet: No account returned.");
             }
+            
+            Debug.Log($"[WalletManager] Successfully connected to wallet: {account.PublicKey}");
             return true;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error connecting wallet: {ex.Message}");
+            Debug.LogError($"[WalletManager] Error connecting wallet: {ex.Message}");
             OnConnectionError?.Invoke(ex.Message);
             return false;
         }
@@ -82,6 +107,7 @@ public class WalletManager : MonoBehaviour
     
     public void DisconnectWallet()
     {
+        Debug.Log("[WalletManager] DisconnectWallet called");
         if (Web3.Instance != null)
         {
             Web3.Instance.Logout();
@@ -101,7 +127,7 @@ public class WalletManager : MonoBehaviour
     
     private async void HandleWalletConnected(Account account)
     {
-        Debug.Log($"Wallet connected: {account.PublicKey}");
+        Debug.Log($"[WalletManager] Wallet connected: {account.PublicKey}");
         OnWalletConnected?.Invoke(account.PublicKey.ToString());
         PlayerPrefs.SetString("LastWalletAddress", account.PublicKey.ToString());
         PlayerPrefs.Save();
@@ -119,12 +145,12 @@ public class WalletManager : MonoBehaviour
             }
             else
             {
-                Debug.LogError("SoarManager reference is missing!");
+                Debug.LogError("[WalletManager] SoarManager reference is missing!");
             }
         }
         else
         {
-            Debug.Log("Player already registered, skipping username panel");
+            Debug.Log("[WalletManager] Player already registered, skipping username panel");
             // Force refresh the main menu in case UI is stuck
             MenuManager.Instance?.ShowMainMenu();
         }
@@ -141,15 +167,15 @@ public class WalletManager : MonoBehaviour
                             accountData.Result.Value.Data != null &&
                             accountData.Result.Value.Data.Count > 0;
             
-            Debug.Log($"Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
-            Debug.Log($"Account data exists: {accountData.Result?.Value != null}");
-            Debug.Log($"Data length: {accountData.Result?.Value?.Data?.Count ?? 0}");
+            Debug.Log($"[WalletManager] Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
+            Debug.Log($"[WalletManager] Account data exists: {accountData.Result?.Value != null}");
+            Debug.Log($"[WalletManager] Data length: {accountData.Result?.Value?.Data?.Count ?? 0}");
             
             return isRegistered;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error checking player registration: {ex.Message}");
+            Debug.LogError($"[WalletManager] Error checking player registration: {ex.Message}");
             // If we can't check, assume they're not registered to be safe
             return false;
         }
@@ -157,7 +183,26 @@ public class WalletManager : MonoBehaviour
     
     private void HandleWalletDisconnected()
     {
-        Debug.Log("Wallet disconnected");
+        Debug.Log("[WalletManager] Wallet disconnected");
         OnWalletDisconnected?.Invoke();
+    }
+    
+    // Add a method to check connection on scene load
+    public void ValidateConnectionState()
+    {
+        Debug.Log($"[WalletManager] ValidateConnectionState - IsConnected: {IsConnected}");
+        if (IsConnected)
+        {
+            Debug.Log($"[WalletManager] Still connected to wallet: {WalletPublicKey}");
+        }
+    }
+    
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        // Log connection state when application focus changes
+        if (!pauseStatus) // When application resumes from pause
+        {
+            Debug.Log($"[WalletManager] Application resumed - IsConnected: {IsConnected}");
+        }
     }
 }

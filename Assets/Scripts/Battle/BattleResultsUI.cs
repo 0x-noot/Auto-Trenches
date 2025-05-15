@@ -227,7 +227,20 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         Debug.Log("Setting return to menu preferences");
         PlayerPrefs.SetInt("ShowMainMenu", 1);
+        
+        // Ensure wallet connection is maintained across scene transitions
         PlayerPrefs.SetInt("KeepWalletConnected", 1);
+        
+        // Log the current wallet connection state
+        if (WalletManager.Instance != null)
+        {
+            Debug.Log($"Current wallet connection state: {WalletManager.Instance.IsConnected}");
+        }
+        else
+        {
+            Debug.LogWarning("WalletManager.Instance is null when setting preferences");
+        }
+        
         PlayerPrefs.Save();
     }
 

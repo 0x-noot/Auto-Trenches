@@ -1122,6 +1122,7 @@ MonoBehaviour:
   lobbyPanel: {fileID: 1639504457}
   modeSelectionPanel: {fileID: 1057997659}
   profilePanel: {fileID: 1993271800}
+  walletPanel: {fileID: 731834372}
   profileButton: {fileID: 10670722}
 --- !u!1 &172347257
 GameObject:
@@ -10012,6 +10013,8 @@ MonoBehaviour:
   usernameInput: {fileID: 64556125}
   statusText: {fileID: 2145607246}
   submitButton: {fileID: 603822162}
+  gameIdString: HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC
+  leaderboardPdaString: 3nVK66juaCJ7p2AzqGzjhkkwSHjXokPPSPrJqSZY19ge
 --- !u!1 &1845129887
 GameObject:
   m_ObjectHideFlags: 0

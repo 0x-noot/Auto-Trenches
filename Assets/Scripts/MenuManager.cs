@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
+using System.Collections;
 
 public class MenuManager : MonoBehaviourPunCallbacks
 {
@@ -73,11 +74,8 @@ public class MenuManager : MonoBehaviourPunCallbacks
             profileButton.onClick.AddListener(ShowProfile);
         }
         
-        // Only process startup flags once to avoid duplicate processing
-        if (!processedStartupFlags)
-        {
-            ProcessStartupFlags();
-        }
+        // Delay processing startup flags to ensure all managers are initialized
+        StartCoroutine(DelayedProcessStartupFlags());
     }
     
     private void OnEnable()
@@ -98,6 +96,19 @@ public class MenuManager : MonoBehaviourPunCallbacks
         
         // If we loaded the main menu scene again, process startup flags
         if (scene.name == "MainMenu" && !processedStartupFlags)
+        {
+            // Delay processing startup flags to ensure all managers are initialized
+            StartCoroutine(DelayedProcessStartupFlags());
+        }
+    }
+    
+    private IEnumerator DelayedProcessStartupFlags()
+    {
+        // Wait a short frame delay to ensure other managers are initialized
+        yield return new WaitForSeconds(0.2f);
+        
+        // Process startup flags if not already processed
+        if (!processedStartupFlags)
         {
             ProcessStartupFlags();
         }
@@ -121,14 +132,23 @@ public class MenuManager : MonoBehaviourPunCallbacks
         // Mark as processed
         processedStartupFlags = true;
         
-        // CRITICAL FIX: Check if player has connected wallet or username is saved
-        if (WalletManager.Instance != null && WalletManager.Instance.IsConnected)
+        // CRITICAL FIX: Check if wallet is connected first, since this should take priority
+        if (WalletManager.Instance != null)
         {
-            Debug.Log("WalletManager is connected, showing main menu");
-            ShowMainMenu();
-            return;
+            Debug.Log($"WalletManager exists, IsConnected = {WalletManager.Instance.IsConnected}");
+            if (WalletManager.Instance.IsConnected)
+            {
+                Debug.Log("WalletManager is connected, showing main menu");
+                ShowMainMenu();
+                return;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("WalletManager.Instance is null! Checking other conditions...");
         }
         
+        // Other conditions for showing main menu
         if (keepWalletConnected || !string.IsNullOrEmpty(savedUsername))
         {
             Debug.Log("KeepWalletConnected or username exists, showing main menu");
