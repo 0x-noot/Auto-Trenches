@@ -13,6 +13,7 @@ using Solana.Unity.Soar.Program;
 using Solana.Unity.Soar.Types;
 using Solana.Unity.Soar;
 using UnityEngine;
+using Photon.Pun;
 using TMPro;
 
 public class SoarManager : MonoBehaviour
@@ -22,24 +23,37 @@ public class SoarManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI statusText;
     [SerializeField] private UnityEngine.UI.Button submitButton;
 
-    private PublicKey gameId = new PublicKey("HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC");
-    private PublicKey leaderboardPda = new PublicKey("3nVK66juaCJ7p2AzqGzjhkkwSHjXokPPSPrJqSZY19ge");
-    private Account currentAccount;
+    [SerializeField] private string gameIdString = "HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC";
+    [SerializeField] private string leaderboardPdaString = "3nVK66juaCJ7p2AzqGzjhkkwSHjXokPPSPrJqSZY19ge";
 
+    private PublicKey gameId;
+    private PublicKey leaderboardPda;
+    private Account currentAccount;
+    private int maxRetries = 3;
+    
     public static SoarManager Instance { get; private set; }
     
     private void Awake()
     {
         if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
         else
-            {
-                Destroy(gameObject);
-                return;
-            }
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+        try {
+            gameId = new PublicKey(gameIdString);
+            leaderboardPda = new PublicKey(leaderboardPdaString);
+            Debug.Log($"SoarManager initialized with gameId: {gameId}, leaderboard: {leaderboardPda}");
+        }
+        catch (Exception ex) {
+            Debug.LogError($"Error initializing PublicKeys: {ex.Message}");
+        }
         
         usernamePanel.SetActive(false);
     }
@@ -70,7 +84,6 @@ public class SoarManager : MonoBehaviour
         submitButton.interactable = false;
         statusText.text = "Checking registration...";
         
-        // Double-check if already registered before attempting registration
         var playerAccount = SoarPda.PlayerPda(currentAccount.PublicKey);
         var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccount, Commitment.Confirmed);
         
@@ -108,7 +121,9 @@ public class SoarManager : MonoBehaviour
                 return;
             }
 
-            // Get fresh blockhash
+            PlayerPrefs.SetString("PlayerUsername", username);
+            PlayerPrefs.Save();
+
             var blockHash = await Web3.Rpc.GetLatestBlockHashAsync();
             if (blockHash == null || blockHash.Result == null)
             {
@@ -119,7 +134,7 @@ public class SoarManager : MonoBehaviour
             {
                 FeePayer = account.PublicKey,
                 Instructions = new List<TransactionInstruction>(),
-                RecentBlockHash = blockHash.Result.Value.Blockhash // Use the fresh blockhash
+                RecentBlockHash = blockHash.Result.Value.Blockhash
             };
 
             var accountsInitUser = new InitializePlayerAccounts()
@@ -166,7 +181,6 @@ public class SoarManager : MonoBehaviour
                 usernamePanel.SetActive(false);
                 Debug.Log("Player registration confirmed");
                 
-                // Navigate to main menu after registration
                 MenuManager.Instance?.ShowMainMenu();
             }
             else
@@ -186,66 +200,119 @@ public class SoarManager : MonoBehaviour
 
     public async Task<bool> SubmitScoreToLeaderboard(ulong score)
     {
-        try
+        int retryCount = 0;
+        bool success = false;
+        
+        while (retryCount < maxRetries && !success)
         {
-            if (Web3.Wallet == null || Web3.Wallet.Account == null)
+            try
             {
-                Debug.LogError("Wallet not connected");
-                return false;
+                if (Web3.Wallet == null || Web3.Wallet.Account == null)
+                {
+                    Debug.LogError("Wallet not connected");
+                    return false;
+                }
+
+                if (!WalletManager.Instance.IsConnected)
+                {
+                    Debug.Log("Wallet disconnected. Attempting to reconnect...");
+                    bool reconnected = await WalletManager.Instance.ConnectWallet();
+                    if (!reconnected)
+                    {
+                        Debug.LogError("Failed to reconnect wallet");
+                        return false;
+                    }
+                }
+
+                var playerAddress = Web3.Wallet.Account.PublicKey;
+                var playerAccountPda = SoarPda.PlayerPda(playerAddress);
+                
+                var blockHashResult = await Web3.Rpc.GetLatestBlockHashAsync();
+                if (blockHashResult == null || blockHashResult.Result == null)
+                {
+                    throw new Exception("Failed to get block hash");
+                }
+                
+                var tx = new Transaction()
+                {
+                    FeePayer = playerAddress,
+                    Instructions = new List<TransactionInstruction>(),
+                    RecentBlockHash = blockHashResult.Result.Value.Blockhash
+                };
+
+                var accounts = new SubmitScoreAccounts()
+                {
+                    Payer = playerAddress,
+                    Authority = playerAddress,
+                    PlayerAccount = playerAccountPda,
+                    Leaderboard = leaderboardPda,
+                    PlayerScores = SoarPda.PlayerScoresPda(playerAccountPda, leaderboardPda),
+                    SystemProgram = SystemProgram.ProgramIdKey
+                };
+
+                var submitScoreIx = SoarProgram.SubmitScore(
+                    accounts: accounts,
+                    score: score,
+                    programId: SoarProgram.ProgramIdKey
+                );
+
+                tx.Add(submitScoreIx);
+
+                Debug.Log("About to sign and send transaction...");
+                var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
+                
+                if (!result.WasSuccessful)
+                {
+                    Debug.LogError($"Failed to submit score: {result.Reason}");
+                    retryCount++;
+                    await Task.Delay(500);
+                    continue;
+                }
+
+                Debug.Log($"Score transaction sent. Signature: {result.Result}");
+                
+                bool confirmed = await Web3.Rpc.ConfirmTransaction(result.Result, Commitment.Confirmed);
+                
+                if (confirmed)
+                {
+                    Debug.Log("Score submission confirmed on-chain!");
+                    if (ProfileManager.Instance != null && GameModeManager.Instance.CurrentMode == GameMode.Ranked)
+                    {
+                        bool playerWon = false;
+                        if (BattleRoundManager.Instance != null)
+                        {
+                            if (PhotonNetwork.IsMasterClient)
+                            {
+                                playerWon = BattleRoundManager.Instance.GetPlayerAHP() > BattleRoundManager.Instance.GetPlayerBHP();
+                            }
+                            else
+                            {
+                                playerWon = BattleRoundManager.Instance.GetPlayerBHP() > BattleRoundManager.Instance.GetPlayerAHP();
+                            }
+                        }
+                        ProfileManager.Instance.RecordMatch(playerWon);
+                    }
+                    success = true;
+                    return true;
+                }
+                else
+                {
+                    Debug.LogWarning("Transaction sent but not confirmed. Retrying...");
+                    retryCount++;
+                }
             }
-
-            var playerAddress = Web3.Wallet.Account.PublicKey;
-            var playerAccountPda = SoarPda.PlayerPda(playerAddress);
-            
-            var tx = new Transaction()
+            catch (Exception ex)
             {
-                FeePayer = playerAddress,
-                Instructions = new List<TransactionInstruction>(),
-                RecentBlockHash = await Web3.BlockHash()
-            };
-
-            var accounts = new SubmitScoreAccounts()
-            {
-                Payer = playerAddress,
-                Authority = playerAddress,
-                PlayerAccount = playerAccountPda,
-                Leaderboard = leaderboardPda,
-                PlayerScores = SoarPda.PlayerScoresPda(playerAccountPda, leaderboardPda),
-                SystemProgram = SystemProgram.ProgramIdKey
-            };
-
-            var submitScoreIx = SoarProgram.SubmitScore(
-                accounts: accounts,
-                score: score,
-                programId: SoarProgram.ProgramIdKey
-            );
-
-            tx.Add(submitScoreIx);
-
-            // Send transaction
-            var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
-            
-            if (!result.WasSuccessful)
-            {
-                Debug.LogError($"Failed to submit score: {result.Reason}");
-                return false;
+                Debug.LogError($"Error submitting score (attempt {retryCount+1}): {ex.Message}");
+                retryCount++;
+                await Task.Delay(500);
             }
-
-            Debug.Log($"Score submitted successfully. Transaction: {result.Result}");
-            
-            // Wait for confirmation
-            await Web3.Rpc.ConfirmTransaction(result.Result, Commitment.Confirmed);
-            
-            return true;
         }
-        catch (Exception ex)
-        {
-            Debug.LogError($"Error submitting score: {ex.Message}");
-            return false;
-        }
+        
+        Debug.LogError($"Failed to submit score after {maxRetries} attempts");
+        return false;
     }
 
-    // Method to fetch current score
     public async Task<ulong> GetPlayerScore(PublicKey playerPublicKey)
     {
         try
@@ -255,21 +322,19 @@ public class SoarManager : MonoBehaviour
             
             if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
             {
-                // Note: You'll need to deserialize the account data to get the actual score
-                // This is a placeholder - the actual implementation depends on your SOAR version
                 Debug.Log("Player scores account found, but deserialization not implemented");
-                return 1200; // Default ELO
+                return 1200;
             }
             else
             {
                 Debug.Log("No scores found for player");
-                return 1200; // Default ELO
+                return 1200;
             }
         }
         catch (Exception ex)
         {
             Debug.LogError($"Error fetching player score: {ex.Message}");
-            return 1200; // Default ELO
+            return 1200;
         }
     }
 }

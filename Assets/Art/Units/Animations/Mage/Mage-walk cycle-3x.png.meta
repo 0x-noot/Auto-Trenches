@@ -1,61 +1,67 @@
 fileFormatVersion: 2
-guid: 75cb54ae34f9349369a02ce63f808e24
+guid: ac56c5192b9a84c35a18d918209a7f91
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2649042465172222100
-    second: Archer WALK-3x_0
+      213: 843978178700665174
+    second: Mage-walk cycle-3x_0
   - first:
-      213: -1622194258734452757
-    second: Archer WALK-3x_1
+      213: -3286026547603051822
+    second: Mage-walk cycle-3x_1
   - first:
-      213: 5866022163760077093
-    second: Archer WALK-3x_2
+      213: 3749841830286793126
+    second: Mage-walk cycle-3x_2
   - first:
-      213: -3594777787590697932
-    second: Archer WALK-3x_3
+      213: -5003001903641833876
+    second: Mage-walk cycle-3x_3
   - first:
-      213: -5168720603628482188
-    second: Archer WALK-3x_4
+      213: -965415656051622655
+    second: Mage-walk cycle-3x_4
   - first:
-      213: -5491270070269259587
-    second: Archer WALK-3x_5
+      213: 394847783443311778
+    second: Mage-walk cycle-3x_5
   - first:
-      213: 4025871074236278196
-    second: Archer WALK-3x_6
+      213: -5871389676210262185
+    second: Mage-walk cycle-3x_6
   - first:
-      213: -6232644797159475558
-    second: Archer WALK-3x_7
+      213: 229393954505436053
+    second: Mage-walk cycle-3x_7
   - first:
-      213: 6925736869883193219
-    second: Archer WALK-3x_8
+      213: -1164051768251359295
+    second: Mage-walk cycle-3x_8
   - first:
-      213: 3599183397281612253
-    second: Archer WALK-3x_9
+      213: 8355678758175377852
+    second: Mage-walk cycle-3x_9
   - first:
-      213: 7275139050713792367
-    second: Archer WALK-3x_10
+      213: -5062407715727594480
+    second: Mage-walk cycle-3x_10
   - first:
-      213: 7282537226716058511
-    second: Archer WALK-3x_11
+      213: 810364499882166626
+    second: Mage-walk cycle-3x_11
   - first:
-      213: 78179881068694733
-    second: Archer WALK-3x_12
+      213: -1170479442224345380
+    second: Mage-walk cycle-3x_12
   - first:
-      213: -7665735890875670473
-    second: Archer WALK-3x_13
+      213: 5357245497733619776
+    second: Mage-walk cycle-3x_13
   - first:
-      213: 2886743470383122984
-    second: Archer WALK-3x_14
+      213: 506984446127079396
+    second: Mage-walk cycle-3x_14
   - first:
-      213: -6758957741797956900
-    second: Archer WALK-3x_15
+      213: -8452870472970640748
+    second: Mage-walk cycle-3x_15
   - first:
-      213: 2045547278337995936
-    second: Archer WALK-3x_16
+      213: 6509487276024880007
+    second: Mage-walk cycle-3x_16
   - first:
-      213: 315179682740136743
-    second: Archer WALK-3x_17
+      213: -4478351504078130279
+    second: Mage-walk cycle-3x_17
+  - first:
+      213: -484985656278546500
+    second: Mage-walk cycle-3x_18
+  - first:
+      213: -293818273612401290
+    second: Mage-walk cycle-3x_19
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -164,13 +170,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Archer WALK-3x_0
+      name: Mage-walk cycle-3x_0
       rect:
         serializedVersion: 2
-        x: 44
-        y: 755
-        width: 62
-        height: 89
+        x: 48
+        y: 804
+        width: 48
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -179,20 +185,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c6f0c74c9e5bc3bd0800000000000000
-      internalID: -2649042465172222100
+      spriteID: 65162a39ea966bb00800000000000000
+      internalID: 843978178700665174
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_1
+      name: Mage-walk cycle-3x_1
       rect:
         serializedVersion: 2
-        x: 218
-        y: 755
-        width: 50
-        height: 86
+        x: 195
+        y: 804
+        width: 42
+        height: 66
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -201,20 +207,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: bef647b9aeecc79e0800000000000000
-      internalID: -1622194258734452757
+      spriteID: 2daed9bd340b562d0800000000000000
+      internalID: -3286026547603051822
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_2
+      name: Mage-walk cycle-3x_2
       rect:
         serializedVersion: 2
-        x: 383
-        y: 755
-        width: 50
-        height: 86
+        x: 354
+        y: 804
+        width: 42
+        height: 66
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -223,20 +229,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 529dc73141c486150800000000000000
-      internalID: 5866022163760077093
+      spriteID: 6a91522f64d1a0430800000000000000
+      internalID: 3749841830286793126
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_3
+      name: Mage-walk cycle-3x_3
       rect:
         serializedVersion: 2
-        x: 488
-        y: 755
-        width: 62
-        height: 89
+        x: 480
+        y: 804
+        width: 45
+        height: 66
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -245,20 +251,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 43c113ce5a8cc1ec0800000000000000
-      internalID: -3594777787590697932
+      spriteID: c6e43d29644c19ab0800000000000000
+      internalID: -5003001903641833876
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_4
+      name: Mage-walk cycle-3x_4
       rect:
         serializedVersion: 2
-        x: 38
-        y: 611
-        width: 62
-        height: 86
+        x: 54
+        y: 711
+        width: 42
+        height: 78
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -267,20 +273,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4715b7dfef30548b0800000000000000
-      internalID: -5168720603628482188
+      spriteID: 10d317863972a92f0800000000000000
+      internalID: -965415656051622655
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_5
+      name: Mage-walk cycle-3x_5
       rect:
         serializedVersion: 2
-        x: 224
-        y: 611
-        width: 47
-        height: 86
+        x: 198
+        y: 708
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -289,20 +295,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: db0dddf07f61bc3b0800000000000000
-      internalID: -5491270070269259587
+      spriteID: 2ac2d7097f7ca7500800000000000000
+      internalID: 394847783443311778
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_6
+      name: Mage-walk cycle-3x_6
       rect:
         serializedVersion: 2
-        x: 383
-        y: 611
-        width: 47
-        height: 86
+        x: 351
+        y: 708
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -311,20 +317,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4b5af5b7964ced730800000000000000
-      internalID: 4025871074236278196
+      spriteID: 75f679b8232a48ea0800000000000000
+      internalID: -5871389676210262185
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_7
+      name: Mage-walk cycle-3x_7
       rect:
         serializedVersion: 2
-        x: 494
-        y: 611
-        width: 65
-        height: 86
+        x: 486
+        y: 708
+        width: 45
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -333,20 +339,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a967f1634923189a0800000000000000
-      internalID: -6232644797159475558
+      spriteID: 59b2be31698fe2300800000000000000
+      internalID: 229393954505436053
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_8
+      name: Mage-walk cycle-3x_8
       rect:
         serializedVersion: 2
-        x: 44
-        y: 467
-        width: 62
-        height: 89
+        x: 54
+        y: 612
+        width: 42
+        height: 75
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -355,20 +361,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 387a6313df82d1060800000000000000
-      internalID: 6925736869883193219
+      spriteID: 1cf563d851578dfe0800000000000000
+      internalID: -1164051768251359295
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_9
+      name: Mage-walk cycle-3x_9
       rect:
         serializedVersion: 2
-        x: 221
-        y: 467
-        width: 50
-        height: 86
+        x: 201
+        y: 612
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -377,20 +383,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dd144740b3ed2f130800000000000000
-      internalID: 3599183397281612253
+      spriteID: cb9025e6f8555f370800000000000000
+      internalID: 8355678758175377852
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_10
+      name: Mage-walk cycle-3x_10
       rect:
         serializedVersion: 2
-        x: 386
-        y: 467
-        width: 47
-        height: 86
+        x: 348
+        y: 612
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -399,20 +405,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f6f3e59db6c76f460800000000000000
-      internalID: 7275139050713792367
+      spriteID: 01c2cdb1107beb9b0800000000000000
+      internalID: -5062407715727594480
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_11
+      name: Mage-walk cycle-3x_11
       rect:
         serializedVersion: 2
-        x: 497
-        y: 467
-        width: 65
-        height: 89
+        x: 489
+        y: 612
+        width: 48
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -421,20 +427,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f8318fde505c01560800000000000000
-      internalID: 7282537226716058511
+      spriteID: 269401a183efe3b00800000000000000
+      internalID: 810364499882166626
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_12
+      name: Mage-walk cycle-3x_12
       rect:
         serializedVersion: 2
-        x: 47
-        y: 323
-        width: 47
-        height: 86
+        x: 51
+        y: 519
+        width: 48
+        height: 72
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -443,20 +449,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dcc8ea70030c51100800000000000000
-      internalID: 78179881068694733
+      spriteID: cde0255162f91cfe0800000000000000
+      internalID: -1170479442224345380
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_13
+      name: Mage-walk cycle-3x_13
       rect:
         serializedVersion: 2
-        x: 215
-        y: 323
-        width: 56
-        height: 86
+        x: 204
+        y: 516
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -465,20 +471,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 730a46272d5dd9590800000000000000
-      internalID: -7665735890875670473
+      spriteID: 04029f27562c85a40800000000000000
+      internalID: 5357245497733619776
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_14
+      name: Mage-walk cycle-3x_14
       rect:
         serializedVersion: 2
-        x: 392
-        y: 323
-        width: 56
-        height: 86
+        x: 345
+        y: 516
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -487,20 +493,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 82a4dd544e5cf0820800000000000000
-      internalID: 2886743470383122984
+      spriteID: 4ef7d0aeaab290700800000000000000
+      internalID: 506984446127079396
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_15
+      name: Mage-walk cycle-3x_15
       rect:
         serializedVersion: 2
-        x: 509
-        y: 323
-        width: 50
-        height: 86
+        x: 492
+        y: 516
+        width: 45
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -509,20 +515,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: cd2a14c8ebb5332a0800000000000000
-      internalID: -6758957741797956900
+      spriteID: 492623e071f51ba80800000000000000
+      internalID: -8452870472970640748
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_16
+      name: Mage-walk cycle-3x_16
       rect:
         serializedVersion: 2
-        x: 224
-        y: 179
-        width: 47
-        height: 86
+        x: 48
+        y: 372
+        width: 48
+        height: 75
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -531,20 +537,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0a47a90796e336c10800000000000000
-      internalID: 2045547278337995936
+      spriteID: 78b53655038565a50800000000000000
+      internalID: 6509487276024880007
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Archer WALK-3x_17
+      name: Mage-walk cycle-3x_17
       rect:
         serializedVersion: 2
-        x: 392
-        y: 179
-        width: 47
-        height: 86
+        x: 207
+        y: 372
+        width: 42
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -553,8 +559,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 72b6526604ebf5400800000000000000
-      internalID: 315179682740136743
+      spriteID: 993361cc803b9d1c0800000000000000
+      internalID: -4478351504078130279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Mage-walk cycle-3x_18
+      rect:
+        serializedVersion: 2
+        x: 351
+        y: 372
+        width: 42
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb78b5c7d1cf449f0800000000000000
+      internalID: -484985656278546500
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Mage-walk cycle-3x_19
+      rect:
+        serializedVersion: 2
+        x: 489
+        y: 372
+        width: 48
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 67570dc36d52cebf0800000000000000
+      internalID: -293818273612401290
       vertices: []
       indices: 
       edges: []
@@ -563,7 +613,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 9474ff7bd14ef47beaa372aae2f1db5f
     internalID: 0
     vertices: []
     indices: 
@@ -573,24 +623,26 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Archer WALK-3x_0: -2649042465172222100
-      Archer WALK-3x_1: -1622194258734452757
-      Archer WALK-3x_10: 7275139050713792367
-      Archer WALK-3x_11: 7282537226716058511
-      Archer WALK-3x_12: 78179881068694733
-      Archer WALK-3x_13: -7665735890875670473
-      Archer WALK-3x_14: 2886743470383122984
-      Archer WALK-3x_15: -6758957741797956900
-      Archer WALK-3x_16: 2045547278337995936
-      Archer WALK-3x_17: 315179682740136743
-      Archer WALK-3x_2: 5866022163760077093
-      Archer WALK-3x_3: -3594777787590697932
-      Archer WALK-3x_4: -5168720603628482188
-      Archer WALK-3x_5: -5491270070269259587
-      Archer WALK-3x_6: 4025871074236278196
-      Archer WALK-3x_7: -6232644797159475558
-      Archer WALK-3x_8: 6925736869883193219
-      Archer WALK-3x_9: 3599183397281612253
+      Mage-walk cycle-3x_0: 843978178700665174
+      Mage-walk cycle-3x_1: -3286026547603051822
+      Mage-walk cycle-3x_10: -5062407715727594480
+      Mage-walk cycle-3x_11: 810364499882166626
+      Mage-walk cycle-3x_12: -1170479442224345380
+      Mage-walk cycle-3x_13: 5357245497733619776
+      Mage-walk cycle-3x_14: 506984446127079396
+      Mage-walk cycle-3x_15: -8452870472970640748
+      Mage-walk cycle-3x_16: 6509487276024880007
+      Mage-walk cycle-3x_17: -4478351504078130279
+      Mage-walk cycle-3x_18: -484985656278546500
+      Mage-walk cycle-3x_19: -293818273612401290
+      Mage-walk cycle-3x_2: 3749841830286793126
+      Mage-walk cycle-3x_3: -5003001903641833876
+      Mage-walk cycle-3x_4: -965415656051622655
+      Mage-walk cycle-3x_5: 394847783443311778
+      Mage-walk cycle-3x_6: -5871389676210262185
+      Mage-walk cycle-3x_7: 229393954505436053
+      Mage-walk cycle-3x_8: -1164051768251359295
+      Mage-walk cycle-3x_9: 8355678758175377852
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -8,7 +8,6 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 {
     public static BattleRoundManager Instance { get; private set; }
 
-    [Header("Player References")]
     [SerializeField] private PlayerHP playerAHP;
     [SerializeField] private PlayerHP playerBHP;
     [SerializeField] private PlacementManager placementManager;
@@ -17,8 +16,8 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
     private bool isRoundActive = false;
 
     public event Action<int> OnRoundStart;
-    public event Action<string, int> OnRoundEnd; // resultText, surviving units
-    public event Action<string> OnMatchEnd; // resultText
+    public event Action<string, int> OnRoundEnd;
+    public event Action<string> OnMatchEnd;
 
     private void Awake()
     {
@@ -28,7 +27,6 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
 
     private void Start()
     {
-        // Find references if not assigned
         if (playerAHP == null)
         {
             GameObject playerAObj = GameObject.Find("PlayerAHP");
@@ -49,7 +47,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
-            GameManager.Instance.OnGameOver += HandleRoundEnd;
+            GameManager.Instance.OnGameOver += HandleGameOver;
         }
 
         Debug.Log($"BattleRoundManager initialized: PlayerAHP: {playerAHP != null}, PlayerBHP: {playerBHP != null}");
@@ -60,7 +58,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
-            GameManager.Instance.OnGameOver -= HandleRoundEnd;
+            GameManager.Instance.OnGameOver -= HandleGameOver;
         }
     }
 
@@ -69,6 +67,48 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         Debug.Log($"BattleRoundManager: Game state changed to {newState}");
         if (newState == GameState.BattleActive) isRoundActive = true;
         else if (newState == GameState.PlayerAPlacement) isRoundActive = false;
+        else if (newState == GameState.BattleEnd)
+        {
+            // This ensures we trigger match end for both players
+            if (!PhotonNetwork.IsMasterClient) return;
+            
+            string winner = playerAHP.GetCurrentHP() > playerBHP.GetCurrentHP() ? "player" : "enemy";
+            photonView.RPC("RPCTriggerMatchEnd", RpcTarget.All, winner);
+        }
+    }
+
+    private void HandleGameOver(string winner)
+    {
+        // This is from GameManager's final result
+        if (!PhotonNetwork.IsMasterClient) return;
+        
+        int survivingUnits = CountSurvivingUnits(winner);
+        Debug.Log($"Final game over. Winner: {winner}, Surviving units: {survivingUnits}");
+        
+        // Directly trigger match end for everyone
+        photonView.RPC("RPCTriggerMatchEnd", RpcTarget.All, winner);
+    }
+
+    [PunRPC]
+    private void RPCTriggerMatchEnd(string winner)
+    {
+        // Convert "player"/"enemy" to local victory/defeat message
+        string localResultText;
+        
+        // "player" means host/MasterClient won, "enemy" means client won
+        if (PhotonNetwork.IsMasterClient)
+        {
+            // I'm the host
+            localResultText = winner == "player" ? "Victory!" : "Defeat!";
+        }
+        else
+        {
+            // I'm the client
+            localResultText = winner == "enemy" ? "Victory!" : "Defeat!";
+        }
+        
+        Debug.Log($"Match end triggered. Local result: {localResultText}");
+        OnMatchEnd?.Invoke(localResultText);
     }
 
     public void StartNewRound()
@@ -100,17 +140,31 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         }
     }
 
+    // Handle round end (called by GameManager)
     private void HandleRoundEnd(string winner)
     {
         if (!PhotonNetwork.IsMasterClient) return;
 
         int survivingUnits = CountSurvivingUnits(winner);
         Debug.Log($"Round ended. Winner: {winner}, Surviving units: {survivingUnits}");
-        photonView.RPC("RPCHandleRoundEnd", RpcTarget.All, winner, survivingUnits);
+        
+        // Check if this round will end the match
+        bool isMatchEnd = false;
+        if (winner == "player" && playerBHP != null && (playerBHP.GetCurrentHP() - survivingUnits) <= 0)
+        {
+            isMatchEnd = true;
+        }
+        else if (winner == "enemy" && playerAHP != null && (playerAHP.GetCurrentHP() - survivingUnits) <= 0)
+        {
+            isMatchEnd = true;
+        }
+        
+        // Send both the round end and potentially match end information
+        photonView.RPC("RPCHandleRoundEnd", RpcTarget.All, winner, survivingUnits, isMatchEnd);
     }
 
     [PunRPC]
-    private void RPCHandleRoundEnd(string winner, int survivingUnits)
+    private void RPCHandleRoundEnd(string winner, int survivingUnits, bool isMatchEnd)
     {
         // Convert "player"/"enemy" to local victory/defeat message
         string localResultText;
@@ -145,8 +199,9 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             playerBHP.ResetWinStreak();
             playerBHP.TakeDamage(survivingUnits);
             
-            if (playerBHP.IsDead())
+            if (isMatchEnd || playerBHP.IsDead())
             {
+                // This ensures both host and client know this is a match end
                 OnMatchEnd?.Invoke(localResultText);
                 return;
             }
@@ -157,8 +212,9 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
             playerAHP.ResetWinStreak();
             playerAHP.TakeDamage(survivingUnits);
             
-            if (playerAHP.IsDead())
+            if (isMatchEnd || playerAHP.IsDead())
             {
+                // This ensures both host and client know this is a match end
                 OnMatchEnd?.Invoke(localResultText);
                 return;
             }
@@ -169,6 +225,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         currentRound++;
         PrepareNextRound();
     }
+    
     private int CountSurvivingUnits(string winner)
     {
         if (GameManager.Instance == null) return 0;
@@ -215,7 +272,6 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         Debug.Log("Executing round preparation");
         isRoundActive = false;
 
-        // Clean up any orphaned health bars
         var orphanedHealthSystems = FindObjectsOfType<HealthSystem>()
             .Where(hs => hs.transform.parent == null)
             .ToArray();

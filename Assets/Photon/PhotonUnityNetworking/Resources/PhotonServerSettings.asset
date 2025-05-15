@@ -126,6 +126,7 @@ MonoBehaviour:
   - RPCApplyKnockback
   - RPCShowCrashEffect
   - RPCPrepareForLevelLoad
+  - RPCTriggerMatchEnd
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

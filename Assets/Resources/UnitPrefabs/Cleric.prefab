@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 3668296887065870118}
   - component: {fileID: 5121141988179948861}
   - component: {fileID: 2286614882835520094}
+  - component: {fileID: 2841738265560622825}
   m_Layer: 0
   m_Name: Cleric
   m_TagString: Untagged
@@ -295,6 +296,7 @@ MonoBehaviour:
   - {fileID: 4997081546437948490}
   - {fileID: 4108768984313371858}
   - {fileID: 3668296887065870118}
+  - {fileID: 2841738265560622825}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -320,6 +322,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2841738265560622825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1896498469237918707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa74a85c8ae4199ae2dcf3ba33eb1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6601199593067039798
 PrefabInstance:
   m_ObjectHideFlags: 0

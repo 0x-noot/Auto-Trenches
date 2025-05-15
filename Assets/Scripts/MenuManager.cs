@@ -6,18 +6,16 @@ public class MenuManager : MonoBehaviourPunCallbacks
 {
     public static MenuManager Instance { get; private set; }
 
-    [Header("Scene References")]
     [SerializeField] private string battleSceneName = "BattleScene";
     
-    [Header("Panel References")]
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject infoPanel;
     [SerializeField] private GameObject lobbyPanel;
     [SerializeField] private GameObject modeSelectionPanel;
     [SerializeField] private GameObject profilePanel;
+    [SerializeField] private GameObject walletPanel;
     
-    [Header("Profile")]
     [SerializeField] private UnityEngine.UI.Button profileButton; 
     private ModeSelectionUI modeSelectionUI;
     private bool isInitialized = false;
@@ -29,6 +27,7 @@ public class MenuManager : MonoBehaviourPunCallbacks
         {
             Instance = this;
             Debug.Log("MenuManager: Instance set");
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -55,7 +54,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
         if (modeSelectionPanel == null)
             Debug.LogError("ModeSelectionPanel reference is missing in MenuManager!");
         if (profilePanel == null)
-            Debug.LogWarning("ProfilePanel reference is missing in MenuManager!"); 
+            Debug.LogWarning("ProfilePanel reference is missing in MenuManager!");
+        if (walletPanel == null)
+            Debug.LogWarning("WalletPanel reference is missing in MenuManager!");
     }
 
     private void Start()
@@ -71,11 +72,23 @@ public class MenuManager : MonoBehaviourPunCallbacks
             profileButton.onClick.AddListener(ShowProfile);
         }
         
+        bool showMainMenu = PlayerPrefs.GetInt("ShowMainMenu", 0) == 1;
+        PlayerPrefs.SetInt("ShowMainMenu", 0);
+        PlayerPrefs.Save();
+        
         string savedUsername = PlayerPrefs.GetString("PlayerUsername", "");
         
-        if (string.IsNullOrEmpty(savedUsername))
+        if (string.IsNullOrEmpty(savedUsername) && !showMainMenu)
         {
             DisableAllPanels();
+            if (WalletManager.Instance != null && WalletManager.Instance.IsConnected)
+            {
+                ShowMainMenu();
+            }
+            else
+            {
+                ShowWalletPanel();
+            }
         }
         else
         {
@@ -95,7 +108,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
         modeSelectionPanel?.SetActive(false);
-        profilePanel?.SetActive(false); 
+        profilePanel?.SetActive(false);
+        if (walletPanel != null)
+            walletPanel.SetActive(false);
         
         isInitialized = true;
         Debug.Log("MenuManager: Panels initialized");
@@ -109,7 +124,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
         infoPanel?.SetActive(false);
         lobbyPanel?.SetActive(false);
         modeSelectionPanel?.SetActive(false);
-        profilePanel?.SetActive(false); 
+        profilePanel?.SetActive(false);
+        if (walletPanel != null)
+            walletPanel.SetActive(false);
     }
 
     public void ShowMainMenu()
@@ -117,6 +134,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
         Debug.Log("MenuManager: ShowMainMenu called");
         DisableAllPanels();
         mainMenuPanel?.SetActive(true);
+    }
+    
+    public void ShowWalletPanel()
+    {
+        Debug.Log("MenuManager: ShowWalletPanel called");
+        DisableAllPanels();
+        if (walletPanel != null)
+            walletPanel.SetActive(true);
     }
 
     public void ShowSettings()

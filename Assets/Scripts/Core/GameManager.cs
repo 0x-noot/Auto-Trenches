@@ -66,6 +66,11 @@ public class GameManager : MonoBehaviourPunCallbacks
     private void OnDestroy()
     {
         CleanupUnits();
+
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnMatchEnd -= HandleMatchEnd;
+        }
     }
 
     private void Start()
@@ -73,6 +78,11 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (!isInitialized)
         {
             Initialize();
+        }
+
+        if (BattleRoundManager.Instance != null)
+        {
+            BattleRoundManager.Instance.OnMatchEnd += HandleMatchEnd;
         }
     }
 
@@ -271,6 +281,13 @@ public class GameManager : MonoBehaviourPunCallbacks
         if (currentGameState != GameState.BattleActive || unit == null) return;
         
         photonView.RPC("RPCHandleUnitDeath", RpcTarget.All, unit.photonView.ViewID);
+    }
+
+    private void HandleMatchEnd(string result)
+    {
+        Debug.Log($"GameManager received match end notification: {result}");
+        
+        UpdateGameState(GameState.GameOver);
     }
 
     [PunRPC]

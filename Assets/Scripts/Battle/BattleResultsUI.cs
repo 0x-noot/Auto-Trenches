@@ -7,16 +7,14 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
 
-public class BattleResultsUI : MonoBehaviour
+public class BattleResultsUI : MonoBehaviourPunCallbacks
 {
-    [Header("UI References")]
     [SerializeField] private GameObject resultsPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
     [SerializeField] private TextMeshProUGUI battleStatsText;
-    [SerializeField] private Button continueButton; // Main button for returning/submitting
+    [SerializeField] private Button continueButton;
     [SerializeField] private TextMeshProUGUI continueButtonText;
     
-    [Header("Animation Settings")]
     [SerializeField] private float panelFadeInDuration = 1f;
     [SerializeField] private float statsRevealDelay = 0.5f;
     [SerializeField] private float transitionDelay = 3f;
@@ -28,6 +26,9 @@ public class BattleResultsUI : MonoBehaviour
     private bool wonMatch = false;
     private int pendingEloChange = 0;
     private int newElo = 0;
+    private bool transactionSubmitted = false;
+    private bool transactionSuccess = false;
+    private bool isMatchEnd = false;
 
     private void Awake()
     {
@@ -38,7 +39,6 @@ public class BattleResultsUI : MonoBehaviour
         HidePanel();
         ValidateReferences();
         
-        // Setup button listener
         if (continueButton != null)
         {
             continueButton.onClick.AddListener(OnContinueClicked);
@@ -89,6 +89,9 @@ public class BattleResultsUI : MonoBehaviour
     private void HandleRoundEnd(string resultText, int originalSurvivingUnits)
     {
         if (BattleRoundManager.Instance == null || GameManager.Instance == null) return;
+        
+        // Don't process round end if we're already in match end
+        if (isMatchEnd) return;
 
         bool isVictory = resultText == "Victory!";
         
@@ -107,6 +110,9 @@ public class BattleResultsUI : MonoBehaviour
 
     private void HandleMatchEnd(string resultText)
     {
+        Debug.Log("BattleResultsUI: Match end received with result: " + resultText);
+        isMatchEnd = true;
+        
         // Store match result for score submission
         wonMatch = resultText == "Victory!";
         
@@ -117,6 +123,11 @@ public class BattleResultsUI : MonoBehaviour
             pendingScoreSubmission = true;
             // Calculate ELO change
             CalculatePendingEloChange();
+        }
+        else
+        {
+            // Make sure it's false for Practice mode
+            pendingScoreSubmission = false;
         }
         
         StartCoroutine(ShowMatchResults(resultText));
@@ -130,7 +141,7 @@ public class BattleResultsUI : MonoBehaviour
         if (currentProfile == null) return;
         
         int currentELO = currentProfile.eloRating;
-        int opponentELO = currentELO; // Assume same ELO for now
+        int opponentELO = currentELO;
         
         pendingEloChange = ELOManager.Instance.CalculateELOChange(currentELO, opponentELO, wonMatch);
         newElo = ELOManager.Instance.GetNewELO(currentELO, pendingEloChange);
@@ -145,9 +156,8 @@ public class BattleResultsUI : MonoBehaviour
         
         battleStatsText.text = GenerateRoundStats(resultText, survivingUnits);
         
-        // Set button text for round end
-        continueButtonText.text = "Continue";
-        continueButton.interactable = true;
+        // Hide the continue button for round results - we automatically continue
+        continueButton.gameObject.SetActive(false);
         
         yield return StartCoroutine(FadeInPanel());
         yield return new WaitForSeconds(transitionDelay);
@@ -165,6 +175,9 @@ public class BattleResultsUI : MonoBehaviour
         winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         
         battleStatsText.text = GenerateMatchStats();
+        
+        // Show continue button for match end
+        continueButton.gameObject.SetActive(true);
         
         // Set button text based on whether we need to submit score
         if (pendingScoreSubmission)
@@ -187,7 +200,7 @@ public class BattleResultsUI : MonoBehaviour
         // Disable button to prevent double clicks
         continueButton.interactable = false;
         
-        if (pendingScoreSubmission)
+        if (pendingScoreSubmission && !transactionSubmitted)
         {
             // Start the async submission process
             SubmitScoreAndReturnAsync();
@@ -206,6 +219,8 @@ public class BattleResultsUI : MonoBehaviour
         
         // Submit the score
         bool success = await SubmitScore();
+        transactionSubmitted = true;
+        transactionSuccess = success;
         
         if (success)
         {
@@ -229,10 +244,23 @@ public class BattleResultsUI : MonoBehaviour
             var soarManager = FindFirstObjectByType<SoarManager>();
             if (soarManager != null && newElo > 0)
             {
+                Debug.Log($"Attempting to submit score: {newElo} (change: {pendingEloChange:+#;-#;0})");
+                
+                if (WalletManager.Instance == null || !WalletManager.Instance.IsConnected)
+                {
+                    Debug.LogError("Cannot submit score: Wallet not connected");
+                    return false;
+                }
+                
                 bool success = await soarManager.SubmitScoreToLeaderboard((ulong)newElo);
                 if (success)
                 {
                     Debug.Log($"ELO submitted successfully: {newElo} (change: {pendingEloChange:+#;-#;0})");
+                    
+                    if (ProfileManager.Instance != null)
+                    {
+                        await ProfileManager.Instance.LoadProfileData();
+                    }
                 }
                 return success;
             }
@@ -277,6 +305,10 @@ public class BattleResultsUI : MonoBehaviour
     private IEnumerator TransitionToMainMenu()
     {
         yield return StartCoroutine(FadeOutPanel());
+        
+        PlayerPrefs.SetInt("ShowMainMenu", 1);
+        PlayerPrefs.Save();
+        
         SceneManager.LoadScene(mainMenuScene);
         isTransitioning = false;
     }
