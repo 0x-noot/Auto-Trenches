@@ -197,10 +197,29 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         hasShownMatchResults = true;
         wonMatch = resultText == "Victory!";
         
-        if (GameModeManager.Instance != null && 
-            GameModeManager.Instance.CurrentMode == GameMode.Ranked)
+        bool isRankedMode = false;
+        
+        // Check GameModeManager first
+        if (GameModeManager.Instance != null) 
         {
-            pendingScoreSubmission = true;
+            isRankedMode = GameModeManager.Instance.CurrentMode == GameMode.Ranked;
+            Debug.Log($"Game mode from GameModeManager: {GameModeManager.Instance.CurrentMode}");
+        }
+        // Then check room properties as fallback
+        else if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
+        {
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("GameMode", out object gameModeObj))
+            {
+                string gameModeStr = gameModeObj.ToString();
+                isRankedMode = gameModeStr == "Ranked";
+                Debug.Log($"Game mode from room properties: {gameModeStr}");
+            }
+        }
+        
+        pendingScoreSubmission = isRankedMode;
+        
+        if (pendingScoreSubmission)
+        {
             CalculatePendingEloChange();
         }
         
