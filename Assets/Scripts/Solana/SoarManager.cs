@@ -41,7 +41,6 @@ public class SoarManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            Debug.Log("[SoarManager] Instance created");
         }
         else
         {
@@ -52,44 +51,21 @@ public class SoarManager : MonoBehaviour
         try {
             gameId = new PublicKey(gameIdString);
             leaderboardPda = new PublicKey(leaderboardPdaString);
-            Debug.Log($"[SoarManager] Initialized with gameId: {gameId}, leaderboard: {leaderboardPda}");
         }
-        catch (Exception ex) {
-            Debug.LogError($"[SoarManager] Error initializing PublicKeys: {ex.Message}");
-        }
+        catch (Exception ex) { }
         
-        // Ensure panel is hidden by default
         if (usernamePanel != null)
         {
             usernamePanel.SetActive(false);
-            Debug.Log("[SoarManager] Username panel hidden on startup");
-        }
-        else
-        {
-            Debug.LogError("[SoarManager] Username panel reference is missing!");
         }
     }
 
     public void ShowUsernamePanel(Account account)
     {
-        Debug.Log($"[SoarManager] ShowUsernamePanel called for account: {account.PublicKey}");
         currentAccount = account;
         
-        if (usernamePanel == null)
+        if (usernamePanel == null || usernameInput == null || statusText == null)
         {
-            Debug.LogError("[SoarManager] Username panel is null! Cannot show panel");
-            return;
-        }
-        
-        if (usernameInput == null)
-        {
-            Debug.LogError("[SoarManager] Username input field is null!");
-            return;
-        }
-        
-        if (statusText == null)
-        {
-            Debug.LogError("[SoarManager] Status text is null!");
             return;
         }
         
@@ -102,22 +78,16 @@ public class SoarManager : MonoBehaviour
             submitButton.interactable = true;
         }
         
-        // Make sure it's in front of other UI elements
         if (usernamePanel.transform.parent != null)
         {
             usernamePanel.transform.SetAsLastSibling();
         }
-        
-        Debug.Log("[SoarManager] Username panel activated");
     }
 
     public async void OnSubmitUsername()
     {
-        Debug.Log("[SoarManager] OnSubmitUsername called");
-        
         if (usernameInput == null)
         {
-            Debug.LogError("[SoarManager] Username input is null!");
             return;
         }
         
@@ -133,7 +103,6 @@ public class SoarManager : MonoBehaviour
             return;
         }
 
-        // Store the username in PlayerPrefs whether registration succeeds or not
         PlayerPrefs.SetString("PlayerUsername", username);
         PlayerPrefs.Save();
 
@@ -160,8 +129,6 @@ public class SoarManager : MonoBehaviour
     {
         try
         {
-            Debug.Log("[SoarManager] Starting player registration...");
-
             var playerAccount = SoarPda.PlayerPda(account.PublicKey);
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccount, Commitment.Confirmed);
             
@@ -169,7 +136,6 @@ public class SoarManager : MonoBehaviour
             {
                 statusText.text = "Already registered!";
                 submitButton.interactable = true;
-                Debug.Log("[SoarManager] Player already registered - aborting registration");
                 
                 await Task.Delay(1500);
                 usernamePanel.SetActive(false);
@@ -206,7 +172,6 @@ public class SoarManager : MonoBehaviour
             
             tx.Add(initPlayerIx);
             
-            Debug.Log("[SoarManager] Signing and sending transaction...");
             var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
             
             if (!result.WasSuccessful)
@@ -215,9 +180,7 @@ public class SoarManager : MonoBehaviour
             }
             
             string txSignature = result.Result;
-            Debug.Log($"[SoarManager] Transaction sent, signature: {txSignature}");
 
-            Debug.Log("[SoarManager] Confirming transaction...");
             var confirmTask = Web3.Rpc.ConfirmTransaction(txSignature, Commitment.Confirmed);
             var confirmResult = await Task.WhenAny(confirmTask, Task.Delay(TimeSpan.FromSeconds(30)));
             
@@ -231,7 +194,6 @@ public class SoarManager : MonoBehaviour
             {
                 statusText.text = "Registration successful!";
                 usernamePanel.SetActive(false);
-                Debug.Log("[SoarManager] Player registration confirmed");
                 
                 MenuManager.Instance?.ShowMainMenu();
             }
@@ -239,12 +201,10 @@ public class SoarManager : MonoBehaviour
             {
                 statusText.text = "Registration failed. Try again.";
                 submitButton.interactable = true;
-                Debug.Log("[SoarManager] Transaction confirmation failed");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[SoarManager] Error registering player: {ex.Message}");
             statusText.text = $"Error: {ex.Message}";
             submitButton.interactable = true;
         }
@@ -261,17 +221,14 @@ public class SoarManager : MonoBehaviour
             {
                 if (Web3.Wallet == null || Web3.Wallet.Account == null)
                 {
-                    Debug.LogError("[SoarManager] Wallet not connected");
                     return false;
                 }
 
                 if (!WalletManager.Instance.IsConnected)
                 {
-                    Debug.Log("[SoarManager] Wallet disconnected. Attempting to reconnect...");
                     bool reconnected = await WalletManager.Instance.ConnectWallet();
                     if (!reconnected)
                     {
-                        Debug.LogError("[SoarManager] Failed to reconnect wallet");
                         return false;
                     }
                 }
@@ -310,24 +267,19 @@ public class SoarManager : MonoBehaviour
 
                 tx.Add(submitScoreIx);
 
-                Debug.Log("[SoarManager] About to sign and send transaction...");
                 var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
                 
                 if (!result.WasSuccessful)
                 {
-                    Debug.LogError($"[SoarManager] Failed to submit score: {result.Reason}");
                     retryCount++;
                     await Task.Delay(500);
                     continue;
                 }
-
-                Debug.Log($"[SoarManager] Score transaction sent. Signature: {result.Result}");
                 
                 bool confirmed = await Web3.Rpc.ConfirmTransaction(result.Result, Commitment.Confirmed);
                 
                 if (confirmed)
                 {
-                    Debug.Log("[SoarManager] Score submission confirmed on-chain!");
                     if (ProfileManager.Instance != null && GameModeManager.Instance.CurrentMode == GameMode.Ranked)
                     {
                         bool playerWon = false;
@@ -349,19 +301,16 @@ public class SoarManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning("[SoarManager] Transaction sent but not confirmed. Retrying...");
                     retryCount++;
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[SoarManager] Error submitting score (attempt {retryCount+1}): {ex.Message}");
                 retryCount++;
                 await Task.Delay(500);
             }
         }
         
-        Debug.LogError($"[SoarManager] Failed to submit score after {maxRetries} attempts");
         return false;
     }
 
@@ -374,18 +323,15 @@ public class SoarManager : MonoBehaviour
             
             if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
             {
-                Debug.Log("[SoarManager] Player scores account found, but deserialization not implemented");
                 return 1200;
             }
             else
             {
-                Debug.Log("[SoarManager] No scores found for player");
                 return 1200;
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[SoarManager] Error fetching player score: {ex.Message}");
             return 1200;
         }
     }

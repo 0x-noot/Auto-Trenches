@@ -1140,7 +1140,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   walletPanel: {fileID: 731834372}
   mainMenuPanel: {fileID: 568465527}
-  usernamePanel: {fileID: 0}
+  usernamePanel: {fileID: 1930395807}
   initialDelay: 0.5
 --- !u!1 &172347257
 GameObject:
@@ -7109,7 +7109,7 @@ MonoBehaviour:
   lobbyListPanel: {fileID: 1639504457}
   matchLobbyPanel: {fileID: 1177174152}
   connectingPanel: {fileID: 950519991}
-  usernamePanel: {fileID: 0}
+  usernamePanel: {fileID: 1930395807}
   connectWalletButton: {fileID: 280440309}
   walletAddressText: {fileID: 2068570269}
   connectionStatusText: {fileID: 1679786239}
