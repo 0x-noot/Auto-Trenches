@@ -1,0 +1,754 @@
+fileFormatVersion: 2
+guid: 74011a6183ef54a5e86a911199e2ef39
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2090822219601778023
+    second: peasant-walk cycle 3x_0
+  - first:
+      213: -5733382119647288209
+    second: peasant-walk cycle 3x_1
+  - first:
+      213: -3083168978941801047
+    second: peasant-walk cycle 3x_2
+  - first:
+      213: 6432972330911188127
+    second: peasant-walk cycle 3x_3
+  - first:
+      213: -691159921806343005
+    second: peasant-walk cycle 3x_4
+  - first:
+      213: 3332414460340512606
+    second: peasant-walk cycle 3x_5
+  - first:
+      213: 6499240715959149692
+    second: peasant-walk cycle 3x_6
+  - first:
+      213: -642967295986494329
+    second: peasant-walk cycle 3x_7
+  - first:
+      213: -1087482232239690339
+    second: peasant-walk cycle 3x_8
+  - first:
+      213: -7615214591019251993
+    second: peasant-walk cycle 3x_9
+  - first:
+      213: -5040344326855760214
+    second: peasant-walk cycle 3x_10
+  - first:
+      213: -3383731699500165285
+    second: peasant-walk cycle 3x_11
+  - first:
+      213: -8593102959232126628
+    second: peasant-walk cycle 3x_12
+  - first:
+      213: -2143161763421249943
+    second: peasant-walk cycle 3x_13
+  - first:
+      213: 1713577226674862369
+    second: peasant-walk cycle 3x_14
+  - first:
+      213: 4193537119658220771
+    second: peasant-walk cycle 3x_15
+  - first:
+      213: 3458453102953469567
+    second: peasant-walk cycle 3x_16
+  - first:
+      213: 1865552495280157978
+    second: peasant-walk cycle 3x_17
+  - first:
+      213: -2724047167388675816
+    second: peasant-walk cycle 3x_18
+  - first:
+      213: -3256024613638932380
+    second: peasant-walk cycle 3x_19
+  - first:
+      213: -7840387414189923376
+    second: peasant-walk cycle 3x_20
+  - first:
+      213: 8955363772516118702
+    second: peasant-walk cycle 3x_21
+  - first:
+      213: 7179418447070401275
+    second: peasant-walk cycle 3x_22
+  - first:
+      213: -6702640540682956950
+    second: peasant-walk cycle 3x_23
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 60
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_0
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 1521
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7659bd72bb7140d10800000000000000
+      internalID: 2090822219601778023
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_1
+      rect:
+        serializedVersion: 2
+        x: 225
+        y: 1521
+        width: 36
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f64e8d4c65fee60b0800000000000000
+      internalID: -5733382119647288209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_2
+      rect:
+        serializedVersion: 2
+        x: 381
+        y: 1521
+        width: 36
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ad8ba326226635d0800000000000000
+      internalID: -3083168978941801047
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_3
+      rect:
+        serializedVersion: 2
+        x: 489
+        y: 1521
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f94c0e96042864950800000000000000
+      internalID: 6432972330911188127
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_4
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 1377
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a40fb986b18866f0800000000000000
+      internalID: -691159921806343005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_5
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 1377
+        width: 36
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e57a8f8bb4d1f3e20800000000000000
+      internalID: 3332414460340512606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_6
+      rect:
+        serializedVersion: 2
+        x: 375
+        y: 1377
+        width: 36
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7420882ff0f13a50800000000000000
+      internalID: 6499240715959149692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_7
+      rect:
+        serializedVersion: 2
+        x: 495
+        y: 1377
+        width: 60
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7841880a6a8b317f0800000000000000
+      internalID: -642967295986494329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_8
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 1233
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d9dedc7ebac78e0f0800000000000000
+      internalID: -1087482232239690339
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_9
+      rect:
+        serializedVersion: 2
+        x: 234
+        y: 1233
+        width: 36
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e60de53da2515690800000000000000
+      internalID: -7615214591019251993
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_10
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 1233
+        width: 36
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa66b142a891d0ab0800000000000000
+      internalID: -5040344326855760214
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_11
+      rect:
+        serializedVersion: 2
+        x: 498
+        y: 1233
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b57501472f19a01d0800000000000000
+      internalID: -3383731699500165285
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_12
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 1122
+        width: 63
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c517c94036a2fb880800000000000000
+      internalID: -8593102959232126628
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_13
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 1125
+        width: 51
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96e931b2bb5f142e0800000000000000
+      internalID: -2143161763421249943
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_14
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 1125
+        width: 45
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1297723a869d7c710800000000000000
+      internalID: 1713577226674862369
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_15
+      rect:
+        serializedVersion: 2
+        x: 495
+        y: 1125
+        width: 63
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ec94a1cacf623a30800000000000000
+      internalID: 4193537119658220771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_16
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 1014
+        width: 60
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7693e106c4eeff20800000000000000
+      internalID: 3458453102953469567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_17
+      rect:
+        serializedVersion: 2
+        x: 225
+        y: 1017
+        width: 45
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a15740f3c16c3e910800000000000000
+      internalID: 1865552495280157978
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_18
+      rect:
+        serializedVersion: 2
+        x: 375
+        y: 1017
+        width: 39
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 811936ca88d323ad0800000000000000
+      internalID: -2724047167388675816
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_19
+      rect:
+        serializedVersion: 2
+        x: 498
+        y: 1017
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4687f147dd640d2d0800000000000000
+      internalID: -3256024613638932380
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_20
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 801
+        width: 60
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0d324cbdf29513390800000000000000
+      internalID: -7840387414189923376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_21
+      rect:
+        serializedVersion: 2
+        x: 222
+        y: 801
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea0b93f47e7d74c70800000000000000
+      internalID: 8955363772516118702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_22
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 801
+        width: 60
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf294871a0b62a360800000000000000
+      internalID: 7179418447070401275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: peasant-walk cycle 3x_23
+      rect:
+        serializedVersion: 2
+        x: 378
+        y: 801
+        width: 60
+        height: 87
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6fc57bb0ff6bf2a0800000000000000
+      internalID: -6702640540682956950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 0a041f8169cbc497fab5806060e20be5
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      peasant-walk cycle 3x_0: 2090822219601778023
+      peasant-walk cycle 3x_1: -5733382119647288209
+      peasant-walk cycle 3x_10: -5040344326855760214
+      peasant-walk cycle 3x_11: -3383731699500165285
+      peasant-walk cycle 3x_12: -8593102959232126628
+      peasant-walk cycle 3x_13: -2143161763421249943
+      peasant-walk cycle 3x_14: 1713577226674862369
+      peasant-walk cycle 3x_15: 4193537119658220771
+      peasant-walk cycle 3x_16: 3458453102953469567
+      peasant-walk cycle 3x_17: 1865552495280157978
+      peasant-walk cycle 3x_18: -2724047167388675816
+      peasant-walk cycle 3x_19: -3256024613638932380
+      peasant-walk cycle 3x_2: -3083168978941801047
+      peasant-walk cycle 3x_20: -7840387414189923376
+      peasant-walk cycle 3x_21: 8955363772516118702
+      peasant-walk cycle 3x_22: 7179418447070401275
+      peasant-walk cycle 3x_23: -6702640540682956950
+      peasant-walk cycle 3x_3: 6432972330911188127
+      peasant-walk cycle 3x_4: -691159921806343005
+      peasant-walk cycle 3x_5: 3332414460340512606
+      peasant-walk cycle 3x_6: 6499240715959149692
+      peasant-walk cycle 3x_7: -642967295986494329
+      peasant-walk cycle 3x_8: -1087482232239690339
+      peasant-walk cycle 3x_9: -7615214591019251993
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

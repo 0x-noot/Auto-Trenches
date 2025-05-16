@@ -3399,7 +3399,7 @@ RectTransform:
   m_GameObject: {fileID: 882161554}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.4596, y: 1.4596, z: 1.4596}
+  m_LocalScale: {x: 2.2594607, y: 2.2594607, z: 2.2594607}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 340311539}
@@ -3407,7 +3407,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -213}
+  m_AnchoredPosition: {x: 0, y: -188}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &882161556
@@ -3584,8 +3584,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 72
-  m_fontSizeBase: 72
+  m_fontSize: 60
+  m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -5124,6 +5124,7 @@ MonoBehaviour:
   playerAHP: {fileID: 163010614}
   playerBHP: {fileID: 325649871}
   placementManager: {fileID: 365522353}
+  endGameDelay: 2
 --- !u!4 &1053526295
 Transform:
   m_ObjectHideFlags: 0
@@ -17077,8 +17078,6 @@ MonoBehaviour:
   continueButton: {fileID: 882161556}
   continueButtonText: {fileID: 340311540}
   panelFadeInDuration: 1
-  statsRevealDelay: 0.5
-  transitionDelay: 3
   mainMenuScene: MainMenu
 --- !u!114 &1709004980
 MonoBehaviour:

@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 8734161682754046773}
   - component: {fileID: 6163104908838681718}
   - component: {fileID: 172989328934444090}
+  - component: {fileID: 5625009416491800913}
+  - component: {fileID: 4354079395737644608}
   m_Layer: 0
   m_Name: PeasantMilitia
   m_TagString: Untagged
@@ -86,8 +88,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 15
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.5849056, g: 0.32168037, b: 0.057938762, a: 1}
+  m_Sprite: {fileID: 8022186927150013374, guid: 3f28cb684c12f4a0fbc07fd1cf863d9c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -184,6 +186,7 @@ MonoBehaviour:
   - {fileID: 8734161682754046773}
   - {fileID: 6163104908838681718}
   - {fileID: 172989328934444090}
+  - {fileID: 5625009416491800913}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -299,6 +302,40 @@ MonoBehaviour:
   targetingRange: 100
   updateInterval: 0.1
   positionVariance: 0.5
+--- !u!114 &5625009416491800913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7188846069394007344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa74a85c8ae4199ae2dcf3ba33eb1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!95 &4354079395737644608
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7188846069394007344}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 5e967482241e74c1780b320207f7ee9c, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &8821363525705158017
 PrefabInstance:
   m_ObjectHideFlags: 0
