@@ -358,6 +358,7 @@ public class BattleRoundManager : MonoBehaviourPunCallbacks, IPunObservable
         ForceHPUpdate();
         OnRoundEnd?.Invoke(localResultText, survivingUnits);
         currentRound++;
+        
         PrepareNextRound();
     }
     

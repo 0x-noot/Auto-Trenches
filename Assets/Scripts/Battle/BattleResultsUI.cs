@@ -264,7 +264,14 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         if (BattleRoundManager.Instance != null)
         {
-            winnerText.text = $"Round {BattleRoundManager.Instance.GetCurrentRound()}: {resultText}";
+            // IMPORTANT CHANGE: For the host, display currentRound - 1 to fix the issue
+            int displayRound = BattleRoundManager.Instance.GetCurrentRound();
+            if (PhotonNetwork.IsMasterClient)
+            {
+                displayRound = Mathf.Max(1, displayRound - 1);
+            }
+            
+            winnerText.text = $"Round {displayRound}: {resultText}";
             winnerText.color = resultText == "Victory!" ? Color.green : Color.red;
         }
         else
