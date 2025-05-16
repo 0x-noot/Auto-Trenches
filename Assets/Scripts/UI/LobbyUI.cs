@@ -2,16 +2,20 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Photon.Realtime;
+using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
 
-public class LobbyUI : MonoBehaviour
+public class LobbyUI : MonoBehaviourPunCallbacks
 {
     [Header("Panels")]
     [SerializeField] private GameObject walletPanel;
     [SerializeField] private GameObject lobbyListPanel;
     [SerializeField] private GameObject matchLobbyPanel;
     [SerializeField] private GameObject connectingPanel;
+    
+    // Reference to username panel to prevent conflicts
+    [SerializeField] private GameObject usernamePanel;
 
     [Header("Wallet Panel")]
     [SerializeField] private Button connectWalletButton;
@@ -39,6 +43,16 @@ public class LobbyUI : MonoBehaviour
 
     private void Awake()
     {
+        // Try to find the username panel if not assigned
+        if (usernamePanel == null && SoarManager.Instance != null)
+        {
+            usernamePanel = GameObject.Find("UsernamePanel");
+            if (usernamePanel != null)
+            {
+                Debug.Log("LobbyUI: Found UsernamePanel by name");
+            }
+        }
+        
         if (!WalletManager.Instance.IsConnected)
         {
             walletPanel.SetActive(true);
@@ -139,6 +153,13 @@ public class LobbyUI : MonoBehaviour
 
     public void ShowWalletPanel()
     {
+        // Don't activate if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing wallet panel");
+            return;
+        }
+        
         walletPanel.SetActive(true);
         lobbyListPanel.SetActive(false);
         matchLobbyPanel.SetActive(false);
@@ -146,6 +167,13 @@ public class LobbyUI : MonoBehaviour
 
     public void ShowLobbyListPanel()
     {
+        // Don't activate if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing lobby list panel");
+            return;
+        }
+        
         walletPanel.SetActive(false);
         lobbyListPanel.SetActive(true);
         matchLobbyPanel.SetActive(false);
@@ -153,6 +181,13 @@ public class LobbyUI : MonoBehaviour
 
     public void ShowMatchLobbyPanel()
     {
+        // Don't activate if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing match lobby panel");
+            return;
+        }
+        
         walletPanel.SetActive(false);
         lobbyListPanel.SetActive(false);
         matchLobbyPanel.SetActive(true);
@@ -165,6 +200,12 @@ public class LobbyUI : MonoBehaviour
         lobbyListPanel.SetActive(false);
         matchLobbyPanel.SetActive(false);
         connectingPanel.SetActive(false);
+        
+        // Make sure not to hide the username panel if it's active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active - NOT hiding it");
+        }
     }
 
     #endregion
@@ -243,6 +284,13 @@ public class LobbyUI : MonoBehaviour
         walletAddressText.text = WalletManager.Instance.GetFormattedWalletAddress();
         connectWalletButton.interactable = true;
         
+        // Check if username panel is active - if so, don't hide panels or change UI state
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not changing UI state after wallet connection");
+            return;
+        }
+        
         HideAllPanels();
         
         MenuManager menuManager = FindFirstObjectByType<MenuManager>();
@@ -262,6 +310,14 @@ public class LobbyUI : MonoBehaviour
         connectionStatusText.text = "Disconnected";
         walletAddressText.text = "Not Connected";
         connectWalletButton.interactable = true;
+        
+        // Check if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing wallet panel after disconnect");
+            return;
+        }
+        
         ShowWalletPanel();
     }
     
@@ -284,6 +340,14 @@ public class LobbyUI : MonoBehaviour
     public void OnRoomJoined(bool isMasterClient)
     {
         isInRoom = true;
+        
+        // Check if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing match lobby panel after joining room");
+            return;
+        }
+        
         ShowMatchLobbyPanel();
         
         leaveLobbyButton.gameObject.SetActive(true);
@@ -446,12 +510,28 @@ public class LobbyUI : MonoBehaviour
     public void OnRoomLeft()
     {
         isInRoom = false;
+        
+        // Check if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing lobby list panel after leaving room");
+            return;
+        }
+        
         ShowLobbyListPanel();
     }
 
     public void OnDisconnected()
     {
         isInRoom = false;
+        
+        // Check if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("LobbyUI: Username panel is active, not showing wallet panel after disconnect");
+            return;
+        }
+        
         ShowWalletPanel();
         ShowConnectingPanel(true);
     }

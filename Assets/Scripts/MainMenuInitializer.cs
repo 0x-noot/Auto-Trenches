@@ -1,15 +1,27 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using Photon.Pun;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class MainMenuInitializer : MonoBehaviour
 {
     [SerializeField] private GameObject walletPanel;
     [SerializeField] private GameObject mainMenuPanel;
+    [SerializeField] private GameObject usernamePanel;
     
     [Tooltip("Time to wait before fixing menu state")]
     [SerializeField] private float initialDelay = 0.5f;
+    
+    private void Awake()
+    {
+        if (usernamePanel == null)
+        {
+            usernamePanel = GameObject.Find("UsernamePanel");
+            if (usernamePanel != null)
+            {
+                Debug.Log("MainMenuInitializer: Found UsernamePanel by name in Awake");
+            }
+        }
+    }
     
     private void Start()
     {
@@ -22,8 +34,25 @@ public class MainMenuInitializer : MonoBehaviour
         // Wait to ensure all managers have initialized
         yield return new WaitForSeconds(initialDelay);
         
+        // Find username panel if not assigned
+        if (usernamePanel == null)
+        {
+            usernamePanel = GameObject.Find("UsernamePanel");
+            if (usernamePanel != null)
+            {
+                Debug.Log("MainMenuInitializer: Found UsernamePanel by name");
+            }
+        }
+        
         // Log UI state for debugging
-        Debug.Log($"[MainMenuInitializer] Current UI state - WalletPanel: {(walletPanel ? walletPanel.activeSelf : false)}, MainMenuPanel: {(mainMenuPanel ? mainMenuPanel.activeSelf : false)}");
+        Debug.Log($"[MainMenuInitializer] Current UI state - WalletPanel: {(walletPanel ? walletPanel.activeSelf : false)}, MainMenuPanel: {(mainMenuPanel ? mainMenuPanel.activeSelf : false)}, UsernamePanel: {(usernamePanel ? usernamePanel.activeSelf : false)}");
+        
+        // Check if username panel is active - if so, don't change anything
+        if (usernamePanel != null && usernamePanel.activeSelf)
+        {
+            Debug.Log("[MainMenuInitializer] Username panel is active, not modifying UI state");
+            yield break; // Use yield break instead of return
+        }
         
         // Check if we're returning from a game
         bool returningFromGame = PlayerPrefs.GetInt("ReturningFromGame", 0) == 1;
@@ -59,12 +88,22 @@ public class MainMenuInitializer : MonoBehaviour
         {
             // This is a fresh session without wallet connection
             Debug.Log("[MainMenuInitializer] Fresh session, no wallet connection - showing wallet panel");
+            PlayerPrefs.SetInt("ShowMainMenu", 0);
+            PlayerPrefs.SetInt("ReturningFromGame", 0);
+            PlayerPrefs.Save();
             ForceShowWalletPanel();
         }
     }
     
     private void ForceShowMainMenu()
     {
+        // Don't change state if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("[MainMenuInitializer] Username panel is active, not forcing main menu");
+            return;
+        }
+        
         // Hide wallet panel forcefully
         if (walletPanel != null)
         {
@@ -89,6 +128,13 @@ public class MainMenuInitializer : MonoBehaviour
     
     private void ForceShowWalletPanel()
     {
+        // Don't change state if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("[MainMenuInitializer] Username panel is active, not forcing wallet panel");
+            return;
+        }
+        
         // Hide main menu panel forcefully
         if (mainMenuPanel != null)
         {

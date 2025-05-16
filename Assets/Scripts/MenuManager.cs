@@ -17,6 +17,9 @@ public class MenuManager : MonoBehaviourPunCallbacks
     [SerializeField] private GameObject profilePanel;
     [SerializeField] private GameObject walletPanel;
     
+    // Reference to username panel so we don't accidentally disable it
+    [SerializeField] private GameObject usernamePanel;
+    
     [SerializeField] private UnityEngine.UI.Button profileButton; 
     private ModeSelectionUI modeSelectionUI;
     private bool isInitialized = false;
@@ -40,6 +43,17 @@ public class MenuManager : MonoBehaviourPunCallbacks
 
         ValidatePanelReferences();
         modeSelectionUI = GetComponent<ModeSelectionUI>() ?? GetComponentInChildren<ModeSelectionUI>();
+        
+        // Try to find the username panel if not assigned
+        if (usernamePanel == null && SoarManager.Instance != null)
+        {
+            // Look for username panel by reflection or by name
+            usernamePanel = GameObject.Find("UsernamePanel");
+            if (usernamePanel != null)
+            {
+                Debug.Log("MenuManager: Found UsernamePanel by name");
+            }
+        }
     }
 
     private void ValidatePanelReferences()
@@ -127,6 +141,13 @@ public class MenuManager : MonoBehaviourPunCallbacks
         
         // Set processedStartupFlags to true before any early returns to prevent future reprocessing
         processedStartupFlags = true;
+        
+        // Don't process if the username panel is active - this means registration is in progress
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, skipping startup flags processing");
+            return;
+        }
         
         // FIRST PRIORITY: Check if wallet is connected
         if (WalletManager.Instance != null)
@@ -216,11 +237,26 @@ public class MenuManager : MonoBehaviourPunCallbacks
             Debug.Log("MenuManager: Forcibly disabling wallet panel");
             walletPanel.SetActive(false);
         }
+        
+        // IMPORTANT: Do not disable the username panel as it's handled by SoarManager
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active - NOT disabling it");
+            // Keep username panel visible if it's being shown
+        }
     }
 
     public void ShowMainMenu()
     {
         Debug.Log("MenuManager: ShowMainMenu called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing main menu yet");
+            return;
+        }
+        
         DisableAllPanels();
         
         // CRITICAL: Forcibly disable wallet panel again just to be sure
@@ -239,6 +275,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowWalletPanel()
     {
         Debug.Log("MenuManager: ShowWalletPanel called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing wallet panel");
+            return;
+        }
+        
         DisableAllPanels();
         
         if (walletPanel != null)
@@ -255,6 +299,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowSettings()
     {
         Debug.Log("MenuManager: ShowSettings called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing settings");
+            return;
+        }
+        
         DisableAllPanels();
         settingsPanel?.SetActive(true);
     }
@@ -262,6 +314,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowInfo()
     {
         Debug.Log("MenuManager: ShowInfo called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing info");
+            return;
+        }
+        
         DisableAllPanels();
         infoPanel?.SetActive(true);
     }
@@ -269,6 +329,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowModeSelection()
     {
         Debug.Log("MenuManager: ShowModeSelection called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing mode selection");
+            return;
+        }
+        
         DisableAllPanels();
         modeSelectionPanel?.SetActive(true);
     }
@@ -276,6 +344,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowProfile()
     {
         Debug.Log("MenuManager: ShowProfile called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing profile");
+            return;
+        }
+        
         DisableAllPanels();
         profilePanel?.SetActive(true);
         
@@ -292,6 +368,14 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public void ShowLobby()
     {
         Debug.Log("MenuManager: ShowLobby called");
+        
+        // Don't disable panels if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing lobby");
+            return;
+        }
+        
         DisableAllPanels();
         lobbyPanel?.SetActive(true);
 
@@ -366,12 +450,28 @@ public class MenuManager : MonoBehaviourPunCallbacks
     public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
     {
         Debug.Log($"MenuManager: Disconnected from Photon with cause: {cause}");
+        
+        // Don't show main menu if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing main menu after disconnect");
+            return;
+        }
+        
         ShowMainMenu();
     }
 
     public override void OnLeftRoom()
     {
         Debug.Log("MenuManager: Left room, returning to lobby");
+        
+        // Don't show lobby if username panel is active
+        if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            Debug.Log("MenuManager: Username panel is active, not showing lobby after leaving room");
+            return;
+        }
+        
         ShowLobby();
     }
 }

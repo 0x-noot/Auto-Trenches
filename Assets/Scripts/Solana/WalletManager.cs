@@ -13,7 +13,7 @@ public class WalletManager : MonoBehaviour
 {
     public static WalletManager Instance { get; private set; }
     
-    [SerializeField] private SoarManager soarManager;
+    [SerializeField] private SoarManager soarManager; // Reference to SoarManager
     
     public bool IsConnected => Web3.Wallet?.Account != null;
     public string WalletPublicKey => Web3.Wallet?.Account?.PublicKey.ToString();
@@ -28,20 +28,14 @@ public class WalletManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            Debug.Log("[WalletManager] Instance created and set to DontDestroyOnLoad");
-            
+            // Ensure Web3 is initialized
             if (Web3.Instance == null)
             {
-                Debug.LogError("[WalletManager] Web3 instance is not initialized. Ensure a Web3 component is present in the scene with wallet adapter settings configured.");
-            }
-            else
-            {
-                Debug.Log("[WalletManager] Web3 instance found during Awake");
+                Debug.LogError("Web3 instance is not initialized. Ensure a Web3 component is present in the scene with wallet adapter settings configured.");
             }
         }
         else
         {
-            Debug.Log("[WalletManager] Instance already exists, destroying duplicate");
             Destroy(gameObject);
         }
     }
@@ -52,11 +46,13 @@ public class WalletManager : MonoBehaviour
         {
             Web3.OnLogin += HandleWalletConnected;
             Web3.OnLogout += HandleWalletDisconnected;
-            Debug.Log($"[WalletManager] Start - Is connected: {IsConnected}");
-            if (IsConnected)
-            {
-                Debug.Log($"[WalletManager] Already connected to wallet: {WalletPublicKey}");
-            }
+        }
+        
+        // Find SoarManager if not assigned
+        if (soarManager == null)
+        {
+            soarManager = FindFirstObjectByType<SoarManager>();
+            Debug.Log($"[WalletManager] Got SoarManager reference: {soarManager != null}");
         }
     }
     
@@ -74,7 +70,6 @@ public class WalletManager : MonoBehaviour
         try
         {
             Debug.Log("[WalletManager] ConnectWallet called");
-            
             if (Web3.Instance == null || Web3.Wallet == null)
             {
                 throw new Exception("Web3 or Wallet is not initialized. Check Web3 component setup.");
@@ -82,8 +77,7 @@ public class WalletManager : MonoBehaviour
             
             if (IsConnected)
             {
-                Debug.Log("[WalletManager] Already connected, returning true");
-                // Notify any subscribers that might have missed initial connection event
+                Debug.Log("[WalletManager] Already connected");
                 OnWalletConnected?.Invoke(WalletPublicKey);
                 return true;
             }
@@ -107,7 +101,6 @@ public class WalletManager : MonoBehaviour
     
     public void DisconnectWallet()
     {
-        Debug.Log("[WalletManager] DisconnectWallet called");
         if (Web3.Instance != null)
         {
             Web3.Instance.Logout();
@@ -132,13 +125,13 @@ public class WalletManager : MonoBehaviour
         PlayerPrefs.SetString("LastWalletAddress", account.PublicKey.ToString());
         PlayerPrefs.Save();
 
-        // Add a delay to ensure the RPC connection is ready
-        await Task.Delay(500);
-
+        // Check if player is already registered
         bool isRegistered = await CheckPlayerRegistration(account);
         
         if (!isRegistered)
         {
+            Debug.Log("[WalletManager] Player NOT registered, showing username panel");
+            // Show username panel only if not registered
             if (soarManager != null)
             {
                 soarManager.ShowUsernamePanel(account);
@@ -146,12 +139,24 @@ public class WalletManager : MonoBehaviour
             else
             {
                 Debug.LogError("[WalletManager] SoarManager reference is missing!");
+                // Try to find it again
+                soarManager = FindFirstObjectByType<SoarManager>();
+                if (soarManager != null)
+                {
+                    Debug.Log("[WalletManager] Found SoarManager, showing username panel");
+                    soarManager.ShowUsernamePanel(account);
+                }
+                else
+                {
+                    Debug.LogError("[WalletManager] Failed to find SoarManager!");
+                }
             }
         }
         else
         {
             Debug.Log("[WalletManager] Player already registered, skipping username panel");
-            // Force refresh the main menu in case UI is stuck
+            // You might want to trigger some event or action here for registered players
+            // For example, loading their profile or going directly to main menu
             MenuManager.Instance?.ShowMainMenu();
         }
     }
@@ -160,23 +165,33 @@ public class WalletManager : MonoBehaviour
     {
         try
         {
+            // Get the player PDA
             var playerAccountPda = SoarPda.PlayerPda(account.PublicKey);
+            
+            // Check if the account exists
             var accountData = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
             
+            // If account exists and has data, player is registered
             bool isRegistered = accountData.Result?.Value != null && 
-                            accountData.Result.Value.Data != null &&
-                            accountData.Result.Value.Data.Count > 0;
+                              accountData.Result.Value.Data != null &&
+                              accountData.Result.Value.Data.Count > 0;
             
             Debug.Log($"[WalletManager] Player registration check: {(isRegistered ? "Registered" : "Not registered")}");
-            Debug.Log($"[WalletManager] Account data exists: {accountData.Result?.Value != null}");
-            Debug.Log($"[WalletManager] Data length: {accountData.Result?.Value?.Data?.Count ?? 0}");
+            if (accountData.Result?.Value != null)
+            {
+                Debug.Log($"[WalletManager] Account data exists, Data length: {accountData.Result?.Value?.Data?.Count ?? 0}");
+            }
+            else
+            {
+                Debug.Log("[WalletManager] Account data is null - player not registered");
+            }
             
             return isRegistered;
         }
         catch (Exception ex)
         {
             Debug.LogError($"[WalletManager] Error checking player registration: {ex.Message}");
-            // If we can't check, assume they're not registered to be safe
+            // If we can't check, assume they're not registered
             return false;
         }
     }
@@ -185,24 +200,5 @@ public class WalletManager : MonoBehaviour
     {
         Debug.Log("[WalletManager] Wallet disconnected");
         OnWalletDisconnected?.Invoke();
-    }
-    
-    // Add a method to check connection on scene load
-    public void ValidateConnectionState()
-    {
-        Debug.Log($"[WalletManager] ValidateConnectionState - IsConnected: {IsConnected}");
-        if (IsConnected)
-        {
-            Debug.Log($"[WalletManager] Still connected to wallet: {WalletPublicKey}");
-        }
-    }
-    
-    private void OnApplicationPause(bool pauseStatus)
-    {
-        // Log connection state when application focus changes
-        if (!pauseStatus) // When application resumes from pause
-        {
-            Debug.Log($"[WalletManager] Application resumed - IsConnected: {IsConnected}");
-        }
     }
 }
