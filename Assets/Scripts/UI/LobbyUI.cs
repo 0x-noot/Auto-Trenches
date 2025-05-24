@@ -104,6 +104,19 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         }
     }
 
+    private bool ValidateWalletConnection()
+    {
+        bool isConnected = WalletManager.Instance != null && WalletManager.Instance.IsConnected;
+        
+        if (!isConnected)
+        {
+            ShowWalletPanel();
+            return false;
+        }
+        
+        return true;
+    }
+
     private void SetupUI()
     {
         connectWalletButton.onClick.AddListener(OnConnectWalletClicked);
@@ -130,8 +143,6 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         }
     }
 
-    #region Panel Management
-
     private void ShowConnectingPanel(bool show)
     {
         if (connectingPanel != null)
@@ -155,6 +166,11 @@ public class LobbyUI : MonoBehaviourPunCallbacks
     public void ShowLobbyListPanel()
     {
         if (usernamePanel != null && usernamePanel.activeInHierarchy)
+        {
+            return;
+        }
+        
+        if (!ValidateWalletConnection())
         {
             return;
         }
@@ -186,13 +202,8 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         
         if (usernamePanel != null && usernamePanel.activeInHierarchy)
         {
-            // Do not hide username panel
         }
     }
-
-    #endregion
-
-    #region Button Handlers
 
     private async void OnConnectWalletClicked()
     {
@@ -210,7 +221,7 @@ public class LobbyUI : MonoBehaviourPunCallbacks
 
     private void OnCreateRoom()
     {
-        if (!WalletManager.Instance.IsConnected)
+        if (!ValidateWalletConnection())
         {
             return;
         }
@@ -250,10 +261,6 @@ public class LobbyUI : MonoBehaviourPunCallbacks
             PhotonManager.Instance.LeaveRoom();
         }
     }
-
-    #endregion
-
-    #region Wallet Event Handlers
 
     private void HandleWalletConnected(string publicKey)
     {
@@ -298,10 +305,6 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         connectionStatusText.text = $"Error: {errorMessage}";
         connectWalletButton.interactable = true;
     }
-
-    #endregion
-
-    #region Photon Callbacks
 
     public void OnPhotonConnected()
     {
@@ -441,7 +444,7 @@ public class LobbyUI : MonoBehaviourPunCallbacks
 
     private void OnJoinRoomClicked(string roomName)
     {
-        if (!WalletManager.Instance.IsConnected)
+        if (!ValidateWalletConnection())
         {
             return;
         }
@@ -508,8 +511,6 @@ public class LobbyUI : MonoBehaviourPunCallbacks
             statusText.text = isReady ? "Opponent is Ready!" : "Waiting for opponent...";
         }
     }
-
-    #endregion
 
     private void UpdateHostInfo(string walletAddress, int wins, int losses)
     {

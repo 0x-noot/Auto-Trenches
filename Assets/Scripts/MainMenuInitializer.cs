@@ -38,26 +38,86 @@ public class MainMenuInitializer : MonoBehaviour
         }
         
         bool returningFromGame = PlayerPrefs.GetInt("ReturningFromGame", 0) == 1;
-        bool walletConnected = (WalletManager.Instance != null && WalletManager.Instance.IsConnected);
         bool keepWalletConnected = PlayerPrefs.GetInt("KeepWalletConnected", 0) == 1;
         bool hasUsername = !string.IsNullOrEmpty(PlayerPrefs.GetString("PlayerUsername", ""));
+        
+        bool walletActuallyConnected = (WalletManager.Instance != null && WalletManager.Instance.IsConnected);
+        
+        Debug.Log($"MainMenuInitializer - WalletActuallyConnected: {walletActuallyConnected}, ReturningFromGame: {returningFromGame}, KeepWalletConnected: {keepWalletConnected}, HasUsername: {hasUsername}");
         
         if (returningFromGame)
         {
             PlayerPrefs.SetInt("ReturningFromGame", 0);
             PlayerPrefs.Save();
             
-            ForceShowMainMenu();
+            if (walletActuallyConnected)
+            {
+                ForceShowMainMenu();
+            }
+            else
+            {
+                PlayerPrefs.SetInt("KeepWalletConnected", 0);
+                PlayerPrefs.SetInt("ShowMainMenu", 0);
+                PlayerPrefs.Save();
+                ForceShowWalletPanel();
+            }
         }
-        else if (walletConnected || (keepWalletConnected && hasUsername))
+        else if (walletActuallyConnected)
         {
             ForceShowMainMenu();
+        }
+        else if (keepWalletConnected && hasUsername)
+        {
+            Debug.Log("Attempting to reconnect wallet with cached credentials");
+            yield return StartCoroutine(TryReconnectWallet());
         }
         else
         {
             PlayerPrefs.SetInt("ShowMainMenu", 0);
             PlayerPrefs.SetInt("ReturningFromGame", 0);
+            PlayerPrefs.SetInt("KeepWalletConnected", 0);
             PlayerPrefs.Save();
+            ForceShowWalletPanel();
+        }
+    }
+
+    private IEnumerator TryReconnectWallet()
+    {
+        if (WalletManager.Instance != null)
+        {
+            ForceShowWalletPanel();
+            
+            yield return null;
+            
+            var connectTask = WalletManager.Instance.ConnectWallet();
+            
+            yield return new WaitUntil(() => connectTask.IsCompleted);
+            
+            bool connected = false;
+            if (connectTask.IsFaulted)
+            {
+                Debug.LogError($"Error reconnecting wallet: {connectTask.Exception?.GetBaseException()?.Message}");
+                connected = false;
+            }
+            else
+            {
+                connected = connectTask.Result;
+            }
+            
+            if (connected)
+            {
+                ForceShowMainMenu();
+            }
+            else
+            {
+                PlayerPrefs.SetInt("KeepWalletConnected", 0);
+                PlayerPrefs.SetInt("ShowMainMenu", 0);
+                PlayerPrefs.Save();
+                ForceShowWalletPanel();
+            }
+        }
+        else
+        {
             ForceShowWalletPanel();
         }
     }

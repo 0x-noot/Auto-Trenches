@@ -17,7 +17,17 @@ public class WalletManager : MonoBehaviour
     
     [SerializeField] private SoarManager soarManager;
     
-    public bool IsConnected => Web3.Wallet?.Account != null;
+    public bool IsConnected 
+    { 
+        get 
+        { 
+            bool basicCheck = Web3.Wallet?.Account != null;
+            if (!basicCheck) return false;
+            
+            return ValidateConnection();
+        } 
+    }
+    
     public string WalletPublicKey => Web3.Wallet?.Account?.PublicKey.ToString();
     
     public event Action<string> OnWalletConnected;
@@ -64,6 +74,35 @@ public class WalletManager : MonoBehaviour
         }
     }
     
+    public bool ValidateConnection()
+    {
+        try 
+        {
+            if (Web3.Instance == null || Web3.Wallet == null || Web3.Wallet.Account == null)
+            {
+                return false;
+            }
+            
+            string publicKey = Web3.Wallet.Account.PublicKey.ToString();
+            bool isValid = !string.IsNullOrEmpty(publicKey);
+            
+            return isValid;
+        }
+        catch (System.Exception ex)
+        {
+            return false;
+        }
+    }
+    
+    public void ClearCachedData()
+    {
+        PlayerPrefs.SetInt("KeepWalletConnected", 0);
+        PlayerPrefs.SetInt("ShowMainMenu", 0);
+        PlayerPrefs.SetInt("ReturningFromGame", 0);
+        PlayerPrefs.DeleteKey("LastWalletAddress");
+        PlayerPrefs.Save();
+    }
+    
     public async Task<bool> ConnectWallet()
     {
         try
@@ -89,7 +128,6 @@ public class WalletManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error connecting wallet: {ex.Message}");
             OnConnectionError?.Invoke(ex.Message);
             return false;
         }
@@ -101,6 +139,8 @@ public class WalletManager : MonoBehaviour
         {
             Web3.Instance.Logout();
         }
+        
+        ClearCachedData();
     }
     
     public string GetFormattedWalletAddress()
@@ -165,6 +205,7 @@ public class WalletManager : MonoBehaviour
     
     private void HandleWalletDisconnected()
     {
+        ClearCachedData();
         OnWalletDisconnected?.Invoke();
     }
 }

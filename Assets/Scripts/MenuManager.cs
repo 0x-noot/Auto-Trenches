@@ -111,45 +111,76 @@ public class MenuManager : MonoBehaviourPunCallbacks
         
         processedStartupFlags = true;
         
+        bool isActuallyConnected = (WalletManager.Instance != null && WalletManager.Instance.IsConnected);
+        
+        Debug.Log($"ProcessStartupFlags - ActuallyConnected: {isActuallyConnected}, ShowMainMenu: {showMainMenu}, KeepWallet: {keepWalletConnected}, HasUsername: {!string.IsNullOrEmpty(savedUsername)}, ReturningFromGame: {returningFromGame}");
+        
         if (usernamePanel != null && usernamePanel.activeInHierarchy)
         {
             return;
         }
         
-        if (WalletManager.Instance != null)
+        if (isActuallyConnected)
         {
-            if (WalletManager.Instance.IsConnected)
-            {
-                ShowMainMenu();
-                return;
-            }
+            ShowMainMenu();
+            return;
         }
         
-        if (returningFromGame)
+        if (!isActuallyConnected && (keepWalletConnected || showMainMenu || returningFromGame))
+        {
+            Debug.Log("Wallet not actually connected, clearing cached flags");
+            PlayerPrefs.SetInt("KeepWalletConnected", 0);
+            PlayerPrefs.SetInt("ShowMainMenu", 0);
+            PlayerPrefs.SetInt("ReturningFromGame", 0);
+            PlayerPrefs.Save();
+        }
+        
+        if (returningFromGame && isActuallyConnected)
         {
             PlayerPrefs.SetInt("ReturningFromGame", 0);
             PlayerPrefs.Save();
-            
             ShowMainMenu();
             return;
         }
         
-        if (keepWalletConnected && !string.IsNullOrEmpty(savedUsername))
+        if (!string.IsNullOrEmpty(savedUsername) && keepWalletConnected && !isActuallyConnected)
         {
-            ShowMainMenu();
+            Debug.Log("Attempting to reconnect wallet with cached credentials");
+            StartCoroutine(TryReconnectWallet());
             return;
         }
         
-        if (showMainMenu)
-        {
-            ShowMainMenu();
-            return;
-        }
-        
-        PlayerPrefs.SetInt("ShowMainMenu", 0);
-        PlayerPrefs.SetInt("ReturningFromGame", 0);
-        PlayerPrefs.Save();
         ShowWalletPanel();
+    }
+
+    private IEnumerator TryReconnectWallet()
+    {
+        ShowWalletPanel();
+        
+        if (WalletManager.Instance != null)
+        {
+            var connectTask = WalletManager.Instance.ConnectWallet();
+            
+            yield return new WaitUntil(() => connectTask.IsCompleted);
+            
+            bool reconnected = connectTask.Result;
+            
+            if (reconnected)
+            {
+                ShowMainMenu();
+            }
+            else
+            {
+                PlayerPrefs.SetInt("KeepWalletConnected", 0);
+                PlayerPrefs.SetInt("ShowMainMenu", 0);
+                PlayerPrefs.Save();
+                ShowWalletPanel();
+            }
+        }
+        else
+        {
+            ShowWalletPanel();
+        }
     }
 
     private void InitializePanels()
