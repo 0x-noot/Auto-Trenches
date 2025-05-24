@@ -413,17 +413,80 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         {
             Debug.Log("[BattleResultsUI] Starting score submission");
             
-            var soarManager = FindFirstObjectByType<SoarManager>();
-            if (soarManager == null)
+            WalletManager walletManager = WalletManager.Instance;
+            if (walletManager == null)
             {
-                Debug.LogError("[BattleResultsUI] SoarManager not found!");
+                Debug.LogWarning("[BattleResultsUI] WalletManager.Instance is null, trying to find it...");
+                walletManager = FindObjectOfType<WalletManager>();
+                
+                if (walletManager == null)
+                {
+                    Debug.LogError("[BattleResultsUI] Could not find WalletManager anywhere!");
+                    
+                    GameObject[] dontDestroyObjects = GetDontDestroyOnLoadObjects();
+                    foreach (var obj in dontDestroyObjects)
+                    {
+                        walletManager = obj.GetComponentInChildren<WalletManager>();
+                        if (walletManager != null)
+                        {
+                            Debug.Log("[BattleResultsUI] Found WalletManager in DontDestroyOnLoad!");
+                            break;
+                        }
+                    }
+                    
+                    if (walletManager == null)
+                    {
+                        Debug.LogError("[BattleResultsUI] WalletManager not found even in DontDestroyOnLoad!");
+                        return false;
+                    }
+                }
+            }
+            
+            bool isConnected = await walletManager.EnsureConnected();
+            if (!isConnected)
+            {
+                Debug.LogError("[BattleResultsUI] Failed to ensure wallet connection!");
+                
+                Debug.Log("[BattleResultsUI] Attempting to reconnect wallet...");
+                bool reconnected = await walletManager.ConnectWallet();
+                if (!reconnected)
+                {
+                    Debug.LogError("[BattleResultsUI] Failed to reconnect wallet!");
+                    return false;
+                }
+            }
+            
+            if (!walletManager.IsConnected)
+            {
+                Debug.LogError("[BattleResultsUI] Wallet still not connected after reconnect attempt!");
                 return false;
             }
             
-            if (WalletManager.Instance == null || !WalletManager.Instance.IsConnected)
+            SoarManager soarManager = SoarManager.Instance;
+            if (soarManager == null)
             {
-                Debug.LogError("[BattleResultsUI] Wallet not connected!");
-                return false;
+                Debug.LogWarning("[BattleResultsUI] SoarManager.Instance is null, trying to find it...");
+                soarManager = FindObjectOfType<SoarManager>();
+                
+                if (soarManager == null)
+                {
+                    GameObject[] dontDestroyObjects = GetDontDestroyOnLoadObjects();
+                    foreach (var obj in dontDestroyObjects)
+                    {
+                        soarManager = obj.GetComponentInChildren<SoarManager>();
+                        if (soarManager != null)
+                        {
+                            Debug.Log("[BattleResultsUI] Found SoarManager in DontDestroyOnLoad!");
+                            break;
+                        }
+                    }
+                    
+                    if (soarManager == null)
+                    {
+                        Debug.LogError("[BattleResultsUI] SoarManager not found!");
+                        return false;
+                    }
+                }
             }
             
             ulong scoreToSubmit = 1200;
@@ -449,7 +512,28 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         catch (System.Exception ex)
         {
             Debug.LogError($"[BattleResultsUI] Exception during score submission: {ex.Message}");
+            Debug.LogError($"[BattleResultsUI] Stack trace: {ex.StackTrace}");
             return false;
+        }
+    }
+
+    private GameObject[] GetDontDestroyOnLoadObjects()
+    {
+        GameObject temp = null;
+        try
+        {
+            temp = new GameObject();
+            DontDestroyOnLoad(temp);
+            UnityEngine.SceneManagement.Scene dontDestroyOnLoad = temp.scene;
+            DestroyImmediate(temp);
+            temp = null;
+            
+            return dontDestroyOnLoad.GetRootGameObjects();
+        }
+        finally
+        {
+            if (temp != null)
+                DestroyImmediate(temp);
         }
     }
 

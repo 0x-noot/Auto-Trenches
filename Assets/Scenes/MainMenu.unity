@@ -1553,12 +1553,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 243130592}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 5.1043553, y: -2.0081635, z: 10.023932}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1434124941}
+  m_Father: {fileID: 812497212}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &243130594
 MonoBehaviour:
@@ -3388,12 +3388,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 469999777}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 5.1043553, y: -2.0081635, z: 10.023932}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1434124941}
+  m_Father: {fileID: 812497212}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &469999779
 MonoBehaviour:
@@ -5071,6 +5071,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 810684367}
   m_CullTransparentMesh: 1
+--- !u!1 &812497210
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 812497212}
+  - component: {fileID: 812497211}
+  m_Layer: 0
+  m_Name: PersistentManagers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &812497211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 812497210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 545a9c5822a5e430b9b70f5c074e6756, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &812497212
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 812497210}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5.1043553, y: 2.0081635, z: -10.023932}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1752497165}
+  - {fileID: 243130593}
+  - {fileID: 469999778}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &824942227
 GameObject:
   m_ObjectHideFlags: 0
@@ -8201,11 +8248,9 @@ Transform:
   - {fileID: 733227133}
   - {fileID: 332366800}
   - {fileID: 1184817857}
-  - {fileID: 243130593}
   - {fileID: 147130299}
   - {fileID: 1919258266}
   - {fileID: 496377386}
-  - {fileID: 469999778}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1454362755
@@ -10028,12 +10073,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1752497163}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 5.1043553, y: -2.0081635, z: 10.023932}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 812497212}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1752497166
 MonoBehaviour:
@@ -10052,7 +10097,7 @@ MonoBehaviour:
   statusText: {fileID: 2145607246}
   submitButton: {fileID: 603822162}
   gameIdString: HLnBwVAc2dNJPLyG81bZkQbEkg1qDB6W8r2gZhq4b7FC
-  leaderboardPdaString: 3nVK66juaCJ7p2AzqGzjhkkwSHjXokPPSPrJqSZY19ge
+  leaderboardPdaString: J7UdMJmU2tFbhFtHpw3AWp3fsM7Xr2fV6cXSbHPBi4xj
 --- !u!1 &1845129887
 GameObject:
   m_ObjectHideFlags: 0
@@ -12671,4 +12716,4 @@ SceneRoots:
   - {fileID: 1358728729}
   - {fileID: 1434124941}
   - {fileID: 570794376}
-  - {fileID: 1752497165}
+  - {fileID: 812497212}
