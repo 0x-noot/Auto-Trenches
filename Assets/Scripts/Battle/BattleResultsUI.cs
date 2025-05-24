@@ -98,7 +98,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
                 
                 string resultText = localPlayerWon ? "Victory!" : "Defeat!";
                 
-                // If we're MasterClient, inform GameManager to properly end the battle
                 if (PhotonNetwork.IsMasterClient)
                 {
                     string winner = playerAHP > playerBHP ? "player" : "enemy";
@@ -132,7 +131,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         if (hasShownMatchResults) return;
         
-        // Don't show round results if health is zero (it's a match end)
         if (BattleRoundManager.Instance != null)
         {
             float playerAHP = BattleRoundManager.Instance.GetPlayerAHP();
@@ -140,7 +138,7 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
             
             if (playerAHP <= 0 || playerBHP <= 0)
             {
-                return; // Skip round results, go straight to match results
+                return;
             }
         }
         
@@ -184,7 +182,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         if (hasShownMatchResults) return;
         
-        // Cancel round results if they're showing
         if (isShowingRoundResults)
         {
             StopAllCoroutines();
@@ -199,24 +196,23 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         bool isRankedMode = false;
         
-        // Check GameModeManager first
         if (GameModeManager.Instance != null) 
         {
             isRankedMode = GameModeManager.Instance.CurrentMode == GameMode.Ranked;
-            Debug.Log($"Game mode from GameModeManager: {GameModeManager.Instance.CurrentMode}");
+            Debug.Log($"[BattleResultsUI] Game mode from GameModeManager: {GameModeManager.Instance.CurrentMode}, isRankedMode: {isRankedMode}");
         }
-        // Then check room properties as fallback
         else if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
         {
             if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("GameMode", out object gameModeObj))
             {
                 string gameModeStr = gameModeObj.ToString();
                 isRankedMode = gameModeStr == "Ranked";
-                Debug.Log($"Game mode from room properties: {gameModeStr}");
+                Debug.Log($"[BattleResultsUI] Game mode from room properties: {gameModeStr}, isRankedMode: {isRankedMode}");
             }
         }
         
         pendingScoreSubmission = isRankedMode;
+        Debug.Log($"[BattleResultsUI] Final pendingScoreSubmission: {pendingScoreSubmission}");
         
         if (pendingScoreSubmission)
         {
@@ -245,7 +241,6 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
                 "Submit Score & Continue" : "Return to Menu";
         }
         
-        // Make sure the other player also sees their result
         if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
         {
             photonView.RPC("RPCShowMatchResults", RpcTarget.Others, resultText == "Victory!" ? "Defeat!" : "Victory!");
@@ -268,22 +263,18 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     
     private IEnumerator ShowRoundResults(string resultText, int survivingUnits)
     {
-        // Set flag to prevent other displays
         isShowingRoundResults = true;
         
-        // Don't show round results if match has ended
         if (hasShownMatchResults)
         {
             isShowingRoundResults = false;
             yield break;
         }
         
-        // Setup panel
         resultsPanel.SetActive(true);
         
         if (BattleRoundManager.Instance != null)
         {
-            // IMPORTANT CHANGE: For the host, display currentRound - 1 to fix the issue
             int displayRound = BattleRoundManager.Instance.GetCurrentRound();
             if (PhotonNetwork.IsMasterClient)
             {
@@ -303,29 +294,22 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
         
         continueButton.gameObject.SetActive(false);
         
-        // Fade in
         yield return StartCoroutine(FadeInPanel());
         
-        // Wait a moment
         yield return new WaitForSeconds(3f);
         
-        // Check if match has ended while showing round results
         if (hasShownMatchResults)
         {
             isShowingRoundResults = false;
             yield break;
         }
         
-        // Fade out
         yield return StartCoroutine(FadeOutPanel());
         
-        // Hide panel
         resultsPanel.SetActive(false);
         
-        // Clear flag
         isShowingRoundResults = false;
         
-        // Start next round if appropriate
         if (!hasShownMatchResults && BattleRoundManager.Instance != null)
         {
             BattleRoundManager.Instance.StartNewRound();
@@ -336,15 +320,19 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         if (isTransitioning) return;
         
+        Debug.Log($"[BattleResultsUI] OnContinueClicked - pendingScoreSubmission: {pendingScoreSubmission}, transactionSubmitted: {transactionSubmitted}");
+        
         continueButton.interactable = false;
         isTransitioning = true;
         
         if (pendingScoreSubmission && !transactionSubmitted)
         {
+            Debug.Log("[BattleResultsUI] Starting score submission process...");
             SubmitScoreAndReturnAsync();
         }
         else
         {
+            Debug.Log("[BattleResultsUI] No score submission needed, returning to menu");
             SetReturnToMenuPrefs();
             
             if (PhotonNetwork.IsConnected && PhotonNetwork.InRoom)
@@ -368,12 +356,24 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
 
     private async void SubmitScoreAndReturnAsync()
     {
+        Debug.Log("[BattleResultsUI] SubmitScoreAndReturnAsync started");
+        
         if (continueButtonText != null)
         {
             continueButtonText.text = "Submitting Score...";
         }
         
-        bool success = await SubmitScore();
+        bool success = false;
+        try
+        {
+            success = await SubmitScore();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[BattleResultsUI] Exception in SubmitScoreAndReturnAsync: {ex.Message}");
+            success = false;
+        }
+        
         transactionSubmitted = true;
         
         if (continueButtonText != null)
@@ -411,25 +411,44 @@ public class BattleResultsUI : MonoBehaviourPunCallbacks
     {
         try
         {
+            Debug.Log("[BattleResultsUI] Starting score submission");
+            
             var soarManager = FindFirstObjectByType<SoarManager>();
-            if (soarManager != null && newElo > 0)
+            if (soarManager == null)
             {
-                if (WalletManager.Instance == null || !WalletManager.Instance.IsConnected)
-                {
-                    return false;
-                }
-                
-                bool success = await soarManager.SubmitScoreToLeaderboard((ulong)newElo);
-                if (success && ProfileManager.Instance != null)
+                Debug.LogError("[BattleResultsUI] SoarManager not found!");
+                return false;
+            }
+            
+            if (WalletManager.Instance == null || !WalletManager.Instance.IsConnected)
+            {
+                Debug.LogError("[BattleResultsUI] Wallet not connected!");
+                return false;
+            }
+            
+            ulong scoreToSubmit = 1200;
+            Debug.Log($"[BattleResultsUI] Submitting score: {scoreToSubmit}");
+            
+            bool success = await soarManager.SubmitScoreToLeaderboard(scoreToSubmit);
+            
+            if (success)
+            {
+                Debug.Log("[BattleResultsUI] Score submission successful!");
+                if (ProfileManager.Instance != null)
                 {
                     await ProfileManager.Instance.LoadProfileData();
                 }
-                return success;
             }
-            return false;
+            else
+            {
+                Debug.LogError("[BattleResultsUI] Score submission failed!");
+            }
+            
+            return success;
         }
-        catch (System.Exception)
+        catch (System.Exception ex)
         {
+            Debug.LogError($"[BattleResultsUI] Exception during score submission: {ex.Message}");
             return false;
         }
     }

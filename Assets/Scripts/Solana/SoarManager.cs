@@ -212,6 +212,7 @@ public class SoarManager : MonoBehaviour
 
     public async Task<bool> SubmitScoreToLeaderboard(ulong score)
     {
+        Debug.Log($"[SoarManager] SubmitScoreToLeaderboard called with score: {score}");
         int retryCount = 0;
         bool success = false;
         
@@ -221,20 +222,27 @@ public class SoarManager : MonoBehaviour
             {
                 if (Web3.Wallet == null || Web3.Wallet.Account == null)
                 {
+                    Debug.LogError("[SoarManager] Web3 Wallet or Account is null!");
                     return false;
                 }
 
                 if (!WalletManager.Instance.IsConnected)
                 {
+                    Debug.Log("[SoarManager] Wallet not connected, attempting to reconnect...");
                     bool reconnected = await WalletManager.Instance.ConnectWallet();
                     if (!reconnected)
                     {
+                        Debug.LogError("[SoarManager] Failed to reconnect wallet!");
                         return false;
                     }
                 }
 
                 var playerAddress = Web3.Wallet.Account.PublicKey;
                 var playerAccountPda = SoarPda.PlayerPda(playerAddress);
+                
+                Debug.Log($"[SoarManager] Player address: {playerAddress}");
+                Debug.Log($"[SoarManager] Player account PDA: {playerAccountPda}");
+                Debug.Log($"[SoarManager] Leaderboard PDA: {leaderboardPda}");
                 
                 var blockHashResult = await Web3.Rpc.GetLatestBlockHashAsync();
                 if (blockHashResult == null || blockHashResult.Result == null)
@@ -259,6 +267,7 @@ public class SoarManager : MonoBehaviour
                     SystemProgram = SystemProgram.ProgramIdKey
                 };
 
+                Debug.Log("[SoarManager] Creating submit score instruction...");
                 var submitScoreIx = SoarProgram.SubmitScore(
                     accounts: accounts,
                     score: score,
@@ -267,19 +276,26 @@ public class SoarManager : MonoBehaviour
 
                 tx.Add(submitScoreIx);
 
+                Debug.Log("[SoarManager] Sending transaction to wallet for signing...");
                 var result = await Web3.Wallet.SignAndSendTransaction(tx, commitment: Commitment.Confirmed);
                 
                 if (!result.WasSuccessful)
                 {
+                    Debug.LogError($"[SoarManager] Transaction failed: {result.Reason}");
                     retryCount++;
                     await Task.Delay(500);
                     continue;
                 }
                 
+                Debug.Log($"[SoarManager] Transaction sent successfully! Signature: {result.Result}");
+                Debug.Log("[SoarManager] Waiting for confirmation...");
+                
                 bool confirmed = await Web3.Rpc.ConfirmTransaction(result.Result, Commitment.Confirmed);
                 
                 if (confirmed)
                 {
+                    Debug.Log("[SoarManager] Transaction confirmed successfully!");
+                    
                     if (ProfileManager.Instance != null && GameModeManager.Instance.CurrentMode == GameMode.Ranked)
                     {
                         bool playerWon = false;
@@ -301,16 +317,20 @@ public class SoarManager : MonoBehaviour
                 }
                 else
                 {
+                    Debug.LogError("[SoarManager] Transaction confirmation failed!");
                     retryCount++;
                 }
             }
             catch (Exception ex)
             {
+                Debug.LogError($"[SoarManager] Exception during score submission (attempt {retryCount + 1}): {ex.Message}");
+                Debug.LogError($"[SoarManager] Stack trace: {ex.StackTrace}");
                 retryCount++;
                 await Task.Delay(500);
             }
         }
         
+        Debug.LogError($"[SoarManager] Failed to submit score after {maxRetries} attempts");
         return false;
     }
 
