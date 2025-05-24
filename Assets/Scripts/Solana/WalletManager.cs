@@ -103,6 +103,90 @@ public class WalletManager : MonoBehaviour
         PlayerPrefs.Save();
     }
     
+    public async Task<string> GetRegisteredUsername()
+    {
+        if (!IsConnected) return null;
+        
+        try
+        {
+            var playerAccountPda = SoarPda.PlayerPda(Web3.Wallet.Account.PublicKey);
+            var accountInfo = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
+            
+            if (accountInfo?.Result?.Value?.Data != null && accountInfo.Result.Value.Data.Count > 0)
+            {
+                byte[] accountData = Convert.FromBase64String(accountInfo.Result.Value.Data[0]);
+                
+                if (accountData.Length > 8)
+                {
+                    try
+                    {
+                        var player = Player.Deserialize(accountData);
+                        if (player != null && !string.IsNullOrEmpty(player.Username))
+                        {
+                            return player.Username;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+        }
+        
+        return null;
+    }
+    
+    public async Task<string> GetUsernameForWallet(string walletAddress)
+    {
+        try
+        {
+            var publicKey = new PublicKey(walletAddress);
+            var playerAccountPda = SoarPda.PlayerPda(publicKey);
+            var accountInfo = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
+            
+            if (accountInfo?.Result?.Value?.Data != null && accountInfo.Result.Value.Data.Count > 0)
+            {
+                byte[] accountData = Convert.FromBase64String(accountInfo.Result.Value.Data[0]);
+                
+                if (accountData.Length > 8)
+                {
+                    try
+                    {
+                        var player = Player.Deserialize(accountData);
+                        if (player != null && !string.IsNullOrEmpty(player.Username))
+                        {
+                            return player.Username;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+        }
+        
+        return null;
+    }
+    
+    public string GetDisplayName()
+    {
+        if (!IsConnected) return "Not Connected";
+        
+        string cachedUsername = PlayerPrefs.GetString("PlayerUsername", "");
+        if (!string.IsNullOrEmpty(cachedUsername))
+        {
+            return cachedUsername;
+        }
+        
+        return GetFormattedWalletAddress();
+    }
+    
     public async Task<bool> ConnectWallet()
     {
         try
@@ -158,8 +242,14 @@ public class WalletManager : MonoBehaviour
     {
         OnWalletConnected?.Invoke(account.PublicKey.ToString());
         PlayerPrefs.SetString("LastWalletAddress", account.PublicKey.ToString());
-        PlayerPrefs.Save();
-
+        
+        string registeredUsername = await GetRegisteredUsername();
+        if (!string.IsNullOrEmpty(registeredUsername))
+        {
+            PlayerPrefs.SetString("PlayerUsername", registeredUsername);
+            PlayerPrefs.Save();
+        }
+        
         bool isRegistered = await CheckPlayerRegistration(account);
         
         if (!isRegistered)

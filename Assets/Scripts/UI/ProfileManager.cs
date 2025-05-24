@@ -49,7 +49,6 @@ public class ProfileManager : MonoBehaviour
     {
         if (!WalletManager.Instance.IsConnected)
         {
-            Debug.LogError("Wallet not connected");
             OnProfileError?.Invoke("Please connect your wallet first");
             return;
         }
@@ -66,7 +65,6 @@ public class ProfileManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error loading profile: {ex.Message}");
             OnProfileError?.Invoke("Failed to load profile data");
             profileUI.HideProfile();
         }
@@ -88,19 +86,27 @@ public class ProfileManager : MonoBehaviour
                 
                 if (accountData.Result?.Value != null && accountData.Result.Value.Data?.Count > 0)
                 {
-                    profile.username = PlayerPrefs.GetString("PlayerUsername", "Player");
+                    string registeredUsername = await GetUsernameFromSoarAccount(playerAccountPda);
+                    
+                    if (!string.IsNullOrEmpty(registeredUsername))
+                    {
+                        profile.username = registeredUsername;
+                        PlayerPrefs.SetString("PlayerUsername", registeredUsername);
+                        PlayerPrefs.Save();
+                    }
+                    else
+                    {
+                        profile.username = PlayerPrefs.GetString("PlayerUsername", "Player");
+                    }
                     
                     await FetchLeaderboardScore(profile, playerPublicKey);
                     
                     profile.totalMatches = PlayerPrefs.GetInt(PREF_TOTAL_MATCHES, 0);
                     profile.wins = PlayerPrefs.GetInt(PREF_WINS, 0);
                     profile.losses = PlayerPrefs.GetInt(PREF_LOSSES, 0);
-                    
-                    Debug.Log($"Player profile loaded: ELO={profile.eloRating}, Matches={profile.totalMatches}, W/L={profile.wins}/{profile.losses}");
                 }
                 else
                 {
-                    Debug.LogWarning("Player not registered in SOAR");
                     profile.username = "Not Registered";
                     profile.eloRating = 1200;
                     profile.totalMatches = 0;
@@ -110,7 +116,6 @@ public class ProfileManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"Error fetching player account: {ex.Message}");
                 profile.username = PlayerPrefs.GetString("PlayerUsername", "Not Registered");
                 profile.eloRating = 1200;
                 profile.totalMatches = 0;
@@ -120,7 +125,6 @@ public class ProfileManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error fetching player profile: {ex.Message}");
             profile.username = "Error Loading";
             profile.eloRating = 1200;
             profile.totalMatches = 0;
@@ -131,31 +135,61 @@ public class ProfileManager : MonoBehaviour
         return profile;
     }
     
+    private async Task<string> GetUsernameFromSoarAccount(PublicKey playerAccountPda)
+    {
+        try
+        {
+            var accountInfo = await Web3.Rpc.GetAccountInfoAsync(playerAccountPda, Commitment.Confirmed);
+            
+            if (accountInfo?.Result?.Value?.Data != null && accountInfo.Result.Value.Data.Count > 0)
+            {
+                byte[] accountData = Convert.FromBase64String(accountInfo.Result.Value.Data[0]);
+                
+                if (accountData.Length > 8)
+                {
+                    try
+                    {
+                        var player = Player.Deserialize(accountData);
+                        if (player != null && !string.IsNullOrEmpty(player.Username))
+                        {
+                            return player.Username;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Fallback silently
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Fallback silently
+        }
+        
+        return null;
+    }
+    
     private async Task FetchLeaderboardScore(ProfileData profile, PublicKey playerPublicKey)
     {
         try
         {
-            // Use SoarManager to get the player's score
             if (soarManager != null)
             {
                 ulong score = await soarManager.GetPlayerScore(playerPublicKey);
                 profile.eloRating = (int)score;
-                Debug.Log($"Fetched player score: {score}");
             }
             else
             {
-                Debug.LogWarning("SoarManager not available, using default ELO");
                 profile.eloRating = 1200;
             }
         }
         catch (Exception ex)
         {
-            Debug.LogWarning($"Error fetching leaderboard score: {ex.Message}");
             profile.eloRating = 1200;
         }
     }
     
-
     public void RecordMatch(bool won)
     {
         int totalMatches = PlayerPrefs.GetInt(PREF_TOTAL_MATCHES, 0) + 1;
@@ -175,8 +209,6 @@ public class ProfileManager : MonoBehaviour
         PlayerPrefs.SetInt(PREF_WINS, wins);
         PlayerPrefs.SetInt(PREF_LOSSES, losses);
         PlayerPrefs.Save();
-        
-        Debug.Log($"Match recorded: Won={won}, Total={totalMatches}, W/L={wins}/{losses}");
     }
     
     public ProfileData GetCurrentProfile()
@@ -188,7 +220,6 @@ public class ProfileManager : MonoBehaviour
     {
         if (!WalletManager.Instance.IsConnected)
         {
-            Debug.LogError("Wallet not connected");
             return;
         }
         
@@ -200,16 +231,15 @@ public class ProfileManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error loading profile data: {ex.Message}");
+            // Handle silently
         }
     }
+    
     public void ResetStats()
     {
         PlayerPrefs.SetInt(PREF_TOTAL_MATCHES, 0);
         PlayerPrefs.SetInt(PREF_WINS, 0);
         PlayerPrefs.SetInt(PREF_LOSSES, 0);
         PlayerPrefs.Save();
-        
-        Debug.Log("Stats reset");
     }
 }

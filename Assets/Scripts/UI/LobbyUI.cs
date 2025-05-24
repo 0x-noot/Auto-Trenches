@@ -4,6 +4,7 @@ using TMPro;
 using Photon.Realtime;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Photon.Pun;
 
 public class LobbyUI : MonoBehaviourPunCallbacks
@@ -262,6 +263,20 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         }
     }
 
+    private async Task<string> GetDisplayNameForWallet(string walletAddress)
+    {
+        if (WalletManager.Instance != null)
+        {
+            string username = await WalletManager.Instance.GetUsernameForWallet(walletAddress);
+            if (!string.IsNullOrEmpty(username))
+            {
+                return username;
+            }
+        }
+        
+        return FormatWalletAddress(walletAddress);
+    }
+
     private void HandleWalletConnected(string publicKey)
     {
         connectionStatusText.text = "Connected!";
@@ -311,7 +326,7 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         ShowConnectingPanel(false);
     }
 
-    public void OnRoomJoined(bool isMasterClient)
+    public async void OnRoomJoined(bool isMasterClient)
     {
         isInRoom = true;
         
@@ -325,23 +340,26 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         leaveLobbyButton.gameObject.SetActive(true);
         readyButton.interactable = true;
         
-        if (PhotonNetwork.CurrentRoom != null && 
-            PhotonNetwork.CurrentRoom.Players.ContainsKey(1))
+        string localDisplayName = WalletManager.Instance.GetDisplayName();
+        
+        if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.Players.ContainsKey(1))
         {
             string hostWalletAddress = PhotonNetwork.CurrentRoom.Players[1].NickName;
             
             if (isMasterClient)
             {
                 statusText.text = "Waiting for opponent...";
-                UpdateHostInfo(FormatWalletAddress(hostWalletAddress), 0, 0);
+                hostNameText.text = localDisplayName;
+                hostStatsText.text = "Wins: 0 Losses: 0";
                 clientNameText.text = "Waiting for player...";
                 clientStatsText.text = "";
             }
             else
             {
-                hostNameText.text = FormatWalletAddress(hostWalletAddress);
+                string hostDisplayName = await GetDisplayNameForWallet(hostWalletAddress);
+                hostNameText.text = hostDisplayName;
                 hostStatsText.text = "Wins: 0 Losses: 0";
-                clientNameText.text = FormatWalletAddress(WalletManager.Instance.WalletPublicKey);
+                clientNameText.text = localDisplayName;
                 clientStatsText.text = "Wins: 0 Losses: 0";
                 statusText.text = "Waiting for players to ready up...";
             }
@@ -351,7 +369,8 @@ public class LobbyUI : MonoBehaviourPunCallbacks
             if (isMasterClient)
             {
                 statusText.text = "Waiting for opponent...";
-                UpdateHostInfo(FormatWalletAddress(WalletManager.Instance.WalletPublicKey), 0, 0);
+                hostNameText.text = localDisplayName;
+                hostStatsText.text = "Wins: 0 Losses: 0";
                 clientNameText.text = "Waiting for player...";
                 clientStatsText.text = "";
             }
@@ -359,14 +378,14 @@ public class LobbyUI : MonoBehaviourPunCallbacks
             {
                 hostNameText.text = "Host";
                 hostStatsText.text = "Wins: 0 Losses: 0";
-                clientNameText.text = FormatWalletAddress(WalletManager.Instance.WalletPublicKey);
+                clientNameText.text = localDisplayName;
                 clientStatsText.text = "Wins: 0 Losses: 0";
                 statusText.text = "Waiting for players to ready up...";
             }
         }
     }
 
-    public void UpdateRoomList(List<RoomInfo> roomList)
+    public async void UpdateRoomList(List<RoomInfo> roomList)
     {
         foreach (RoomInfo info in roomList)
         {
@@ -405,8 +424,8 @@ public class LobbyUI : MonoBehaviourPunCallbacks
                                 hostWalletAddress = hostNameObj.ToString();
                             }
                             
-                            string formattedHostAddress = FormatWalletAddress(hostWalletAddress);
-                            string displayName = $"[{gameMode}] {formattedHostAddress}";
+                            string hostDisplayName = await GetDisplayNameForWallet(hostWalletAddress);
+                            string displayName = $"[{gameMode}] {hostDisplayName}";
                             entryUI.Initialize(room.Name, displayName, () => OnJoinRoomClicked(room.Name));
                         }
                     }
@@ -452,11 +471,12 @@ public class LobbyUI : MonoBehaviourPunCallbacks
         PhotonManager.Instance.JoinRoom(roomName, WalletManager.Instance.WalletPublicKey);
     }
 
-    public void OnPlayerJoinedRoom(Player newPlayer)
+    public async void OnPlayerJoinedRoom(Player newPlayer)
     {
         if (matchLobbyPanel.activeSelf)
         {
-            clientNameText.text = FormatWalletAddress(newPlayer.NickName);
+            string playerDisplayName = await GetDisplayNameForWallet(newPlayer.NickName);
+            clientNameText.text = playerDisplayName;
             clientStatsText.text = "Wins: 0 Losses: 0";
             statusText.text = "Waiting for players to ready up...";
         }
